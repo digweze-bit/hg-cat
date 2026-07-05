@@ -342,8 +342,10 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
               </div>
             </div>
 
+            {/* Orange rule before fields */}
+            <div style={{position:'absolute', top:mm(94), left:lx, width:mm(18), height:mm(0.35), background:'#E05C2A'}}/>
             {/* Fields */}
-            <div style={{position:'absolute', top:mm(90), left:lx, width:mm(125)}}>
+            <div style={{position:'absolute', top:mm(97), left:lx, width:mm(125)}}>
               {fields.map(([label, value, italic]) => value ? (
                 <div key={label} style={{display:'flex', gap:mm(2), padding:`${mm(1.5)}px 0`, alignItems:'baseline'}}>
                   <div style={{fontSize:mm(2.83), fontWeight:700, letterSpacing:'.12em', color:'#000', flexShrink:0, textTransform:'uppercase', whiteSpace:'nowrap'}}>{label}</div>
@@ -454,7 +456,7 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 .rule{width:18mm;height:0.35mm;background:#E05C2A;margin-top:2mm;}
 .certifies{font-size:2.2mm;color:#555555;line-height:1.65;margin-top:5mm;max-width:120mm;}
 
-.fields{position:absolute;top:90mm;left:12.8mm;width:125mm;}
+.fields{position:absolute;top:97mm;left:12.8mm;width:125mm;}
 .field-row{display:flex;align-items:baseline;gap:2mm;padding:1.5mm 0;}
 .fl{font-size:2.83mm;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#000;flex-shrink:0;white-space:nowrap;}
 .fv{font-size:3.35mm;color:#333333;}
@@ -490,6 +492,7 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
     <div class="certifies">Hourglass Gallery certifies that the artwork described below is an authentic and original work by the artist.</div>
   </div>
 
+  <div class="fields-rule" style="position:absolute;top:94mm;left:12.8mm;width:18mm;height:0.35mm;background:#E05C2A;"></div>
   <div class="fields">
     ${fields.map(([label, value, italic]) => value
       ? `<div class="field-row"><div class="fl">${e(label)}</div><div class="${italic?'fv-italic':'fv'}">${e(value)}</div></div>`
