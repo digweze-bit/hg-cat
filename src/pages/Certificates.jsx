@@ -325,7 +325,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
 
             {/* Logo */}
             <div style={{position:'absolute', top:mm(12), left:lx}}>
-              <img src={logo} alt="Hourglass Gallery" style={{height:mm(14), maxWidth:mm(80), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
+              <img src={logo} alt="Hourglass Gallery" style={{height:mm(21), maxWidth:mm(100), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
             </div>
 
             {/* Heading */}
@@ -481,7 +481,7 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 <div class="page">
 
   <div class="logo">
-    <img src="${logoSrc}" alt="Hourglass Gallery" style="height:14mm;object-fit:contain;object-position:left center;display:block;">
+    <img src="${logoSrc}" alt="Hourglass Gallery" style="height:21mm;object-fit:contain;object-position:left center;display:block;">
   </div>
 
   <div class="heading">
