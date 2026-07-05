@@ -325,7 +325,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
 
             {/* Logo */}
             <div style={{position:'absolute', top:mm(12), left:lx}}>
-              <img src={logo} alt="Hourglass Gallery" style={{height:mm(21), maxWidth:mm(100), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
+              <img src={logo} alt="Hourglass Gallery" style={{height:mm(16.8), maxWidth:mm(90), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
             </div>
 
             {/* Heading */}
@@ -345,8 +345,8 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
             {/* Fields */}
             <div style={{position:'absolute', top:mm(90), left:lx, width:mm(125)}}>
               {fields.map(([label, value, italic]) => value ? (
-                <div key={label} style={{display:'flex', gap:mm(4), borderBottom:`${mm(0.25)}px solid #ccc`, padding:`${mm(1.2)}px 0`, alignItems:'baseline', minHeight:mm(9.5)}}>
-                  <div style={{fontSize:mm(2.83), fontWeight:700, letterSpacing:'.12em', color:'#000', width:mm(24), flexShrink:0, textTransform:'uppercase'}}>{label}</div>
+                <div key={label} style={{display:'flex', gap:mm(2), padding:`${mm(1.5)}px 0`, alignItems:'baseline'}}>
+                  <div style={{fontSize:mm(2.83), fontWeight:700, letterSpacing:'.12em', color:'#000', flexShrink:0, textTransform:'uppercase', whiteSpace:'nowrap'}}>{label}</div>
                   <div style={{fontSize:mm(3.35), color:'#333', fontStyle:italic?'italic':'normal'}}>{value}</div>
                 </div>
               ) : null)}
@@ -455,8 +455,8 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 .certifies{font-size:2.2mm;color:#555555;line-height:1.65;margin-top:5mm;max-width:120mm;}
 
 .fields{position:absolute;top:90mm;left:12.8mm;width:125mm;}
-.field-row{display:flex;align-items:baseline;gap:4mm;border-bottom:0.25mm solid #ccc;padding:1.2mm 0;min-height:9.5mm;}
-.fl{font-size:2.83mm;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#000;width:24mm;flex-shrink:0;}
+.field-row{display:flex;align-items:baseline;gap:2mm;padding:1.5mm 0;}
+.fl{font-size:2.83mm;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#000;flex-shrink:0;white-space:nowrap;}
 .fv{font-size:3.35mm;color:#333333;}
 .fv-italic{font-size:3.35mm;color:#333333;font-style:italic;font-family:'Times New Roman',Times,serif;}
 
@@ -481,7 +481,7 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 <div class="page">
 
   <div class="logo">
-    <img src="${logoSrc}" alt="Hourglass Gallery" style="height:21mm;object-fit:contain;object-position:left center;display:block;">
+    <img src="${logoSrc}" alt="Hourglass Gallery" style="height:16.8mm;object-fit:contain;object-position:left center;display:block;">
   </div>
 
   <div class="heading">
