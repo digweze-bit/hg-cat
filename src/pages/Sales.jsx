@@ -498,12 +498,37 @@ function InvoiceModal({ clients, artworks, artistMap, rates, userId, onClose, on
 
           {/* Right: invoice settings + totals */}
           <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
-            <div className="form-group">
+            <div className="form-group" style={{position:'relative'}}>
               <label className="form-label">Client *</label>
-              <select className="form-select" value={form.client_id} onChange={e=>setForm(f=>({...f,client_id:e.target.value}))}>
-                <option value="">— select client —</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              {form.client_id && !clientSearch ? (
+                <div style={{display:'flex', gap:8, alignItems:'center'}}>
+                  <div style={{flex:1, padding:'8px 10px', border:'1px solid var(--line)', borderRadius:4, fontSize:13, background:'var(--white)'}}>
+                    {clients.find(c=>c.id===form.client_id)?.name}
+                  </div>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>{setForm(f=>({...f,client_id:''}));setClientSearch('')}}>✕</button>
+                </div>
+              ) : (
+                <>
+                  <input className="form-input" placeholder="Search clients…" value={clientSearch}
+                    onChange={e=>setClientSearch(e.target.value)}
+                    onFocus={()=>{ if(form.client_id) setClientSearch('') }}
+                  />
+                  {clientSearch && (
+                    <div style={{position:'absolute', zIndex:50, top:'100%', left:0, right:0, background:'var(--white)', border:'1px solid var(--line)', borderTop:'none', borderRadius:'0 0 4px 4px', maxHeight:200, overflowY:'auto', boxShadow:'0 4px 12px rgba(0,0,0,.08)'}}>
+                      {clients.filter(c=>c.name.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
+                        <div style={{padding:'10px 12px', fontSize:13, color:'var(--muted)'}}>No clients found</div>
+                      )}
+                      {clients.filter(c=>c.name.toLowerCase().includes(clientSearch.toLowerCase())).map(c=>(
+                        <div key={c.id} style={{padding:'9px 12px', cursor:'pointer', fontSize:13, borderBottom:'1px solid var(--line-soft)'}}
+                          onMouseDown={()=>{ setForm(f=>({...f,client_id:c.id})); setClientSearch('') }}>
+                          {c.name}
+                          {c.email && <span style={{fontSize:11, color:'var(--muted)', marginLeft:8}}>{c.email}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
             <div className="form-group">
               <label className="form-label">Currency</label>

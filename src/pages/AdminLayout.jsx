@@ -10,6 +10,7 @@ const NAV = [
   { path: '/admin/archive', label: 'Live Archive', icon: '◈' },
   { section: 'Commerce' },
   { path: '/admin/sales', label: 'Sales & Invoices', icon: '◑' },
+  { path: '/admin/consignors', label: 'Consignors', icon: '◐' },
   { path: '/admin/reports', label: 'Reports', icon: '◧' },
   { path: '/admin/certificates', label: 'Certificates', icon: '◇' },
   { section: 'Admin' },
@@ -78,6 +79,7 @@ export default function AdminLayout() {
              location.pathname.includes('artworks') ? 'Artworks' :
              location.pathname.includes('archive') ? 'Live Archive' :
              location.pathname.includes('sales') ? 'Sales & Invoices' :
+             location.pathname.includes('consignors') ? 'Consignors' :
              location.pathname.includes('certificates') ? 'Certificates' :
              location.pathname.includes('users') ? 'Staff Users' : ''}
           </div>
