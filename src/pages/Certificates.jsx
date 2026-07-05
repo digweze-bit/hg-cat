@@ -336,7 +336,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
               {/* Orange rule — tight under heading */}
               <div style={{width:mm(18), height:mm(0.35), background:ORANGE, marginTop:mm(2)}}/>
               {/* Intro text */}
-              <div style={{fontSize:mm(2.6), color:'#555', lineHeight:1.65, marginTop:mm(5), maxWidth:mm(120)}}>
+              <div style={{fontSize:mm(2.6), color:'#555', lineHeight:1.65, marginTop:mm(2), maxWidth:mm(120)}}>
                 Hourglass Gallery certifies that the artwork described below is an<br/>
                 authentic and original work by the artist.
               </div>
@@ -454,7 +454,7 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 .heading{position:absolute;top:50mm;left:12.8mm;}
 .heading h1{font-family:'Times New Roman',Times,serif;font-size:10.3mm;font-weight:400;color:#000;line-height:1.05;}
 .rule{width:18mm;height:0.35mm;background:#E05C2A;margin-top:2mm;}
-.certifies{font-size:2.2mm;color:#555555;line-height:1.65;margin-top:5mm;max-width:120mm;}
+.certifies{font-size:2.2mm;color:#555555;line-height:1.65;margin-top:2mm;max-width:120mm;}
 
 .fields{position:absolute;top:97mm;left:12.8mm;width:125mm;}
 .field-row{display:flex;align-items:baseline;gap:2mm;padding:1.5mm 0;}
