@@ -324,10 +324,8 @@ function COAPreview({ form, imageUrl, editionLabel }) {
           <div style={{position:'absolute',inset:0}}>
 
             {/* Logo */}
-            <div style={{position:'absolute', top:mm(12), left:lx, display:'flex', alignItems:'baseline', gap:mm(0.5)}}>
-              <span style={{fontSize:mm(7), fontWeight:700, color:'#000', letterSpacing:'-0.01em'}}>HOURGLASS</span>
-              <span style={{fontSize:mm(7), fontWeight:700, color:ORANGE}}>/</span>
-              <span style={{fontSize:mm(3.5), fontWeight:700, color:ORANGE, marginLeft:mm(0.5)}}>GALLERY</span>
+            <div style={{position:'absolute', top:mm(12), left:lx}}>
+              <img src={LOGO_B64} alt="Hourglass Gallery" style={{height:mm(7), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
             </div>
 
             {/* Heading */}
@@ -389,10 +387,10 @@ function COAPreview({ form, imageUrl, editionLabel }) {
 
               return (
                 <>
-                  <div style={{position:'absolute', left:imgX, top:imgY, width:imgW, height:imgH, background:'#f0ece7', border:'1px solid #ddd', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <div style={{position:'absolute', left:imgX, top:imgY, width:imgW, height:imgH, display:'flex', alignItems:'center', justifyContent:'center'}}>
                     {imageUrl
                       ? <img src={imageUrl} alt="" style={{maxWidth:'100%', maxHeight:'100%', objectFit:'contain'}}/>
-                      : <span style={{fontSize:mm(2.7), color:'#aaa'}}>Artwork image</span>
+                      : <span style={{fontSize:mm(2.7), color:'#ccc'}}>Artwork image</span>
                     }
                   </div>
                   {/* Caption */}
@@ -473,8 +471,8 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 
 .right-col{position:absolute;top:0;right:0;width:54%;height:100%;display:flex;align-items:center;justify-content:center;}
 .art-wrap{display:flex;flex-direction:column;align-items:center;}
-.art-img{max-width:88mm;max-height:94mm;object-fit:contain;display:block;border:0.3mm solid #ddd;}
-.no-img{width:88mm;height:94mm;background:#f0ece7;display:flex;align-items:center;justify-content:center;font-size:3mm;color:#aaa;}
+.art-img{max-width:88mm;max-height:94mm;object-fit:contain;display:block;}
+.no-img{width:88mm;height:94mm;display:flex;align-items:center;justify-content:center;font-size:3mm;color:#ccc;}
 .art-cap{font-size:2.65mm;color:#555555;margin-top:7mm;text-align:center;line-height:1.5;max-width:88mm;}
 .cert-no{font-size:2.83mm;font-weight:700;color:#000;letter-spacing:.08em;text-align:center;margin-top:6mm;}
 </style>
