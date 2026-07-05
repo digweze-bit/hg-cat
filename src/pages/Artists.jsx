@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,25 +7,52 @@ const EMPTY = { name:'', nationality:'', medium:'', bio:'', born:'', died:'', po
 export default function Artists() {
   const navigate = useNavigate()
   const [artists, setArtists] = useState([])
+  const [artworks, setArtworks] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState(null) // null | 'add' | 'edit'
+  const [sortBy, setSortBy] = useState('az') // 'az' | 'sold' | 'most'
+  const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
 
   async function load() {
-    const data = await fetchAll('artists', { order: 'sort_order' })
-    setArtists(data)
+    const [a, w] = await Promise.all([
+      fetchAll('artists', { order: 'name' }),
+      fetchAll('artworks', { order: 'sort_order' }),
+    ])
+    setArtists(a)
+    setArtworks(w)
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  const filtered = artists.filter(a =>
-    !search || a.name?.toLowerCase().includes(search.toLowerCase())
-  )
+  // Work counts and sold counts per artist
+  const workCounts = useMemo(() => {
+    const counts = {}
+    artworks.forEach(w => { counts[w.artist_id] = (counts[w.artist_id] || 0) + 1 })
+    return counts
+  }, [artworks])
+
+  const soldCounts = useMemo(() => {
+    const counts = {}
+    artworks.filter(w => w.availability === 'Sold').forEach(w => {
+      counts[w.artist_id] = (counts[w.artist_id] || 0) + 1
+    })
+    return counts
+  }, [artworks])
+
+  const filtered = useMemo(() => {
+    let list = artists.filter(a =>
+      !search || a.name?.toLowerCase().includes(search.toLowerCase())
+    )
+    if (sortBy === 'az') list = [...list].sort((a, b) => a.name.localeCompare(b.name))
+    if (sortBy === 'sold') list = [...list].sort((a, b) => (soldCounts[b.id] || 0) - (soldCounts[a.id] || 0))
+    if (sortBy === 'most') list = [...list].sort((a, b) => (workCounts[b.id] || 0) - (workCounts[a.id] || 0))
+    return list
+  }, [artists, search, sortBy, workCounts, soldCounts])
 
   async function toggleVisible(artist) {
     await supabase.from('artists').update({ visible: !artist.visible }).eq('id', artist.id)
@@ -96,8 +123,17 @@ export default function Artists() {
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artist</button>
       </div>
 
-      <div style={{ display:'flex', gap:10, marginBottom:20 }}>
+      <div style={{ display:'flex', gap:10, marginBottom:20, alignItems:'center' }}>
         <input className="form-input" style={{ maxWidth:300 }} placeholder="Search artists…" value={search} onChange={e=>setSearch(e.target.value)} />
+        <div style={{ display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden', marginLeft:8 }}>
+          {[['az','A – Z'],['most','Most works'],['sold','Frequently sold']].map(([key, label]) => (
+            <button key={key} onClick={() => setSortBy(key)}
+              style={{ padding:'6px 14px', fontSize:12, cursor:'pointer', fontFamily:'var(--font-sans)', border:'none', borderRight:'1px solid var(--line)', background: sortBy===key ? 'var(--ink)' : 'var(--white)', color: sortBy===key ? 'var(--white)' : 'var(--muted)', transition:'all 150ms' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <span style={{ fontSize:13, color:'var(--muted)', marginLeft:4 }}>{filtered.length} artists</span>
       </div>
 
       <div className="card">
@@ -106,6 +142,7 @@ export default function Artists() {
             <thead>
               <tr>
                 <th>Artist</th><th>Nationality</th><th>Medium</th>
+                <th>Works</th><th>Sold</th>
                 <th>Visible</th><th style={{ width:160 }}>Actions</th>
               </tr>
             </thead>
@@ -123,6 +160,8 @@ export default function Artists() {
                   </td>
                   <td style={{ color:'var(--muted)', fontSize:13 }}>{a.nationality || '—'}</td>
                   <td style={{ color:'var(--muted)', fontSize:13 }}>{a.medium || '—'}</td>
+                  <td style={{ fontSize:13 }}>{workCounts[a.id] || 0}</td>
+                  <td style={{ fontSize:13, color: soldCounts[a.id] ? 'var(--green)' : 'var(--muted)' }}>{soldCounts[a.id] || 0}</td>
                   <td>
                     <button
                       onClick={() => toggleVisible(a)}

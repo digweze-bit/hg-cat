@@ -10,6 +10,7 @@ export default function Artworks() {
   const [artworks, setArtworks] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ artist:'', availability:'', location:'', search:'', visible:'', ownership:'' })
+  const [sortBy, setSortBy] = useState('recent') // 'recent' | 'az' | 'price_desc' | 'price_asc' | 'location'
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
@@ -51,8 +52,18 @@ export default function Artworks() {
     return true
   }), [artworks, filters, artistMap])
 
-  const paginated = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE)
-  const totalPages = Math.ceil(filtered.length / PER_PAGE)
+  const sorted = useMemo(() => {
+    let list = [...filtered]
+    if (sortBy === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
+    else if (sortBy === 'recent') list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    else if (sortBy === 'price_desc') list.sort((a, b) => parsePrice(b.price) - parsePrice(a.price))
+    else if (sortBy === 'price_asc') list.sort((a, b) => parsePrice(a.price) - parsePrice(b.price))
+    else if (sortBy === 'location') list.sort((a, b) => (a.location || 'zzz').localeCompare(b.location || 'zzz'))
+    return list
+  }, [filtered, sortBy])
+
+  const paginated = sorted.slice(page * PER_PAGE, (page + 1) * PER_PAGE)
+  const totalPages = Math.ceil(sorted.length / PER_PAGE)
 
   async function toggleVisible(artwork) {
     await supabase.from('artworks').update({ visible: !artwork.visible }).eq('id', artwork.id)
@@ -168,7 +179,23 @@ export default function Artworks() {
           <option value="true">Visible</option>
           <option value="false">Hidden</option>
         </select>
-        <span style={{ alignSelf:'center', fontSize:13, color:'var(--muted)', marginLeft:4 }}>{filtered.length} results</span>
+
+        {/* Sort controls */}
+        <div style={{ marginLeft:'auto', display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
+          {[
+            ['recent','Most recent'],
+            ['az','A – Z'],
+            ['price_desc','Price ↓'],
+            ['price_asc','Price ↑'],
+            ['location','Location'],
+          ].map(([key, label]) => (
+            <button key={key} onClick={() => { setSortBy(key); setPage(0) }}
+              style={{ padding:'6px 12px', fontSize:11, cursor:'pointer', fontFamily:'var(--font-sans)', border:'none', borderRight:'1px solid var(--line)', background: sortBy===key ? 'var(--ink)' : 'var(--white)', color: sortBy===key ? 'var(--white)' : 'var(--muted)', whiteSpace:'nowrap', transition:'all 150ms' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <span style={{ fontSize:13, color:'var(--muted)' }}>{filtered.length} results</span>
       </div>
 
       {/* Table */}
@@ -178,8 +205,13 @@ export default function Artworks() {
             <thead>
               <tr>
                 <th style={{ width:60 }}>Image</th>
-                <th>Title</th><th>Artist</th><th>Year</th>
-                <th>Ownership</th><th>Location</th><th>Status</th><th>Visible</th>
+                <th style={{ cursor:'pointer', color: sortBy==='az'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('az'); setPage(0) }}>Title {sortBy==='az'?'↑':''}</th>
+                <th>Artist</th>
+                <th style={{ cursor:'pointer', color: sortBy==='recent'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('recent'); setPage(0) }}>Year {sortBy==='recent'?'↓':''}</th>
+                <th style={{ cursor:'pointer', color: sortBy==='location'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('location'); setPage(0) }}>Location {sortBy==='location'?'↑':''}</th>
+                <th>Ownership</th>
+                <th style={{ cursor:'pointer', color: ['price_desc','price_asc'].includes(sortBy)?'var(--ink)':'inherit' }} onClick={() => { setSortBy(sortBy==='price_desc'?'price_asc':'price_desc'); setPage(0) }}>Price {sortBy==='price_desc'?'↓':sortBy==='price_asc'?'↑':''}</th>
+                <th>Status</th><th>Visible</th>
                 <th style={{ width:120 }}>Actions</th>
               </tr>
             </thead>
@@ -198,6 +230,7 @@ export default function Artworks() {
                   </td>
                   <td style={{ fontSize:13 }}>{artistMap[w.artist_id]?.name || '—'}</td>
                   <td style={{ fontSize:13, color:'var(--muted)' }}>{w.year || '—'}</td>
+                  <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || '—'}</td>
                   <td>
                     {w.ownership === 'consignment'
                       ? <span className="badge badge-amber" title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
@@ -206,7 +239,7 @@ export default function Artworks() {
                       : <span className="badge badge-blue">Gallery owned</span>
                     }
                   </td>
-                  <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || '—'}</td>
+                  <td style={{ fontSize:12, color:'var(--muted)' }}>{w.price || '—'}</td>
                   <td>
                     <span className={`badge ${w.availability==='Available'?'badge-green':w.availability==='Sold'?'badge-red':'badge-amber'}`}>
                       {w.availability}
@@ -402,6 +435,11 @@ export default function Artworks() {
       )}
     </div>
   )
+}
+
+function parsePrice(priceStr) {
+  if (!priceStr) return 0
+  return parseFloat(String(priceStr).replace(/[^0-9.]/g, '')) || 0
 }
 
 async function resizeImage(file, maxPx = 1200) {
