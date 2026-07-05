@@ -8,6 +8,7 @@ import Artworks from './pages/Artworks'
 import Archive from './pages/Archive'
 import Sales from './pages/Sales'
 import Certificates from './pages/Certificates'
+import Reports from './pages/Reports'
 import Users from './pages/Users'
 import { AuthProvider } from './components/AuthProvider'
 import RequireAuth from './components/RequireAuth'
@@ -35,6 +36,7 @@ export default function App() {
             <Route path="archive" element={<Archive />} />
             <Route path="archive/:artistId" element={<Archive />} />
             <Route path="sales" element={<Sales />} />
+            <Route path="reports" element={<Reports />} />
             <Route path="certificates" element={<Certificates />} />
             <Route path="users" element={<Users />} />
           </Route>

@@ -103,6 +103,7 @@ export default function Dashboard() {
           <button className="btn btn-outline" onClick={() => navigate('/admin/artworks')}>+ Add artwork</button>
           <button className="btn btn-outline" onClick={() => navigate('/admin/artists')}>+ Add artist</button>
           <button className="btn btn-outline" onClick={() => navigate('/admin/sales')}>+ New invoice</button>
+          <button className="btn btn-outline" onClick={() => navigate('/admin/reports')}>Reports</button>
           <button className="btn btn-outline" onClick={() => navigate('/admin/certificates')}>Generate COA</button>
           <button className="btn btn-outline" onClick={() => navigate('/admin/archive')}>Live Archive</button>
         </div>

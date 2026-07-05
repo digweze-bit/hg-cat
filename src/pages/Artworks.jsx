@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 
 const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS']
+const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
 const EMPTY = { title:'', artist_id:'', year:'', medium:'', dimensions:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40 }
 
@@ -163,12 +164,10 @@ export default function Artworks() {
           <option value="">All status</option>
           {AVAILABILITY.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        {locations.length > 0 && (
-          <select className="form-select" style={{ width:160 }} value={filters.location} onChange={e=>sf('location',e.target.value)}>
-            <option value="">All locations</option>
-            {locations.map(l => <option key={l} value={l}>{l}</option>)}
-          </select>
-        )}
+        <select className="form-select" style={{ width:180 }} value={filters.location} onChange={e=>sf('location',e.target.value)}>
+          <option value="">All locations</option>
+          {[...new Set([...DEFAULT_LOCATIONS, ...locations])].map(l => <option key={l} value={l}>{l}</option>)}
+        </select>
         <select className="form-select" style={{ width:170 }} value={filters.ownership} onChange={e=>sf('ownership',e.target.value)}>
           <option value="">All ownership</option>
           <option value="gallery">Gallery owned</option>
@@ -196,6 +195,13 @@ export default function Artworks() {
           ))}
         </div>
         <span style={{ fontSize:13, color:'var(--muted)' }}>{filtered.length} results</span>
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={() => printArtworkList(sorted, artistMap, filters)}
+          title="Print current filtered list"
+        >
+          🖨 Print list
+        </button>
       </div>
 
       {/* Table */}
@@ -435,6 +441,72 @@ export default function Artworks() {
       )}
     </div>
   )
+}
+
+function printArtworkList(artworks, artistMap, filters) {
+  const title = filters.location
+    ? `Artwork List — ${filters.location}`
+    : filters.artist
+      ? `Artwork List — ${artistMap[filters.artist]?.name || 'Artist'}`
+      : 'Artwork List — All Works'
+
+  const subtitle = [
+    filters.availability && `Status: ${filters.availability}`,
+    filters.ownership && `Ownership: ${filters.ownership}`,
+    filters.search && `Search: "${filters.search}"`,
+  ].filter(Boolean).join(' · ')
+
+  const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
+  const rows = artworks.map((w, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${escH(w.title)}</strong>${w.series ? `<br><span style="color:#888;font-size:10px">${escH(w.series)}</span>` : ''}</td>
+      <td>${escH(artistMap[w.artist_id]?.name || '—')}</td>
+      <td>${escH(w.year || '—')}</td>
+      <td>${escH(w.medium || '—')}</td>
+      <td>${escH(w.dimensions || '—')}</td>
+      <td>${escH(w.location || '—')}</td>
+      <td style="color:${w.availability === 'Available' ? '#2d6a4f' : w.availability === 'Sold' ? '#8b1a1a' : '#92600a'};font-weight:500">${escH(w.availability || '—')}</td>
+      <td>${escH(w.price || '—')}</td>
+    </tr>`).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,sans-serif;color:#1a1714;padding:32px 40px;font-size:12px;}
+.header{margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid #1a1714;}
+.logo{font-family:Georgia,serif;font-size:18px;margin-bottom:2px;}
+.report-title{font-size:14px;font-weight:600;margin:8px 0 2px;}
+.subtitle{font-size:11px;color:#888;}
+.meta{font-size:10px;color:#aaa;margin-top:4px;}
+table{width:100%;border-collapse:collapse;margin-top:8px;}
+th{padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;border-bottom:2px solid #1a1714;background:#f9f8f6;}
+td{padding:7px 10px;border-bottom:1px solid #ece8e1;font-size:11px;vertical-align:top;}
+tr:nth-child(even) td{background:#faf9f7;}
+.footer{margin-top:24px;padding-top:12px;border-top:1px solid #ddd9d1;font-size:10px;color:#aaa;text-align:center;}
+@media print{body{padding:16px 20px;}th{background:#f0ece4 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style></head><body>
+<div class="header">
+  <div class="logo">Hourglass Gallery</div>
+  <div class="report-title">${escH(title)}</div>
+  ${subtitle ? `<div class="subtitle">${escH(subtitle)}</div>` : ''}
+  <div class="meta">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''}</div>
+</div>
+<table>
+  <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Year</th><th>Medium</th><th>Dimensions</th><th>Location</th><th>Status</th><th>Price</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
+</body></html>`
+
+  const w = window.open('', '_blank', 'width=1100,height=750')
+  w.document.write(html)
+  w.document.close()
+  setTimeout(() => w.print(), 500)
+}
+
+function escH(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 function parsePrice(priceStr) {

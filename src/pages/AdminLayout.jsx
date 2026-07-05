@@ -10,6 +10,7 @@ const NAV = [
   { path: '/admin/archive', label: 'Live Archive', icon: '◈' },
   { section: 'Commerce' },
   { path: '/admin/sales', label: 'Sales & Invoices', icon: '◑' },
+  { path: '/admin/reports', label: 'Reports', icon: '◧' },
   { path: '/admin/certificates', label: 'Certificates', icon: '◇' },
   { section: 'Admin' },
   { path: '/admin/users', label: 'Staff users', icon: '◉' },
