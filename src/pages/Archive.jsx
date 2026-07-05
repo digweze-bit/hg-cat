@@ -278,6 +278,16 @@ export default function Archive() {
             </div>
           ))}
         </div>
+        {/* Create Provenance Document button */}
+        <div style={{ padding:'10px 12px', borderTop:'1px solid var(--line)', flexShrink:0 }}>
+          <button
+            className="btn btn-gold"
+            style={{ width:'100%', fontSize:12, padding:'9px 12px', justifyContent:'center' }}
+            onClick={() => setModal('provDoc')}
+          >
+            📋 Create Provenance Document
+          </button>
+        </div>
       </div>
 
       {/* ── MAIN ── */}
@@ -684,6 +694,19 @@ export default function Archive() {
         </div>
       )}
 
+      {/* ── Provenance Document Builder ── */}
+      {modal === 'provDoc' && (
+        <ProvenanceDocBuilder
+          artists={artists}
+          allArtworks={artworks}
+          allEntries={entries}
+          allProvenance={provenance}
+          activeArtistId={activeArtistId}
+          onClose={() => setModal(null)}
+          onLoadArtist={(id) => { selectArtist(id) }}
+        />
+      )}
+
       {toastMsg && (
         <div style={{ position:'fixed', bottom:20, left:'50%', transform:'translateX(-50%)', background:'var(--ink)', color:'var(--white)', padding:'7px 16px', borderRadius:3, fontSize:12, zIndex:200 }}>
           {toastMsg}
@@ -747,4 +770,579 @@ async function resizeImage(file, maxPx = 1200) {
     }
     img.src = URL.createObjectURL(file)
   })
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROVENANCE DOCUMENT BUILDER
+// A multi-step wizard that generates a printable provenance report
+// ══════════════════════════════════════════════════════════════
+function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance, activeArtistId, onClose, onLoadArtist }) {
+  const [step, setStep]           = useState(1) // 1=source, 2=artwork details, 3=select evidence, 4=preview
+  const [source, setSource]       = useState('') // 'existing' | 'fresh'
+  const [selectedArtistId, setSelectedArtistId] = useState(activeArtistId || '')
+  const [selectedArtworkId, setSelectedArtworkId] = useState('')
+  const [artistSearch, setArtistSearch] = useState('')
+  const [artworkSearch, setArtworkSearch] = useState('')
+
+  // Artwork details (used for both fresh and existing — editable either way)
+  const [details, setDetails] = useState({
+    artistName:'', title:'', year:'', medium:'', dimensions:'',
+    catRef:'', location:'', condition:'', notes:'', provNotes:'',
+    reportTitle:'', additionalNotes:'',
+  })
+
+  // Evidence selection
+  const [included, setIncluded] = useState(new Set())
+
+  // All artworks across all artists for existing lookup
+  const [allArtworksGlobal, setAllArtworksGlobal] = useState([])
+  const [allEntriesGlobal, setAllEntriesGlobal]   = useState([])
+  const [allProvGlobal, setAllProvGlobal]          = useState([])
+  const [loadingGlobal, setLoadingGlobal]          = useState(false)
+
+  // Load all artworks/entries globally when needed
+  useEffect(() => {
+    if (source !== 'existing') return
+    setLoadingGlobal(true)
+    Promise.all([
+      fetchAll('artworks', { order: 'title' }),
+      fetchAll('archive_entries', { order: 'created_at' }),
+      fetchAll('provenance_entries', { order: 'sort_order' }),
+    ]).then(([w, e, p]) => {
+      setAllArtworksGlobal(w)
+      setAllEntriesGlobal(e)
+      setAllProvGlobal(p)
+      setLoadingGlobal(false)
+    })
+  }, [source])
+
+  const artistMap = Object.fromEntries(artists.map(a => [a.id, a]))
+
+  // Artworks for selected artist
+  const artistArtworks = source === 'existing'
+    ? allArtworksGlobal.filter(w => !selectedArtistId || w.artist_id === selectedArtistId)
+    : []
+
+  const filteredArtworks = artistArtworks.filter(w =>
+    !artworkSearch || w.title.toLowerCase().includes(artworkSearch.toLowerCase())
+  )
+
+  const selectedArtwork = allArtworksGlobal.find(w => w.id === selectedArtworkId)
+
+  // When artwork selected, populate details
+  function selectExistingArtwork(artwork) {
+    setSelectedArtworkId(artwork.id)
+    const artist = artistMap[artwork.artist_id]
+    setDetails(d => ({
+      ...d,
+      artistName: artist?.name || '',
+      title: artwork.title || '',
+      year: artwork.year || '',
+      medium: artwork.medium || '',
+      dimensions: artwork.dimensions || '',
+      catRef: artwork.catRef || '',
+      location: artwork.location || '',
+      condition: artwork.condition || '',
+      notes: artwork.notes || '',
+      provNotes: artwork.provNotes || '',
+      reportTitle: `Provenance Report — ${artwork.title}`,
+    }))
+    // Auto-select relevant archive evidence
+    const artworkEntries = allEntriesGlobal.filter(e => e.artwork_id === artwork.id)
+    const artistEntries  = allEntriesGlobal.filter(e => e.artist_id === artwork.artist_id && e.starred)
+    const newIncluded = new Set([...artworkEntries.map(e=>e.id), ...artistEntries.map(e=>e.id)])
+    setIncluded(newIncluded)
+    setStep(2)
+  }
+
+  // Evidence pool: artwork-linked + artist key refs + matched by title keywords
+  const evidencePool = useMemo(() => {
+    const artworkId = source === 'existing' ? selectedArtworkId : null
+    const artistId  = source === 'existing' ? selectedArtwork?.artist_id : null
+    const titleWords = details.title.toLowerCase().split(/\s+/).filter(w=>w.length>2)
+
+    const pool = []
+    const seen = new Set()
+
+    const addEntry = (e, relevance) => {
+      if (seen.has(e.id)) return
+      seen.add(e.id)
+      pool.push({ ...e, _relevance: relevance })
+    }
+
+    // Direct artwork links
+    allEntriesGlobal.filter(e => e.artwork_id === artworkId).forEach(e => addEntry(e, 'direct'))
+    allEntriesGlobal.filter(e => e.artwork_id === artworkId).forEach(e => addEntry(e, 'direct'))
+
+    // Starred artist entries
+    if (artistId) {
+      allEntriesGlobal.filter(e => e.artist_id === artistId && e.starred && e.artwork_id !== artworkId)
+        .forEach(e => addEntry(e, 'key_ref'))
+    }
+
+    // Title keyword matches
+    if (titleWords.length) {
+      allEntriesGlobal
+        .filter(e => e.artwork_id !== artworkId)
+        .filter(e => {
+          const s = [e.title, e.description, ...(e.tags||[])].join(' ').toLowerCase()
+          return titleWords.some(w => s.includes(w))
+        })
+        .forEach(e => addEntry(e, 'keyword'))
+    }
+
+    // Artist biography/essay entries
+    if (artistId) {
+      allEntriesGlobal
+        .filter(e => e.artist_id === artistId && ['biography','essay'].includes(e.type))
+        .forEach(e => addEntry(e, 'background'))
+    }
+
+    return pool
+  }, [allEntriesGlobal, selectedArtworkId, selectedArtwork, details.title])
+
+  // Provenance chain for selected artwork
+  const provChain = source === 'existing' && selectedArtworkId
+    ? allProvGlobal.filter(p => p.artwork_id === selectedArtworkId).sort((a,b) => a.sort_order - b.sort_order)
+    : []
+
+  const provScore = provChain.length
+    ? Math.round(100 * provChain.filter(p => !p.is_gap && p.verified).length / provChain.length)
+    : null
+  const scC = provScore === 100 ? '#2d6a4f' : provScore >= 60 ? '#92600a' : '#8b1a1a'
+
+  function toggleEvidence(id) {
+    setIncluded(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function generateAndPrint() {
+    const artist = source === 'existing' ? artistMap[selectedArtwork?.artist_id] : { name: details.artistName }
+    const artwork = source === 'existing' ? selectedArtwork : null
+    const incEntries = evidencePool.filter(e => included.has(e.id))
+    const html = buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC })
+    const w = window.open('', '_blank', 'width=1000,height=750')
+    w.document.write(html)
+    w.document.close()
+    setTimeout(() => w.print(), 600)
+  }
+
+  const RELEVANCE_LABEL = { direct:'Linked', key_ref:'Key ref', keyword:'Title match', background:'Background' }
+  const RELEVANCE_COLOR = { direct:'var(--green)', key_ref:'var(--gold)', keyword:'var(--blue)', background:'var(--muted)' }
+
+  // ── STEP 1: Source selection
+  const renderStep1 = () => (
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div style={{ fontSize:13, color:'var(--muted)', lineHeight:1.65 }}>
+        Choose how to start. You can build from an artwork already in the system — pulling its provenance chain and archive evidence automatically — or start from fresh input if the work isn't in the archive yet.
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+        <div
+          onClick={() => { setSource('existing'); }}
+          style={{ padding:'20px', border:`2px solid ${source==='existing'?'var(--ink)':'var(--line)'}`, borderRadius:4, cursor:'pointer', background: source==='existing'?'var(--ink)':'var(--white)', transition:'all 150ms' }}
+        >
+          <div style={{ fontSize:'1.4rem', marginBottom:8 }}>🗄</div>
+          <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.05rem', marginBottom:6, color: source==='existing'?'var(--white)':'var(--ink)' }}>From existing artwork</div>
+          <div style={{ fontSize:12, color: source==='existing'?'rgba(255,255,255,.65)':'var(--muted)', lineHeight:1.6 }}>
+            Select an artwork already in the Live Archive. Pulls its provenance chain, linked archive entries, and key references automatically.
+          </div>
+        </div>
+        <div
+          onClick={() => { setSource('fresh'); setStep(2) }}
+          style={{ padding:'20px', border:`2px solid ${source==='fresh'?'var(--ink)':'var(--line)'}`, borderRadius:4, cursor:'pointer', background: source==='fresh'?'var(--ink)':'var(--white)', transition:'all 150ms' }}
+        >
+          <div style={{ fontSize:'1.4rem', marginBottom:8 }}>✏</div>
+          <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.05rem', marginBottom:6, color: source==='fresh'?'var(--white)':'var(--ink)' }}>Fresh input</div>
+          <div style={{ fontSize:12, color: source==='fresh'?'rgba(255,255,255,.65)':'var(--muted)', lineHeight:1.6 }}>
+            Enter artwork details and provenance information directly. You can still pull in relevant evidence from the archive.
+          </div>
+        </div>
+      </div>
+
+      {source === 'existing' && (
+        <div style={{ marginTop:4 }}>
+          <div style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:10 }}>Select artist then artwork</div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            {/* Artist picker */}
+            <div>
+              <div style={{ fontSize:11, color:'var(--muted)', marginBottom:5 }}>Artist</div>
+              <input className="form-input" placeholder="Search artists…" value={artistSearch} onChange={e=>setArtistSearch(e.target.value)} style={{ marginBottom:6 }} />
+              <div style={{ border:'1px solid var(--line)', borderRadius:3, maxHeight:200, overflowY:'auto', background:'var(--white)' }}>
+                {artists.filter(a => !artistSearch || a.name.toLowerCase().includes(artistSearch.toLowerCase())).map(a => (
+                  <div key={a.id}
+                    onClick={() => { setSelectedArtistId(a.id); setSelectedArtworkId(''); setArtworkSearch('') }}
+                    style={{ padding:'7px 10px', cursor:'pointer', fontSize:13, borderLeft:`3px solid ${selectedArtistId===a.id?'var(--gold)':'transparent'}`, background: selectedArtistId===a.id?'var(--parchment)':'transparent' }}>
+                    {a.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Artwork picker */}
+            <div>
+              <div style={{ fontSize:11, color:'var(--muted)', marginBottom:5 }}>Artwork</div>
+              <input className="form-input" placeholder="Search artworks…" value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} style={{ marginBottom:6 }} disabled={!selectedArtistId} />
+              <div style={{ border:'1px solid var(--line)', borderRadius:3, maxHeight:200, overflowY:'auto', background:'var(--white)' }}>
+                {loadingGlobal
+                  ? <div style={{ padding:'12px', fontSize:12, color:'var(--muted)' }}>Loading artworks…</div>
+                  : !selectedArtistId
+                    ? <div style={{ padding:'12px', fontSize:12, color:'var(--muted)' }}>Select an artist first</div>
+                    : filteredArtworks.length === 0
+                      ? <div style={{ padding:'12px', fontSize:12, color:'var(--muted)' }}>No artworks found</div>
+                      : filteredArtworks.map(w => (
+                          <div key={w.id}
+                            onClick={() => selectExistingArtwork(w)}
+                            style={{ padding:'7px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:8, borderBottom:'1px solid var(--line-soft)' }}>
+                            {w.image_url && <img src={w.image_url} alt="" style={{ width:32, height:32, objectFit:'cover', borderRadius:2, flexShrink:0 }} />}
+                            <div>
+                              <div style={{ fontSize:12, fontWeight:500 }}>{w.title}</div>
+                              <div style={{ fontSize:10, color:'var(--muted)' }}>{w.year} · {w.medium}</div>
+                            </div>
+                          </div>
+                        ))
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  // ── STEP 2: Artwork details
+  const renderStep2 = () => (
+    <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
+      <div style={{ fontSize:12, color:'var(--muted)', padding:'8px 12px', background:'var(--parchment)', borderRadius:3 }}>
+        {source === 'existing' ? 'Details pre-filled from the archive. Edit anything that should appear differently in the document.' : 'Enter the artwork details for this provenance document.'}
+      </div>
+      <div className="form-group">
+        <label className="form-label">Report title</label>
+        <input className="form-input" value={details.reportTitle||''} onChange={e=>setDetails(d=>({...d,reportTitle:e.target.value}))} placeholder="e.g. Provenance Report — Tutu" />
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label className="form-label">Artist name *</label>
+          <input className="form-input" value={details.artistName||''} onChange={e=>setDetails(d=>({...d,artistName:e.target.value}))} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Title *</label>
+          <input className="form-input" value={details.title||''} onChange={e=>setDetails(d=>({...d,title:e.target.value}))} />
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label className="form-label">Year</label>
+          <input className="form-input" value={details.year||''} onChange={e=>setDetails(d=>({...d,year:e.target.value}))} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Medium</label>
+          <input className="form-input" value={details.medium||''} onChange={e=>setDetails(d=>({...d,medium:e.target.value}))} />
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label className="form-label">Dimensions</label>
+          <input className="form-input" value={details.dimensions||''} onChange={e=>setDetails(d=>({...d,dimensions:e.target.value}))} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Catalogue raisonné ref.</label>
+          <input className="form-input" value={details.catRef||''} onChange={e=>setDetails(d=>({...d,catRef:e.target.value}))} />
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label className="form-label">Current location / owner</label>
+          <input className="form-input" value={details.location||''} onChange={e=>setDetails(d=>({...d,location:e.target.value}))} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Condition</label>
+          <input className="form-input" value={details.condition||''} onChange={e=>setDetails(d=>({...d,condition:e.target.value}))} />
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="form-label">Notes about the work</label>
+        <textarea className="form-textarea" rows={2} value={details.notes||''} onChange={e=>setDetails(d=>({...d,notes:e.target.value}))} placeholder="Subject, inscriptions, signatures…" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>— narrative ownership context, shown in provenance section</span></label>
+        <textarea className="form-textarea" rows={3} value={details.provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026…" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Additional notes for this document</label>
+        <textarea className="form-textarea" rows={2} value={details.additionalNotes||''} onChange={e=>setDetails(d=>({...d,additionalNotes:e.target.value}))} placeholder="Any caveats, specific requirements, or context for this report…" />
+      </div>
+
+      {/* Provenance chain preview (existing only) */}
+      {source === 'existing' && provChain.length > 0 && (
+        <div>
+          <div style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:8 }}>
+            Provenance chain ({provChain.length} entries) · {provScore}% documented
+          </div>
+          <div style={{ maxHeight:180, overflowY:'auto', padding:1 }}>
+            {provChain.map(p => (
+              <div key={p.id} style={{
+                padding:'7px 10px', marginBottom:6, fontSize:12,
+                background: p.is_gap ? 'var(--sienna-bg)' : 'var(--parchment)',
+                border: `1px solid ${p.is_gap?'#E8B79A':'var(--line)'}`,
+                borderLeft: `3px solid ${p.is_gap?'var(--sienna)':'var(--gold)'}`,
+                borderRadius:'0 3px 3px 0',
+              }}>
+                <span style={{ color: p.is_gap?'var(--sienna)':'var(--gold)', fontSize:9, textTransform:'uppercase', letterSpacing:'.07em', marginRight:8 }}>
+                  {p.is_gap?'⚠ Gap':'→'} {p.date_from||''}{p.date_to?' – '+p.date_to:''}
+                </span>
+                <strong>{p.is_gap ? 'Undocumented period' : p.owner}</strong>
+                {p.location && <span style={{ color:'var(--muted)' }}> · {p.location}</span>}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:11, color:'var(--muted)', marginTop:6 }}>The full chain will appear in the document. Add or edit entries via the Artworks & Provenance tab.</div>
+        </div>
+      )}
+    </div>
+  )
+
+  // ── STEP 3: Evidence selection
+  const renderStep3 = () => (
+    <div>
+      <div style={{ fontSize:12, color:'var(--muted)', marginBottom:14, padding:'8px 12px', background:'var(--parchment)', borderRadius:3, lineHeight:1.65 }}>
+        Archive items below have been matched to this artwork. Select which ones to include as evidence in the document. Items linked directly to the artwork are pre-selected.
+      </div>
+      {evidencePool.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'40px 0', color:'var(--muted)' }}>
+          <div style={{ fontSize:'1.2rem', fontFamily:'var(--font-serif)', marginBottom:8 }}>No archive evidence found</div>
+          <p style={{ fontSize:13 }}>You can still generate the document — it will include the artwork details and provenance chain.</p>
+        </div>
+      ) : (
+        <div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>{included.size} of {evidencePool.length} items selected</span>
+            <div style={{ display:'flex', gap:7 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setIncluded(new Set(evidencePool.map(e=>e.id)))}>Select all</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setIncluded(new Set())}>Clear all</button>
+            </div>
+          </div>
+          {evidencePool.map(e => (
+            <div key={e.id}
+              style={{ display:'flex', alignItems:'flex-start', gap:10, padding:'9px 0', borderBottom:'1px solid var(--line-soft)', cursor:'pointer' }}
+              onClick={() => toggleEvidence(e.id)}
+            >
+              <input type="checkbox" checked={included.has(e.id)} onChange={() => toggleEvidence(e.id)} style={{ width:'auto', marginTop:2, cursor:'pointer', flexShrink:0 }} />
+              {e.image_url && <img src={e.image_url} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:2, flexShrink:0 }} />}
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13 }}>{e.title}</div>
+                <div style={{ fontSize:11, color:'var(--muted)' }}>{TYPES.find(t=>t.id===e.type)?.label||e.type} · {e.date||'—'}{e.source?' · '+e.source:''}</div>
+              </div>
+              <span style={{ fontSize:9, padding:'2px 7px', borderRadius:20, background:'var(--parchment-2)', color: RELEVANCE_COLOR[e._relevance]||'var(--muted)', whiteSpace:'nowrap', flexShrink:0 }}>
+                {RELEVANCE_LABEL[e._relevance]||e._relevance}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  // ── STEP 4: Preview / generate
+  const renderStep4 = () => (
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      <div style={{ background:'var(--parchment)', border:'1px solid var(--line)', borderRadius:3, padding:'14px 16px' }}>
+        <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.1rem', marginBottom:4 }}>{details.reportTitle || `Provenance Report — ${details.title}`}</div>
+        <div style={{ fontSize:12, color:'var(--muted)' }}>{details.artistName} {details.year?'· '+details.year:''} {details.medium?'· '+details.medium:''}</div>
+        <div style={{ marginTop:12, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, fontSize:12 }}>
+          <div><span style={{ color:'var(--muted)' }}>Provenance chain: </span>{provChain.length} entries</div>
+          <div><span style={{ color:'var(--muted)' }}>Archive evidence: </span>{included.size} items</div>
+          <div><span style={{ color:'var(--muted)' }}>Completeness: </span><span style={{ color:scC, fontWeight:500 }}>{provScore !== null ? provScore+'%' : 'n/a'}</span></div>
+          <div><span style={{ color:'var(--muted)' }}>Gaps flagged: </span>{provChain.filter(p=>p.is_gap).length}</div>
+        </div>
+      </div>
+      <div style={{ fontSize:13, color:'var(--muted)', lineHeight:1.7 }}>
+        The document will open in a new window, formatted for A4 printing. Use your browser's print dialog to save as PDF or print directly. The document includes the artwork record, provenance chain with completeness analysis, and all selected archive evidence.
+      </div>
+      <button className="btn btn-gold" style={{ padding:'12px', justifyContent:'center', fontSize:14 }} onClick={generateAndPrint}>
+        📋 Generate & print provenance document
+      </button>
+    </div>
+  )
+
+  const canProceed = {
+    1: source === 'fresh' || (source === 'existing' && selectedArtworkId),
+    2: details.title && details.artistName,
+    3: true,
+    4: true,
+  }
+
+  const STEP_LABELS = ['Source', 'Artwork details', 'Select evidence', 'Generate']
+
+  return (
+    <div className="modal-overlay" style={{ zIndex:70, alignItems:'flex-start', paddingTop:40 }}>
+      <div className="modal modal-xl" style={{ maxHeight:'88vh' }}>
+        <div className="modal-header">
+          <div>
+            <div className="modal-title">Create Provenance Document</div>
+            {/* Step indicator */}
+            <div style={{ display:'flex', gap:0, marginTop:8 }}>
+              {STEP_LABELS.map((label, i) => {
+                const s = i + 1
+                const done = step > s
+                const active = step === s
+                return (
+                  <div key={s} style={{ display:'flex', alignItems:'center' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+                      <div style={{
+                        width:20, height:20, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+                        fontSize:10, fontWeight:600,
+                        background: done ? 'var(--green)' : active ? 'var(--ink)' : 'var(--parchment-2)',
+                        color: (done || active) ? 'var(--white)' : 'var(--muted)',
+                      }}>{done ? '✓' : s}</div>
+                      <span style={{ fontSize:11, color: active ? 'var(--ink)' : 'var(--muted)', fontWeight: active?500:400 }}>{label}</span>
+                    </div>
+                    {i < STEP_LABELS.length-1 && <div style={{ width:20, height:1, background:'var(--line)', margin:'0 6px' }} />}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+        </div>
+
+        <div className="modal-body">
+          {step === 1 && renderStep1()}
+          {step === 2 && renderStep2()}
+          {step === 3 && renderStep3()}
+          {step === 4 && renderStep4()}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn btn-outline" onClick={step === 1 ? onClose : () => setStep(s => s-1)}>
+            {step === 1 ? 'Cancel' : '← Back'}
+          </button>
+          {step < 4 && (
+            <button
+              className="btn btn-primary"
+              disabled={!canProceed[step]}
+              onClick={() => {
+                if (step === 1 && source === 'fresh') { setStep(2); return }
+                if (step === 1 && source === 'existing' && !selectedArtworkId) return
+                setStep(s => s+1)
+              }}
+            >
+              {step === 3 ? 'Preview document →' : 'Next →'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── PROVENANCE DOCUMENT HTML ──────────────────────────────────
+function buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC }) {
+  const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
+  const title = details.reportTitle || `Provenance Report — ${details.title}`
+  const gapCount = provChain.filter(p=>p.is_gap).length
+
+  function e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+  const artworkImage = artwork?.image_url || null
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${e(title)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Georgia,serif;color:#1a1714;max-width:800px;margin:0 auto;padding:40px 48px;font-size:14px;}
+.header{border-bottom:2px solid #1a1714;padding-bottom:14px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;}
+.logo-text{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#9A6F3A;margin-bottom:3px;font-family:-apple-system,sans-serif;}
+.gen-date{font-size:10px;color:#aaa;font-family:-apple-system,sans-serif;}
+h1{font-size:26px;font-weight:400;margin:0 0 4px;}
+h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-apple-system,sans-serif;}
+.section-head{font-family:-apple-system,sans-serif;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:#9A6F3A;border-bottom:1px solid #ddd9d1;padding-bottom:5px;margin:24px 0 12px;}
+.artwork-block{display:flex;gap:22px;padding:16px;background:#F5F0E8;border-left:3px solid #9A6F3A;margin-bottom:6px;}
+.artwork-img{width:160px;flex-shrink:0;aspect-ratio:3/4;object-fit:cover;border:1px solid #ddd9d1;}
+.artwork-img-placeholder{width:160px;height:200px;background:#ede9e2;display:flex;align-items:center;justify-content:center;font-size:11px;color:#aaa;font-family:-apple-system,sans-serif;flex-shrink:0;}
+.fields{display:grid;grid-template-columns:120px 1fr;gap:4px 8px;font-family:-apple-system,sans-serif;font-size:12px;align-content:start;}
+.fl{color:#6b6760;}.fv{color:#1a1714;}
+.prov-notes{font-family:-apple-system,sans-serif;font-size:13px;line-height:1.75;padding:12px 14px;background:#F5F0E8;border-left:3px solid #9A6F3A;margin-bottom:10px;}
+.score-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f9f8f6;border-radius:3px;margin-bottom:10px;font-family:-apple-system,sans-serif;}
+.score-track{flex:1;height:4px;background:#ddd9d1;border-radius:2px;overflow:hidden;}
+.score-fill{height:100%;border-radius:2px;}
+.prov-entry{padding:10px 14px;border:1px solid #ddd9d1;border-left:3px solid #9A6F3A;margin-bottom:8px;border-radius:0 3px 3px 0;}
+.prov-gap{padding:10px 14px;border:1px solid #E8B79A;border-left:3px solid #8B3A2A;margin-bottom:8px;border-radius:0 3px 3px 0;background:#F5ECE9;}
+.prov-date{font-family:-apple-system,sans-serif;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#9A6F3A;margin-bottom:3px;}
+.prov-owner{font-size:14px;margin-bottom:2px;}
+.prov-meta{font-family:-apple-system,sans-serif;font-size:11px;color:#6b6760;}
+.prov-docs{font-family:-apple-system,sans-serif;font-size:10px;color:#9A6F3A;margin-top:5px;}
+.gap-label{font-family:-apple-system,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#8B3A2A;margin-bottom:3px;}
+.due-diligence{padding:10px 14px;background:#F5ECE9;border:1px solid #E8B79A;border-left:3px solid #8B3A2A;border-radius:0 3px 3px 0;font-family:-apple-system,sans-serif;font-size:12px;color:#8B3A2A;margin-top:8px;}
+.ev-item{padding:10px 14px;border:1px solid #ddd9d1;border-left:3px solid #9A6F3A;margin-bottom:8px;border-radius:0 3px 3px 0;}
+.ev-type{font-family:-apple-system,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#9A6F3A;margin-bottom:3px;}
+.ev-title{font-size:13px;margin-bottom:2px;}
+.ev-meta{font-family:-apple-system,sans-serif;font-size:11px;color:#6b6760;}
+.ev-desc{font-family:-apple-system,sans-serif;font-size:12px;line-height:1.65;margin-top:6px;color:#3d3a36;}
+.ev-img{max-width:200px;margin-top:8px;border:1px solid #ddd9d1;border-radius:2px;}
+.footer{margin-top:40px;padding-top:14px;border-top:1px solid #ddd9d1;font-family:-apple-system,sans-serif;font-size:10px;color:#aaa;text-align:center;line-height:1.7;}
+@media print{body{padding:24px 28px;}}
+</style></head><body>
+
+<div class="header">
+  <div>
+    <div class="logo-text">Hourglass Gallery · Lagos</div>
+  </div>
+  <div class="gen-date">Generated ${e(today)}</div>
+</div>
+
+<h1>${e(title)}</h1>
+<h2>${e(details.artistName)} — Provenance &amp; Authentication Report</h2>
+
+<!-- ARTWORK RECORD -->
+<div class="section-head">Artwork record</div>
+<div class="artwork-block">
+  ${artworkImage ? `<img class="artwork-img" src="${e(artworkImage)}" alt="${e(details.title)}">` : `<div class="artwork-img-placeholder">No image on file</div>`}
+  <div class="fields">
+    <span class="fl">Title</span><span class="fv"><strong>${e(details.title)}</strong></span>
+    <span class="fl">Artist</span><span class="fv">${e(details.artistName)}</span>
+    ${details.year?`<span class="fl">Year</span><span class="fv">${e(details.year)}</span>`:''}
+    ${details.medium?`<span class="fl">Medium</span><span class="fv">${e(details.medium)}</span>`:''}
+    ${details.dimensions?`<span class="fl">Dimensions</span><span class="fv">${e(details.dimensions)}</span>`:''}
+    ${details.catRef?`<span class="fl">Cat. raisonné</span><span class="fv">${e(details.catRef)}</span>`:''}
+    ${details.location?`<span class="fl">Current owner</span><span class="fv">${e(details.location)}</span>`:''}
+    ${details.condition?`<span class="fl">Condition</span><span class="fv">${e(details.condition)}</span>`:''}
+    ${details.notes?`<span class="fl">Notes</span><span class="fv">${e(details.notes)}</span>`:''}
+    ${details.additionalNotes?`<span class="fl">Document notes</span><span class="fv">${e(details.additionalNotes)}</span>`:''}
+  </div>
+</div>
+
+<!-- PROVENANCE -->
+<div class="section-head">Provenance</div>
+${details.provNotes ? `<div class="prov-notes">${e(details.provNotes)}</div>` : ''}
+${provChain.length ? `
+  ${provScore !== null ? `<div class="score-bar">
+    <span style="font-size:11px;color:#6b6760">Documentation completeness</span>
+    <div class="score-track"><div class="score-fill" style="width:${provScore}%;background:${scC}"></div></div>
+    <span style="font-size:12px;font-weight:600;color:${scC}">${provScore}%</span>
+  </div>` : ''}
+  ${provChain.map(p => p.is_gap
+    ? `<div class="prov-gap"><div class="gap-label">⚠ Gap in record · ${e(p.date_from||'')}${p.date_to?' – '+e(p.date_to):''}</div><div style="font-size:12px;color:#8B3A2A">${e(p.description||'No documentation available for this period')}</div></div>`
+    : `<div class="prov-entry"><div class="prov-date">${e(p.date_from||'')}${p.date_to?' – '+e(p.date_to):' – present'} · ${e(p.entry_type||'')} · <span style="color:${p.verified?'#2d6a4f':'#92600a'}">${p.verified?'VERIFIED':'UNVERIFIED'}</span></div><div class="prov-owner">${e(p.owner||'Unknown')}</div><div class="prov-meta">${e(p.location||'')}${p.description?' — '+e(p.description.slice(0,120))+(p.description.length>120?'…':''):''}</div>${p.docs?.length?`<div class="prov-docs">Documents: ${p.docs.map(d=>e(d)).join(' · ')}</div>`:''}</div>`
+  ).join('')}
+  ${gapCount > 0 ? `<div class="due-diligence"><strong>Due diligence note:</strong> ${gapCount} undocumented period${gapCount>1?'s':''} identified in the provenance record. Further investigation is recommended prior to sale, institutional loan, or insurance valuation.</div>` : ''}
+` : (!details.provNotes ? `<p style="font-family:-apple-system,sans-serif;font-size:12px;color:#6b6760;font-style:italic">No structured provenance information recorded.</p>` : '')}
+
+<!-- ARCHIVE EVIDENCE -->
+${incEntries.length ? `
+<div class="section-head">Archive evidence (${incEntries.length} items)</div>
+${incEntries.map(ev => `<div class="ev-item">
+  <div class="ev-type">${TYPES.find(t=>t.id===ev.type)?.label||ev.type}</div>
+  <div class="ev-title">${e(ev.title)}</div>
+  <div class="ev-meta">${e(ev.date||'—')}${ev.source?' · '+e(ev.source):''}</div>
+  ${ev.description?`<div class="ev-desc">${e(ev.description)}</div>`:''}
+  ${ev.image_url?`<img class="ev-img" src="${ev.image_url}" alt="">`:''}
+</div>`).join('')}` : ''}
+
+<div class="footer">
+  Prepared by Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos<br>
+  This document is compiled from gallery research records and is provided for provenance, due diligence, insurance, and reference purposes.<br>
+  It does not constitute a warranty of title or authenticity.
+</div>
+</body></html>`
 }
