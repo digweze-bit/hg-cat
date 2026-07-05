@@ -272,7 +272,7 @@ export default function Certificates() {
               {/* RIGHT — preview */}
               <div>
                 <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--muted)',marginBottom:10}}>Live preview</div>
-                <COAPreview form={form} imageUrl={selectedArtwork?.image_url||null} editionLabel={editionLabel()}/>
+                <COAPreview form={form} imageUrl={selectedArtwork?.image_url||null} editionLabel={editionLabel()} logo={LOGO_B64} sig={SIG_B64}/>
               </div>
             </div>
             <div className="modal-footer">
@@ -289,7 +289,7 @@ export default function Certificates() {
 }
 
 // ── LIVE PREVIEW ─────────────────────────────────────────────
-function COAPreview({ form, imageUrl, editionLabel }) {
+function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
   const issued = form.issued_date
     ? new Date(form.issued_date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'})
     : ''
@@ -325,7 +325,7 @@ function COAPreview({ form, imageUrl, editionLabel }) {
 
             {/* Logo */}
             <div style={{position:'absolute', top:mm(12), left:lx}}>
-              <img src={LOGO_B64} alt="Hourglass Gallery" style={{height:mm(7), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
+              <img src={logo} alt="Hourglass Gallery" style={{height:mm(7), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
             </div>
 
             {/* Heading */}
@@ -364,7 +364,7 @@ function COAPreview({ form, imageUrl, editionLabel }) {
             <div style={{position:'absolute', bottom:mm(8), left:lx, right:mm(12), display:'flex', justifyContent:'space-between', alignItems:'flex-end'}}>
               <div>
                 {form.include_signature
-                  ? <img src={SIG_B64} alt="" style={{height:mm(14), objectFit:'contain', display:'block', marginBottom:mm(1)}}/>
+                  ? <img src={sig} alt="" style={{height:mm(14), objectFit:'contain', display:'block', marginBottom:mm(1)}}/>
                   : <div style={{height:mm(14)}}/>
                 }
                 <div style={{borderTop:`${mm(0.25)}px solid #000`, width:mm(55), paddingTop:mm(1.5)}}>
