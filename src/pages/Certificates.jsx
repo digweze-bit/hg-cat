@@ -325,7 +325,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
 
             {/* Logo */}
             <div style={{position:'absolute', top:mm(12), left:lx}}>
-              <img src={logo} alt="Hourglass Gallery" style={{height:mm(7), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
+              <img src={logo} alt="Hourglass Gallery" style={{height:mm(8.4), objectFit:'contain', objectPosition:'left center', display:'block'}}/>
             </div>
 
             {/* Heading */}
@@ -445,9 +445,9 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 .page{position:relative;width:297mm;height:210mm;}
 
 .logo{position:absolute;top:12mm;left:12.8mm;display:flex;align-items:baseline;gap:1mm;}
-.logo-text{font-size:7mm;font-weight:700;color:#000;letter-spacing:-0.01em;}
-.logo-slash{font-size:7mm;font-weight:700;color:#E05C2A;}
-.logo-gallery{font-size:3.5mm;font-weight:700;color:#E05C2A;margin-left:1mm;}
+.logo-text{font-size:8.4mm;font-weight:700;color:#000;letter-spacing:-0.01em;}
+.logo-slash{font-size:8.4mm;font-weight:700;color:#E05C2A;}
+.logo-gallery{font-size:4.2mm;font-weight:700;color:#E05C2A;margin-left:1mm;}
 
 .heading{position:absolute;top:31mm;left:12.8mm;}
 .heading h1{font-family:'Times New Roman',Times,serif;font-size:10.3mm;font-weight:400;color:#000;line-height:1.05;}
