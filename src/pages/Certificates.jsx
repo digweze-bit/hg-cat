@@ -355,11 +355,10 @@ function COAPreview({ form, imageUrl, editionLabel }) {
             </div>
 
             {/* Disclaimer */}
-            <div style={{position:'absolute', top:mm(162), left:lx}}>
-              <div style={{fontSize:mm(2.83), color:'#555', lineHeight:1.65}}>
+            <div style={{position:'absolute', top:mm(152), left:lx}}>
+              <div style={{fontSize:mm(2.5), color:'#555', lineHeight:1.65}}>
                 The work is accompanied by this Certificate of Authenticity.<br/>
-                All reasonable due diligence has been exercised to verify the provenance and<br/>
-                authenticity of this work.
+                All reasonable due diligence has been exercised to verify the provenance and authenticity of this work.
               </div>
             </div>
 
@@ -463,8 +462,8 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 .fv{font-size:3.35mm;color:#333333;}
 .fv-italic{font-size:3.35mm;color:#333333;font-style:italic;font-family:'Times New Roman',Times,serif;}
 
-.disclaimer{position:absolute;top:162mm;left:12.8mm;}
-.disclaimer p{font-size:2.83mm;color:#555555;line-height:1.65;}
+.disclaimer{position:absolute;top:152mm;left:12.8mm;}
+.disclaimer p{font-size:2.5mm;color:#555555;line-height:1.65;}
 
 .sig-area{position:absolute;bottom:8mm;left:12.8mm;}
 .sig-img{height:14mm;object-fit:contain;display:block;margin-bottom:1mm;}
@@ -503,8 +502,7 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 
   <div class="disclaimer">
     <p>The work is accompanied by this Certificate of Authenticity.<br>
-    All reasonable due diligence has been exercised to verify the provenance and<br>
-    authenticity of this work.${notes?'<br><br>'+e(notes):''}</p>
+    All reasonable due diligence has been exercised to verify the provenance and authenticity of this work.${notes?'<br><br>'+e(notes):''}</p>
   </div>
 
   <div class="sig-area">
