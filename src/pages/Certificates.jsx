@@ -329,7 +329,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
             </div>
 
             {/* Heading */}
-            <div style={{position:'absolute', top:mm(42), left:lx}}>
+            <div style={{position:'absolute', top:mm(50), left:lx}}>
               <div style={{fontFamily:"'Times New Roman', Times, serif", fontSize:mm(10.3), fontWeight:400, color:'#000', lineHeight:1.05}}>
                 CERTIFICATE OF<br/>AUTHENTICITY
               </div>
@@ -449,10 +449,10 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 .logo-slash{font-size:8.4mm;font-weight:700;color:#E05C2A;}
 .logo-gallery{font-size:4.2mm;font-weight:700;color:#E05C2A;margin-left:1mm;}
 
-.heading{position:absolute;top:42mm;left:12.8mm;}
+.heading{position:absolute;top:50mm;left:12.8mm;}
 .heading h1{font-family:'Times New Roman',Times,serif;font-size:10.3mm;font-weight:400;color:#000;line-height:1.05;}
 .rule{width:18mm;height:0.35mm;background:#E05C2A;margin-top:2mm;}
-.certifies{font-size:2.6mm;color:#555555;line-height:1.65;margin-top:5mm;max-width:120mm;}
+.certifies{font-size:2.2mm;color:#555555;line-height:1.65;margin-top:5mm;max-width:120mm;}
 
 .fields{position:absolute;top:90mm;left:12.8mm;width:125mm;}
 .field-row{display:flex;align-items:baseline;gap:4mm;border-bottom:0.25mm solid #ccc;padding:1.2mm 0;min-height:9.5mm;}
