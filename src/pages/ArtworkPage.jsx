@@ -140,13 +140,7 @@ export default function ArtworkPage() {
                 </div>
               )}
 
-              {/* Print-only QR */}
-              {qrDataUrl && (
-                <div className="print-only" style={{ marginTop:24, display:'flex', alignItems:'center', gap:16 }}>
-                  <img src={qrDataUrl} alt="QR" style={{ width:72, height:72 }}/>
-                  <div style={{ fontSize:10, color:'#9a9490' }}>Scan to view online<br/>{publicUrl}</div>
-                </div>
-              )}
+
             </div>
 
             {/* Right — details */}
