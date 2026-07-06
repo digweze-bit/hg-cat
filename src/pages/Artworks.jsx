@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 
 const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS']
+const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { title:'', artist_id:'', year:'', medium:'', dimensions:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40 }
+const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
 
 export default function Artworks() {
   const [artists, setArtists] = useState([])
@@ -101,12 +102,21 @@ export default function Artworks() {
         consignor_name: form.ownership === 'consignment' ? form.consignor_name || null : null,
         consignor_contact: form.ownership === 'consignment' ? form.consignor_contact || null : null,
         commission_rate: form.ownership === 'consignment' ? Number(form.commission_rate) || 40 : null,
+        is_framed: form.is_framed || false,
+        frame_cost: form.is_framed && form.frame_cost ? Number(form.frame_cost) : null,
+        category: form.category || null,
+        retail_price: form.retail_price ? Number(form.retail_price) : null,
+        inventory_price: form.inventory_price ? Number(form.inventory_price) : null,
+        valuation: form.valuation ? Number(form.valuation) : null,
+        tessera_id: form.tessera_id || null,
         updated_at: new Date().toISOString(),
       }
       if (modal === 'edit') {
         await supabase.from('artworks').update(payload).eq('id', editId)
       } else {
-        await supabase.from('artworks').insert({ ...payload, visible: true })
+        // Auto-generate HG code for new artworks
+        const { data: codeData } = await supabase.rpc('next_hg_code')
+        await supabase.from('artworks').insert({ ...payload, visible: true, hg_code: codeData })
       }
       await load()
       closeModal()
@@ -132,6 +142,13 @@ export default function Artworks() {
       consignor_name: artwork.consignor_name || '',
       consignor_contact: artwork.consignor_contact || '',
       commission_rate: artwork.commission_rate || 40,
+      is_framed: artwork.is_framed || false,
+      frame_cost: artwork.frame_cost || '',
+      category: artwork.category || '',
+      retail_price: artwork.retail_price || '',
+      inventory_price: artwork.inventory_price || '',
+      valuation: artwork.valuation || '',
+      tessera_id: artwork.tessera_id || '',
     })
     setEditId(artwork.id)
     setModal('edit')
@@ -232,7 +249,12 @@ export default function Artworks() {
                   </td>
                   <td>
                     <div style={{ fontWeight:500, fontSize:13 }}>{w.title}</div>
-                    {w.medium && <div style={{ fontSize:11, color:'var(--muted)' }}>{w.medium}</div>}
+                    <div style={{ display:'flex', gap:6, marginTop:2, flexWrap:'wrap' }}>
+                      {w.hg_code && <span style={{ fontSize:10, color:'var(--gold,#b8862a)', fontWeight:600, letterSpacing:'.04em' }}>{w.hg_code}</span>}
+                      {w.medium && <span style={{ fontSize:11, color:'var(--muted)' }}>{w.medium}</span>}
+                      {w.category && <span style={{ fontSize:10, color:'var(--muted)', background:'var(--surface-0,#f8f7f5)', padding:'0 5px', borderRadius:2 }}>{w.category}</span>}
+                      {w.is_framed && <span style={{ fontSize:10, color:'var(--muted)' }}>🖼 Framed</span>}
+                    </div>
                   </td>
                   <td style={{ fontSize:13 }}>{artistMap[w.artist_id]?.name || '—'}</td>
                   <td style={{ fontSize:13, color:'var(--muted)' }}>{w.year || '—'}</td>
@@ -311,18 +333,41 @@ export default function Artworks() {
                     <input className="form-input" value={form.series||''} onChange={e=>setForm(f=>({...f,series:e.target.value}))} />
                   </div>
                 </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Medium</label>
+                    <input className="form-input" value={form.medium||''} onChange={e=>setForm(f=>({...f,medium:e.target.value}))} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Category</label>
+                    <select className="form-select" value={form.category||''} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+                      <option value="">— select —</option>
+                      {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                </div>
                 <div className="form-group">
-                  <label className="form-label">Medium</label>
-                  <input className="form-input" value={form.medium||''} onChange={e=>setForm(f=>({...f,medium:e.target.value}))} />
+                  <label className="form-label">Dimensions</label>
+                  <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Dimensions</label>
-                    <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} />
+                    <label className="form-label">Retail price (₦)</label>
+                    <input className="form-input" type="number" value={form.retail_price||''} onChange={e=>setForm(f=>({...f,retail_price:e.target.value, price:e.target.value ? '₦'+Number(e.target.value).toLocaleString() : ''}))} placeholder="0" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Price</label>
-                    <input className="form-input" value={form.price||''} onChange={e=>setForm(f=>({...f,price:e.target.value}))} placeholder="e.g. ₦2,500,000" />
+                    <label className="form-label">Inventory / cost price (₦)</label>
+                    <input className="form-input" type="number" value={form.inventory_price||''} onChange={e=>setForm(f=>({...f,inventory_price:e.target.value}))} placeholder="0" />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Valuation (₦)</label>
+                    <input className="form-input" type="number" value={form.valuation||''} onChange={e=>setForm(f=>({...f,valuation:e.target.value}))} placeholder="0" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Price display (public)</label>
+                    <input className="form-input" value={form.price||''} onChange={e=>setForm(f=>({...f,price:e.target.value}))} placeholder="e.g. ₦2,500,000 or POA" />
                   </div>
                 </div>
                 <div className="form-row">
@@ -396,14 +441,44 @@ export default function Artworks() {
                   )}
                 </div>
 
+                {/* Framing */}
+                <div style={{ background:'var(--parchment)', borderRadius:3, padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13 }}>
+                    <input type="checkbox" checked={form.is_framed} onChange={e=>setForm(f=>({...f,is_framed:e.target.checked}))} style={{ width:'auto' }}/>
+                    <span style={{ fontWeight:500 }}>Artwork is framed</span>
+                  </label>
+                  {form.is_framed && (
+                    <div className="form-group" style={{ marginBottom:0, maxWidth:200 }}>
+                      <label className="form-label">Frame cost (₦)</label>
+                      <input className="form-input" type="number" value={form.frame_cost||''} onChange={e=>setForm(f=>({...f,frame_cost:e.target.value}))} placeholder="0"/>
+                    </div>
+                  )}
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Write-up / description</label>
                   <textarea className="form-textarea" rows={4} value={form.writeup||''} onChange={e=>setForm(f=>({...f,writeup:e.target.value}))} />
                 </div>
               </div>
 
-              {/* Right — image */}
+              {/* Right — image + metadata */}
               <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
+                {/* HG Code display */}
+                {modal === 'edit' && form.hg_code && (
+                  <div style={{ background:'var(--surface-0,#f8f7f5)', borderRadius:4, padding:'10px 14px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <span style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'.08em' }}>Gallery code</span>
+                    <span style={{ fontSize:15, fontWeight:700, color:'var(--gold,#b8862a)', letterSpacing:'.06em' }}>{form.hg_code}</span>
+                  </div>
+                )}
+                {modal === 'add' && (
+                  <div style={{ background:'var(--surface-0,#f8f7f5)', borderRadius:4, padding:'10px 14px', fontSize:12, color:'var(--muted)' }}>
+                    A gallery code (HG/XXXX) will be auto-generated on save.
+                  </div>
+                )}
+                <div className="form-group">
+                  <label className="form-label">Tessera / legacy ID <span style={{ fontWeight:400, color:'var(--muted)', textTransform:'none', letterSpacing:0, fontSize:10 }}>— for cross-reference only</span></label>
+                  <input className="form-input" value={form.tessera_id||''} onChange={e=>setForm(f=>({...f,tessera_id:e.target.value}))} placeholder="e.g. DA(S)/HG/377"/>
+                </div>
                 <div className="form-group">
                   <label className="form-label">Artwork image</label>
                   <input type="file" accept="image/*" onChange={handleImageUpload} />

@@ -169,7 +169,7 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
 // ── CLIENT LIST ──────────────────────────────────────────────
 function ClientList({ clients, invoices, onRefresh }) {
   const [modal, setModal] = useState(false)
-  const [form, setForm] = useState({ name:'', email:'', phone:'', address:'', city:'', country:'Nigeria', notes:'' })
+  const [form, setForm] = useState({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
   const [saving, setSaving] = useState(false)
 
   const clientInvoiceCount = useMemo(() => {
@@ -183,7 +183,7 @@ function ClientList({ clients, invoices, onRefresh }) {
     setSaving(true)
     try {
       await supabase.from('clients').insert(form)
-      onRefresh(); setModal(false); setForm({ name:'', email:'', phone:'', address:'', city:'', country:'Nigeria', notes:'' })
+      onRefresh(); setModal(false); setForm({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
     } finally { setSaving(false) }
   }
 
@@ -195,13 +195,14 @@ function ClientList({ clients, invoices, onRefresh }) {
       <div className="card">
         <div className="table-wrap">
           <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>City</th><th>Invoices</th></tr></thead>
+            <thead><tr><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>City</th><th>Invoices</th></tr></thead>
             <tbody>
               {clients.map(c => (
                 <tr key={c.id}>
-                  <td style={{ fontWeight:500 }}>{c.name}</td>
+                  <td style={{ fontWeight:500 }}>{c.name}{c.prefix ? <span style={{fontWeight:400,color:'var(--muted)',fontSize:12}}> ({c.prefix})</span> : null}</td>
+                  <td style={{ fontSize:13, color:'var(--muted)' }}>{c.company||'—'}</td>
                   <td style={{ fontSize:13, color:'var(--muted)' }}>{c.email||'—'}</td>
-                  <td style={{ fontSize:13, color:'var(--muted)' }}>{c.phone||'—'}</td>
+                  <td style={{ fontSize:13, color:'var(--muted)' }}>{c.phone||c.phone_mobile||'—'}</td>
                   <td style={{ fontSize:13, color:'var(--muted)' }}>{c.city||'—'}</td>
                   <td style={{ fontSize:13 }}>{clientInvoiceCount[c.id]||0}</td>
                 </tr>
@@ -216,18 +217,73 @@ function ClientList({ clients, invoices, onRefresh }) {
             <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={() => setModal(false)}>✕</button></div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <div className="form-row">
-                <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} /></div>
-                <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} /></div>
+                <div className="form-group" style={{maxWidth:90}}>
+                  <label className="form-label">Prefix</label>
+                  <select className="form-select" value={form.prefix||''} onChange={e=>setForm(f=>({...f,prefix:e.target.value}))}>
+                    <option value="">—</option>
+                    {['Mr','Mrs','Ms','Dr','Prof','Chief','Alhaji','Alhaja','Sir'].map(p=><option key={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">First name</label>
+                  <input className="form-input" value={form.first_name||''} onChange={e=>setForm(f=>({...f,first_name:e.target.value,name:[e.target.value,f.last_name].filter(Boolean).join(' ')}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Last name</label>
+                  <input className="form-input" value={form.last_name||''} onChange={e=>setForm(f=>({...f,last_name:e.target.value,name:[f.first_name,e.target.value].filter(Boolean).join(' ')}))} />
+                </div>
               </div>
               <div className="form-row">
-                <div className="form-group"><label className="form-label">Phone</label><input className="form-input" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} /></div>
-                <div className="form-group"><label className="form-label">City</label><input className="form-input" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))} /></div>
+                <div className="form-group">
+                  <label className="form-label">Full name * <span style={{fontWeight:400,color:'var(--muted)',textTransform:'none',letterSpacing:0}}>— auto-fills from above</span></label>
+                  <input className="form-input" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input className="form-input" type="email" value={form.email||''} onChange={e=>setForm(f=>({...f,email:e.target.value}))} />
+                </div>
               </div>
               <div className="form-row">
-                <div className="form-group"><label className="form-label">Country</label><input className="form-input" value={form.country} onChange={e=>setForm(f=>({...f,country:e.target.value}))} /></div>
-                <div className="form-group"><label className="form-label">Address</label><input className="form-input" value={form.address} onChange={e=>setForm(f=>({...f,address:e.target.value}))} /></div>
+                <div className="form-group">
+                  <label className="form-label">Company / Organisation</label>
+                  <input className="form-input" value={form.company||''} onChange={e=>setForm(f=>({...f,company:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Job title</label>
+                  <input className="form-input" value={form.job_title||''} onChange={e=>setForm(f=>({...f,job_title:e.target.value}))} />
+                </div>
               </div>
-              <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" rows={2} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Mobile</label>
+                  <input className="form-input" value={form.phone_mobile||''} onChange={e=>setForm(f=>({...f,phone_mobile:e.target.value,phone:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Work phone</label>
+                  <input className="form-input" value={form.phone_work||''} onChange={e=>setForm(f=>({...f,phone_work:e.target.value}))} />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Street address</label>
+                  <input className="form-input" value={form.street||''} onChange={e=>setForm(f=>({...f,street:e.target.value,address:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">City</label>
+                  <input className="form-input" value={form.city||''} onChange={e=>setForm(f=>({...f,city:e.target.value}))} />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">State</label>
+                  <input className="form-input" value={form.state||''} onChange={e=>setForm(f=>({...f,state:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Country</label>
+                  <input className="form-input" value={form.country||''} onChange={e=>setForm(f=>({...f,country:e.target.value}))} />
+                </div>
+              </div>
+              <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(false)}>Cancel</button>
@@ -276,7 +332,7 @@ function PaymentList({ invoices, rates }) {
 
 // ── CLIENT MODAL ─────────────────────────────────────────────
 function ClientModal({ onClose, onSave }) {
-  const [form, setForm] = useState({ name:'', email:'', phone:'', address:'', city:'', country:'Nigeria', notes:'' })
+  const [form, setForm] = useState({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
   const [saving, setSaving] = useState(false)
   async function save() {
     if (!form.name) return alert('Name required')
