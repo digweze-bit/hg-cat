@@ -12,6 +12,7 @@ import Reports from './pages/Reports'
 import Users from './pages/Users'
 import Consignors from './pages/Consignors'
 import Books from './pages/Books'
+import ArtworkPage from './pages/ArtworkPage'
 import { AuthProvider } from './components/AuthProvider'
 import RequireAuth from './components/RequireAuth'
 
@@ -22,6 +23,7 @@ export default function App() {
         <Routes>
           {/* Public catalogue */}
           <Route path="/" element={<Catalogue />} />
+          <Route path="/artwork/:id" element={<ArtworkPage />} />
 
           {/* Admin login */}
           <Route path="/admin/login" element={<AdminLogin />} />

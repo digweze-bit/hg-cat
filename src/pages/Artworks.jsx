@@ -248,7 +248,11 @@ export default function Artworks() {
                     }
                   </td>
                   <td>
-                    <div style={{ fontWeight:500, fontSize:13 }}>{w.title}</div>
+                    <a href={`/artwork/${w.id}`} target="_blank" rel="noopener noreferrer"
+                      style={{ fontWeight:500, fontSize:13, color:'var(--ink)', textDecoration:'none', borderBottom:'1px solid var(--line)' }}
+                      title="Open artwork page">
+                      {w.title}
+                    </a>
                     <div style={{ display:'flex', gap:6, marginTop:2, flexWrap:'wrap' }}>
                       {w.hg_code && <span style={{ fontSize:10, color:'var(--gold,#b8862a)', fontWeight:600, letterSpacing:'.04em' }}>{w.hg_code}</span>}
                       {w.medium && <span style={{ fontSize:11, color:'var(--muted)' }}>{w.medium}</span>}
