@@ -13,6 +13,7 @@ export default function Sales() {
   const [clients, setClients] = useState([])
   const [invoices, setInvoices] = useState([])
   const [artworks, setArtworks] = useState([])
+  const [books, setBooks] = useState([])
   const [artists, setArtists] = useState([])
   const [rates, setRates] = useState({})
   const [loading, setLoading] = useState(true)
@@ -20,14 +21,15 @@ export default function Sales() {
   const [activeInvoice, setActiveInvoice] = useState(null) // invoice being viewed/edited
 
   async function load() {
-    const [c, inv, w, a] = await Promise.all([
+    const [c, inv, bks, w, a] = await Promise.all([
       fetchAll('clients', { order: 'name' }),
       supabase.from('invoices').select('*, clients(name), invoice_items(*)').order('created_at', { ascending: false }).limit(200).then(r => r.data || []),
+      supabase.from('books').select('id,title,author,price,stock_count,cover_url').eq('visible',true).order('title').then(r => r.data || []),
       fetchAll('artworks', { filters:[['availability','neq','Sold']], order:'title' }),
       fetchAll('artists', { order:'name' }),
     ])
     const r = await fetchLiveRates()
-    setClients(c); setInvoices(inv); setArtworks(w); setArtists(a); setRates(r)
+    setClients(c); setInvoices(inv); setBooks(bks); setArtworks(w); setArtists(a); setRates(r)
     setLoading(false)
   }
 
@@ -94,6 +96,7 @@ export default function Sales() {
         <InvoiceModal
           clients={clients}
           artworks={artworks}
+            books={books}
           artistMap={artistMap}
           rates={rates}
           userId={user?.id}
@@ -367,7 +370,7 @@ function ClientModal({ onClose, onSave }) {
 }
 
 // ── INVOICE MODAL (create new) ───────────────────────────────
-function InvoiceModal({ clients, artworks, artistMap, rates, userId, onClose, onSave }) {
+function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onClose, onSave }) {
   const [form, setForm] = useState({
     client_id:'', currency:'NGN', discount_type:'none', discount_value:0,
     vat_rate:0, issue_date: new Date().toISOString().split('T')[0],
@@ -375,6 +378,7 @@ function InvoiceModal({ clients, artworks, artistMap, rates, userId, onClose, on
   })
   const [items, setItems] = useState([]) // { artwork_id, title, artist_name, year, medium, dimensions, unit_price, quantity:1, discount:0 }
   const [artworkSearch, setArtworkSearch] = useState('')
+  const [bookSearch, setBookSearch] = useState('')
   const [saving, setSaving] = useState(false)
 
   const rateLabel = getRateLabel(form.currency, rates)
@@ -399,6 +403,26 @@ function InvoiceModal({ clients, artworks, artistMap, rates, userId, onClose, on
       consignor_name: artwork.consignor_name || null,
     }])
     setArtworkSearch('')
+  }
+
+  function addBook(book) {
+    if (items.find(i => i.book_id === book.id)) return
+    setItems(prev => [...prev, {
+      book_id: book.id,
+      item_type: 'book',
+      title: book.title,
+      artist_name: book.author || '',
+      year: '',
+      medium: 'Book',
+      dimensions: '',
+      unit_price: Number(book.price) || 0,
+      quantity: 1,
+      discount: 0,
+      ownership: 'gallery',
+      commission_rate: null,
+      consignor_name: null,
+    }])
+    setBookSearch('')
   }
 
   function removeItem(idx) { setItems(prev => prev.filter((_,i)=>i!==idx)) }
@@ -446,7 +470,9 @@ function InvoiceModal({ clients, artworks, artistMap, rates, userId, onClose, on
 
       await supabase.from('invoice_items').insert(items.map((it,i) => ({
         invoice_id: inv.id,
-        artwork_id: it.artwork_id,
+        artwork_id: it.artwork_id || null,
+        book_id: it.book_id || null,
+        item_type: it.item_type || 'artwork',
         title: it.title,
         artist_name: it.artist_name,
         year: it.year,
@@ -487,7 +513,26 @@ function InvoiceModal({ clients, artworks, artistMap, rates, userId, onClose, on
           {/* Left: items */}
           <div>
             <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:8 }}>Add artworks</div>
+              <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:8 }}>Add items</div>
+              {/* Book search */}
+              <input
+                className="form-input"
+                placeholder="Search books by title or author…"
+                value={bookSearch}
+                onChange={e=>setBookSearch(e.target.value)}
+                style={{ marginBottom:6 }}
+              />
+              {bookSearch && (books||[]).filter(b => b.title?.toLowerCase().includes(bookSearch.toLowerCase()) || b.author?.toLowerCase().includes(bookSearch.toLowerCase())).slice(0,6).map(b => (
+                <div key={b.id} style={{ display:'flex', gap:10, alignItems:'center', padding:'8px 12px', cursor:'pointer', border:'1px solid var(--line)', borderRadius:3, marginBottom:4, background:'var(--white)' }}
+                  onClick={()=>addBook(b)}>
+                  {b.cover_url ? <img src={b.cover_url} alt="" style={{width:28,height:36,objectFit:'cover',borderRadius:2}}/> : <div style={{width:28,height:36,background:'var(--parchment-2)',borderRadius:2,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>📖</div>}
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{b.title}</div>
+                    <div style={{ fontSize:11, color:'var(--muted)' }}>{b.author} · ₦{Number(b.price||0).toLocaleString()} · {b.stock_count} in stock</div>
+                  </div>
+                </div>
+              ))}
+              <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginTop:10, marginBottom:8 }}>Artworks</div>
               <input
                 className="form-input"
                 placeholder="Search artworks by title or artist…"
