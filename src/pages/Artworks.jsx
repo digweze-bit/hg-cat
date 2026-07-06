@@ -260,15 +260,15 @@ export default function Artworks() {
                       {w.is_framed && <span style={{ fontSize:10, color:'var(--muted)' }}>🖼 Framed</span>}
                     </div>
                   </td>
-                  <td style={{ fontSize:13 }}>{artistMap[w.artist_id]?.name || '—'}</td>
+                  <td><span style={{ fontSize:12, background:'var(--parchment-2)', padding:'2px 8px', borderRadius:3, color:'var(--ink)' }}>{artistMap[w.artist_id]?.name || '—'}</span></td>
                   <td style={{ fontSize:13, color:'var(--muted)' }}>{w.year || '—'}</td>
                   <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || '—'}</td>
-                  <td>
+                  <td style={{ fontSize:13, color:'var(--muted)' }}>
                     {w.ownership === 'consignment'
-                      ? <span className="badge badge-amber" title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
+                      ? <span title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
                           Consignment{w.consignment_price ? ` · ₦${Number(w.consignment_price).toLocaleString()}` : ''}
                         </span>
-                      : <span className="badge badge-blue">Gallery owned</span>
+                      : <span>Gallery</span>
                     }
                   </td>
                   <td style={{ fontSize:12, color:'var(--muted)' }}>{w.price || '—'}</td>
