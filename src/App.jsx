@@ -13,6 +13,8 @@ import Users from './pages/Users'
 import Consignors from './pages/Consignors'
 import Books from './pages/Books'
 import ArtworkPage from './pages/ArtworkPage'
+import Forms from './pages/Forms'
+import FormSign from './pages/FormSign'
 import { AuthProvider } from './components/AuthProvider'
 import RequireAuth from './components/RequireAuth'
 
@@ -24,6 +26,7 @@ export default function App() {
           {/* Public catalogue */}
           <Route path="/" element={<Catalogue />} />
           <Route path="/artwork/:id" element={<ArtworkPage />} />
+          <Route path="/sign/:token" element={<FormSign />} />
 
           {/* Admin login */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -42,6 +45,7 @@ export default function App() {
             <Route path="sales" element={<Sales />} />
             <Route path="consignors" element={<Consignors />} />
             <Route path="books" element={<Books />} />
+            <Route path="forms" element={<Forms />} />
             <Route path="reports" element={<Reports />} />
             <Route path="certificates" element={<Certificates />} />
             <Route path="users" element={<Users />} />
