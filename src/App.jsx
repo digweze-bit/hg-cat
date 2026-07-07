@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
+import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AuthProvider } from './components/AuthProvider'
 import RequireAuth from './components/RequireAuth'
 
@@ -7,21 +8,21 @@ import RequireAuth from './components/RequireAuth'
 import Catalogue from './pages/Catalogue'
 import AdminLogin from './pages/AdminLogin'
 
-// Heavy admin pages — load only when navigated to
-const AdminLayout    = lazy(() => import('./pages/AdminLayout'))
-const Dashboard      = lazy(() => import('./pages/Dashboard'))
-const Artists        = lazy(() => import('./pages/Artists'))
-const Artworks       = lazy(() => import('./pages/Artworks'))
-const Archive        = lazy(() => import('./pages/Archive'))
-const Sales          = lazy(() => import('./pages/Sales'))
-const Consignors     = lazy(() => import('./pages/Consignors'))
-const Books          = lazy(() => import('./pages/Books'))
-const Forms          = lazy(() => import('./pages/Forms'))
-const Reports        = lazy(() => import('./pages/Reports'))
-const Certificates   = lazy(() => import('./pages/Certificates'))
-const Users          = lazy(() => import('./pages/Users'))
-const ArtworkPage    = lazy(() => import('./pages/ArtworkPage'))
-const FormSign       = lazy(() => import('./pages/FormSign'))
+// Admin pages — lazy loaded
+const AdminLayout  = lazy(() => import('./pages/AdminLayout'))
+const Dashboard    = lazy(() => import('./pages/Dashboard'))
+const Artists      = lazy(() => import('./pages/Artists'))
+const Artworks     = lazy(() => import('./pages/Artworks'))
+const Archive      = lazy(() => import('./pages/Archive'))
+const Sales        = lazy(() => import('./pages/Sales'))
+const Consignors   = lazy(() => import('./pages/Consignors'))
+const Books        = lazy(() => import('./pages/Books'))
+const Forms        = lazy(() => import('./pages/Forms'))
+const Reports      = lazy(() => import('./pages/Reports'))
+const Certificates = lazy(() => import('./pages/Certificates'))
+const Users        = lazy(() => import('./pages/Users'))
+const ArtworkPage  = lazy(() => import('./pages/ArtworkPage'))
+const FormSign     = lazy(() => import('./pages/FormSign'))
 
 function PageLoader() {
   return (
@@ -31,21 +32,31 @@ function PageLoader() {
   )
 }
 
+function UpdateBanner() {
+  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
+  if (!needRefresh) return null
+  return (
+    <div style={{ position:'fixed', bottom:16, left:'50%', transform:'translateX(-50%)', background:'#1a1714', color:'#fff', padding:'10px 20px', borderRadius:4, fontSize:13, zIndex:9999, display:'flex', gap:12, alignItems:'center', boxShadow:'0 4px 16px rgba(0,0,0,.3)' }}>
+      <span>New version available</span>
+      <button onClick={() => updateServiceWorker(true)}
+        style={{ background:'#E05C2A', border:'none', color:'#fff', padding:'4px 12px', borderRadius:3, cursor:'pointer', fontSize:12, fontWeight:600 }}>
+        Update
+      </button>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <UpdateBanner />
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            {/* Public */}
             <Route path="/" element={<Catalogue />} />
             <Route path="/artwork/:id" element={<ArtworkPage />} />
             <Route path="/sign/:token" element={<FormSign />} />
-
-            {/* Auth */}
             <Route path="/admin/login" element={<AdminLogin />} />
-
-            {/* Protected admin */}
             <Route path="/admin" element={
               <RequireAuth>
                 <AdminLayout />
@@ -64,7 +75,6 @@ export default function App() {
               <Route path="certificates" element={<Certificates />} />
               <Route path="users" element={<Users />} />
             </Route>
-
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
