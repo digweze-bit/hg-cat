@@ -4,32 +4,34 @@ import { supabase } from '../lib/supabase'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(undefined) // undefined = loading
+  const [user, setUser]       = useState(undefined) // undefined = still checking
   const [profile, setProfile] = useState(null)
 
   useEffect(() => {
-    // Get initial session
+    // Fire getSession — Supabase reads from localStorage first so this is near-instant
+    // on repeat visits. First visit hits the network.
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      if (session?.user) loadProfile(session.user.id)
+      const u = session?.user ?? null
+      setUser(u)
+      if (u) {
+        // Load profile in background — don't block rendering
+        supabase.from('profiles').select('*').eq('id', u.id).single()
+          .then(({ data }) => setProfile(data))
+      }
     })
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null)
-        if (session?.user) loadProfile(session.user.id)
-        else setProfile(null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null
+      setUser(u)
+      if (u) {
+        supabase.from('profiles').select('*').eq('id', u.id).single()
+          .then(({ data }) => setProfile(data))
+      } else {
+        setProfile(null)
       }
-    )
+    })
     return () => subscription.unsubscribe()
   }, [])
-
-  async function loadProfile(userId) {
-    const { data } = await supabase
-      .from('profiles').select('*').eq('id', userId).single()
-    setProfile(data)
-  }
 
   async function signIn(email, password) {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
@@ -38,6 +40,7 @@ export function AuthProvider({ children }) {
 
   async function signOut() {
     await supabase.auth.signOut()
+    setProfile(null)
   }
 
   return (

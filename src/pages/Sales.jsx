@@ -21,12 +21,15 @@ export default function Sales() {
   const [activeInvoice, setActiveInvoice] = useState(null) // invoice being viewed/edited
 
   async function load() {
-    const [c, inv, bks] = await Promise.all([
-      fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name' }),
-      supabase.from('invoices').select('*, clients(name), invoice_items(*)').order('created_at', { ascending: false }).limit(200).then(r => r.data || []),
-      supabase.from('books').select('id,title,author,price,stock_count,cover_url').eq('visible',true).order('title').then(r => r.data || []),
+    // Load core data and exchange rates in parallel — rates won't block the page
+    const [[c, inv, bks], r] = await Promise.all([
+      Promise.all([
+        fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name' }),
+        supabase.from('invoices').select('*, clients(name), invoice_items(*)').order('created_at', { ascending: false }).limit(200).then(r => r.data || []),
+        supabase.from('books').select('id,title,author,price,stock_count,cover_url').eq('visible',true).order('title').then(r => r.data || []),
+      ]),
+      fetchLiveRates(),
     ])
-    const r = await fetchLiveRates()
     setClients(c); setInvoices(inv); setBooks(bks); setRates(r)
     // Artworks loaded lazily when invoice modal opens
     setLoading(false)

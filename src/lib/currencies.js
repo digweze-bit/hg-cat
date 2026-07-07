@@ -28,7 +28,10 @@ export function formatAmount(amount, currencyCode = 'NGN') {
 // Returns rates as: 1 foreign currency = X NGN
 export async function fetchLiveRates() {
   try {
-    const res = await fetch('https://api.exchangerate-api.com/v4/latest/NGN')
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 3000)
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/NGN', { signal: controller.signal })
+    clearTimeout(timeout)
     if (!res.ok) throw new Error('Rate fetch failed')
     const json = await res.json()
     // json.rates gives: 1 NGN = X foreign
