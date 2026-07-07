@@ -21,15 +21,14 @@ export default function Sales() {
   const [activeInvoice, setActiveInvoice] = useState(null) // invoice being viewed/edited
 
   async function load() {
-    const [c, inv, bks, w, a] = await Promise.all([
+    const [c, inv, bks] = await Promise.all([
       fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name' }),
       supabase.from('invoices').select('*, clients(name), invoice_items(*)').order('created_at', { ascending: false }).limit(200).then(r => r.data || []),
       supabase.from('books').select('id,title,author,price,stock_count,cover_url').eq('visible',true).order('title').then(r => r.data || []),
-      fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', filters:[['availability','neq','Sold']], order:'title' }),
-      fetchAll('artists', { order:'name' }),
     ])
     const r = await fetchLiveRates()
-    setClients(c); setInvoices(inv); setBooks(bks); setArtworks(w); setArtists(a); setRates(r)
+    setClients(c); setInvoices(inv); setBooks(bks); setRates(r)
+    // Artworks loaded lazily when invoice modal opens
     setLoading(false)
   }
 
@@ -54,7 +53,16 @@ export default function Sales() {
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <button className="btn btn-outline" onClick={() => setModal('client')}>+ Client</button>
-          <button className="btn btn-primary" onClick={() => setModal('invoice')}>+ Invoice</button>
+          <button className="btn btn-primary" onClick={async () => {
+          if (artworks.length === 0) {
+            const [w, a] = await Promise.all([
+              fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', filters:[['availability','neq','Sold']], order:'title' }),
+              fetchAll('artists', { order:'name' }),
+            ])
+            setArtworks(w); setArtists(a)
+          }
+          setModal('invoice')
+        }}>+ Invoice</button>
         </div>
       </div>
 
