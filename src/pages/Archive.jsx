@@ -788,7 +788,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
   const [details, setDetails] = useState({
     artistName:'', title:'', year:'', medium:'', dimensions:'',
     catRef:'', location:'', condition:'', notes:'', provNotes:'',
-    reportTitle:'', additionalNotes:'',
+    reportTitle:'', additionalNotes:'', exhibitionHistory:'', otherInfo:'',
   })
 
   // Evidence selection
@@ -1067,7 +1067,15 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       </div>
       <div className="form-group">
         <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>— narrative ownership context, shown in provenance section</span></label>
-        <textarea className="form-textarea" rows={3} value={details.provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026…" />
+        <textarea className="form-textarea" rows={3} value={provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026…" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Exhibition history</label>
+        <textarea className="form-textarea" rows={3} value={details.exhibitionHistory||''} onChange={e=>setDetails(d=>({...d,exhibitionHistory:e.target.value}))} placeholder="e.g. FESTAC 77, Lagos; Smithsonian Institution 1982; National Gallery of Modern Art, New Delhi 1996…" />
+      </div>
+      <div className="form-group">
+        <label className="form-label">Other information</label>
+        <textarea className="form-textarea" rows={2} value={details.otherInfo||''} onChange={e=>setDetails(d=>({...d,otherInfo:e.target.value}))} placeholder="Literature references, inscriptions, stamps, labels, condition notes…" />
       </div>
       <div className="form-group">
         <label className="form-label">Additional notes for this document</label>
@@ -1308,6 +1316,8 @@ h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-app
     ${details.location?`<span class="fl">Current owner</span><span class="fv">${e(details.location)}</span>`:''}
     ${details.condition?`<span class="fl">Condition</span><span class="fv">${e(details.condition)}</span>`:''}
     ${details.notes?`<span class="fl">Notes</span><span class="fv">${e(details.notes)}</span>`:''}
+    ${details.exhibitionHistory?`<span class="fl">Exhibition history</span><span class="fv">${e(details.exhibitionHistory)}</span>`:''}
+    ${details.otherInfo?`<span class="fl">Other information</span><span class="fv">${e(details.otherInfo)}</span>`:''}
     ${details.additionalNotes?`<span class="fl">Document notes</span><span class="fv">${e(details.additionalNotes)}</span>`:''}
   </div>
 </div>

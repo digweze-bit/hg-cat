@@ -94,10 +94,12 @@ export default function ArtworkPage() {
 
         {/* Top bar */}
         <div className="no-print" style={{ borderBottom:'1px solid #e8e3db', background:'#fff', padding:'12px 28px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <a href="/" style={{ display:'flex', alignItems:'baseline', gap:3, textDecoration:'none' }}>
-            <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:15, letterSpacing:'-.01em', color:'#1a1714' }}>HOURGLASS</span>
-            <span style={{ fontWeight:700, fontSize:15, color:'#E05C2A' }}>/</span>
-            <span style={{ fontWeight:700, fontSize:9, letterSpacing:'.16em', color:'#E05C2A', marginLeft:2 }}>GALLERY</span>
+          <a href="/" style={{ display:'flex', flexDirection:'column', gap:0, textDecoration:'none', lineHeight:1.1 }}>
+            <div style={{ display:'flex', alignItems:'baseline', gap:1 }}>
+              <span style={{ fontFamily:"'Inter',sans-serif", fontWeight:700, fontSize:15, letterSpacing:'-.01em', color:'#1a1714' }}>HOURGLASS</span>
+              <span style={{ fontWeight:700, fontSize:15, color:'#E05C2A' }}>/</span>
+            </div>
+            <span style={{ fontWeight:700, fontSize:8, letterSpacing:'.2em', color:'#E05C2A', marginLeft:1 }}>GALLERY</span>
           </a>
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={whatsappShare}
