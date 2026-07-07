@@ -3,7 +3,7 @@ import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
 import { useAuth } from '../components/AuthProvider'
 
-const TABS = ['Invoices', 'Clients', 'Payments']
+const TABS = ['Invoices', 'Pending Collection', 'Clients', 'Payments']
 const STATUS_COLORS = { draft:'var(--muted)', sent:'var(--blue)', partial:'var(--amber)', paid:'var(--green)', cancelled:'var(--red)' }
 const METHODS = ['transfer','cash','card','cheque','crypto','other']
 
@@ -48,6 +48,7 @@ export default function Sales() {
             {invoices.filter(i=>i.status==='paid').length} paid ·
             {' '}{invoices.filter(i=>['sent','partial'].includes(i.status)).length} outstanding ·
             {' '}{clients.length} clients
+            {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length > 0 && <span style={{color:'#b8862a',marginLeft:8}}>· {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length} pending collection</span>}
             {rates['USD'] && <span style={{ marginLeft:8, fontSize:11, color:'var(--muted)' }}>1 USD = ₦{rates['USD']?.toLocaleString()}</span>}
           </div>
         </div>
@@ -76,6 +77,9 @@ export default function Sales() {
           onOpen={inv => { setActiveInvoice(inv); setModal('invoice-detail') }}
           onRefresh={load}
         />
+      )}
+      {tab === 'Pending Collection' && (
+        <PendingCollection invoices={invoices} onOpen={inv => { setActiveInvoice(inv); setModal('invoice-detail') }} onRefresh={load} />
       )}
       {tab === 'Clients' && (
         <ClientList
@@ -119,6 +123,111 @@ export default function Sales() {
 }
 
 // ── INVOICE LIST ─────────────────────────────────────────────
+// ── PENDING COLLECTION TAB ───────────────────────────────────
+function PendingCollection({ invoices, onOpen, onRefresh }) {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      // Get all undelivered artwork items on paid invoices
+      const paidIds = invoices.filter(i => i.status === 'paid').map(i => i.id)
+      if (paidIds.length === 0) { setItems([]); setLoading(false); return }
+      const { data } = await supabase
+        .from('invoice_items')
+        .select('*, invoices(invoice_number, issue_date, client_id, clients(name))')
+        .in('invoice_id', paidIds)
+        .in('item_type', ['artwork', null])
+        .eq('delivered', false)
+        .order('created_at', { ascending: true })
+      setItems(data || [])
+      setLoading(false)
+    }
+    load()
+  }, [invoices])
+
+  function daysSince(dateStr) {
+    if (!dateStr) return '—'
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 86400000)
+    return diff === 0 ? 'Today' : diff === 1 ? '1 day' : `${diff} days`
+  }
+
+  function urgencyColor(dateStr) {
+    if (!dateStr) return 'var(--muted)'
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 86400000)
+    if (diff > 30) return '#c0392b'
+    if (diff > 14) return '#b8862a'
+    return 'var(--muted)'
+  }
+
+  if (loading) return <div style={{ color:'var(--muted)', padding:20 }}>Loading…</div>
+
+  return (
+    <div>
+      <div style={{ marginBottom:14, display:'flex', alignItems:'center', gap:12 }}>
+        <div style={{ fontSize:13, color:'var(--muted)' }}>
+          {items.length === 0 ? 'No artworks pending collection' : `${items.length} artwork${items.length !== 1 ? 's' : ''} awaiting collection`}
+        </div>
+        {items.length > 0 && <div style={{ fontSize:11, color:'var(--muted)' }}>· Click an item to open the invoice and mark as collected</div>}
+      </div>
+      {items.length === 0 ? (
+        <div className="card" style={{ padding:48, textAlign:'center' }}>
+          <div style={{ fontSize:32, marginBottom:12 }}>✓</div>
+          <div style={{ fontWeight:500 }}>All artworks collected</div>
+          <div style={{ fontSize:13, color:'var(--muted)', marginTop:4 }}>No paid invoices with uncollected works</div>
+        </div>
+      ) : (
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Artwork</th>
+                  <th>Client</th>
+                  <th>Invoice</th>
+                  <th>Invoice date</th>
+                  <th>Waiting</th>
+                  <th>Amount</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(it => {
+                  const inv = it.invoices
+                  const waitColor = urgencyColor(inv?.issue_date)
+                  return (
+                    <tr key={it.id}>
+                      <td>
+                        <div style={{ fontWeight:500, fontSize:13 }}>{it.title}</div>
+                        <div style={{ fontSize:11, color:'var(--muted)' }}>{it.artist_name}{it.year ? ` · ${it.year}` : ''}</div>
+                      </td>
+                      <td style={{ fontSize:13 }}>{inv?.clients?.name || '—'}</td>
+                      <td style={{ fontSize:12, fontFamily:'monospace', color:'var(--muted)' }}>{inv?.invoice_number}</td>
+                      <td style={{ fontSize:12, color:'var(--muted)' }}>{inv?.issue_date ? new Date(inv.issue_date).toLocaleDateString('en-GB') : '—'}</td>
+                      <td>
+                        <span style={{ fontSize:12, fontWeight:600, color: waitColor }}>
+                          {daysSince(inv?.issue_date)}
+                        </span>
+                      </td>
+                      <td style={{ fontSize:13 }}>{formatAmount(it.line_total, 'NGN')}</td>
+                      <td>
+                        <button className="btn btn-ghost btn-sm" onClick={() => {
+                          const fullInv = invoices.find(i => i.id === it.invoice_id)
+                          if (fullInv) onOpen(fullInv)
+                        }}>Open invoice</button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function InvoiceList({ invoices, onOpen, onRefresh }) {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -795,6 +904,27 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
                   {it.ownership === 'consignment' && it.commission_rate && (
                     <div style={{ fontSize:11, color:'var(--amber)', marginTop:2 }}>
                       Consignment — gallery: {it.commission_rate}% (₦{Math.round(it.line_total * it.commission_rate / 100).toLocaleString()}) · owner: {100 - it.commission_rate}% (₦{Math.round(it.line_total * (100 - it.commission_rate) / 100).toLocaleString()})
+                    </div>
+                  )}
+                  {(it.item_type === 'artwork' || !it.item_type) && (
+                    <div style={{ marginTop:6 }}>
+                      <label style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:12 }}>
+                        <input type="checkbox" style={{ width:'auto' }}
+                          checked={it.delivered || false}
+                          onChange={async e => {
+                            const now = new Date().toISOString()
+                            await supabase.from('invoice_items').update({
+                              delivered: e.target.checked,
+                              delivered_at: e.target.checked ? now : null,
+                            }).eq('id', it.id)
+                            setItems(prev => prev.map(i => i.id === it.id ? { ...i, delivered: e.target.checked, delivered_at: e.target.checked ? now : null } : i))
+                            onSave()
+                          }}
+                        />
+                        <span style={{ color: it.delivered ? 'var(--green,#27ae60)' : '#b8862a', fontWeight:500 }}>
+                          {it.delivered ? `✓ Collected${it.delivered_at ? ' · ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : ''}` : '⏳ Pending collection'}
+                        </span>
+                      </label>
                     </div>
                   )}
                 </div>
