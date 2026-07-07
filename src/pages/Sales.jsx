@@ -305,7 +305,13 @@ function ClientList({ clients, invoices, onRefresh }) {
     if (!form.name) return alert('Name required')
     setSaving(true)
     try {
-      await supabase.from('clients').insert(form)
+      const payload = {
+        name: form.name, email: form.email||null,
+        phone: form.phone||null, city: form.city||null,
+        country: form.country||null, notes: form.notes||null,
+      }
+      const { error: saveErr } = await supabase.from('clients').insert(payload)
+      if (saveErr) throw saveErr
       onRefresh(); setModal(false); setForm({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
     } finally { setSaving(false) }
   }
@@ -460,9 +466,35 @@ function ClientModal({ onClose, onSave }) {
   async function save() {
     if (!form.name) return alert('Name required')
     setSaving(true)
-    await supabase.from('clients').insert(form)
-    onSave(); onClose()
-    setSaving(false)
+    try {
+      const payload = {
+        name: form.name,
+        email: form.email || null,
+        phone: form.phone_mobile || form.phone || null,
+        phone_mobile: form.phone_mobile || null,
+        phone_work: form.phone_work || null,
+        prefix: form.prefix || null,
+        first_name: form.first_name || null,
+        last_name: form.last_name || null,
+        company: form.company || null,
+        job_title: form.job_title || null,
+        address: form.street || form.address || null,
+        street: form.street || null,
+        suburb: form.suburb || null,
+        city: form.city || null,
+        state: form.state || null,
+        postcode: form.postcode || null,
+        country: form.country || null,
+        notes: form.notes || null,
+      }
+      const { error } = await supabase.from('clients').insert(payload)
+      if (error) throw error
+      onSave(); onClose()
+    } catch(err) {
+      alert('Failed to save client: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
   }
   return (
     <div className="modal-overlay">
@@ -499,6 +531,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
   const [items, setItems] = useState([]) // { artwork_id, title, artist_name, year, medium, dimensions, unit_price, quantity:1, discount:0 }
   const [artworkSearch, setArtworkSearch] = useState('')
   const [bookSearch, setBookSearch] = useState('')
+  const [clientSearch, setClientSearch] = useState('')
   const [saving, setSaving] = useState(false)
 
   const rateLabel = getRateLabel(form.currency, rates)
