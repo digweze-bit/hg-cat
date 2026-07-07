@@ -291,9 +291,11 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
 
 // ── CLIENT LIST ──────────────────────────────────────────────
 function ClientList({ clients, invoices, onRefresh }) {
-  const [modal, setModal] = useState(false)
+  const [modal, setModal] = useState(false)       // false | 'add' | 'edit'
+  const [selected, setSelected] = useState(null)  // client being viewed/edited
   const [form, setForm] = useState({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
   const [saving, setSaving] = useState(false)
+  const [search, setSearch] = useState('')
 
   const clientInvoiceCount = useMemo(() => {
     const counts = {}
@@ -301,45 +303,150 @@ function ClientList({ clients, invoices, onRefresh }) {
     return counts
   }, [invoices])
 
+  const clientInvoices = useMemo(() => {
+    if (!selected) return []
+    return invoices.filter(i => i.client_id === selected.id)
+  }, [selected, invoices])
+
+  const filtered = useMemo(() =>
+    clients.filter(c => !search || c.name?.toLowerCase().includes(search.toLowerCase()) ||
+      c.company?.toLowerCase().includes(search.toLowerCase()) ||
+      c.email?.toLowerCase().includes(search.toLowerCase()))
+  , [clients, search])
+
+  function openAdd() {
+    setForm({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
+    setModal('add')
+  }
+
+  function openEdit(c) {
+    setForm({ ...c, phone_mobile: c.phone_mobile||c.phone||'', phone_work: c.phone_work||'', street: c.street||c.address||'', suburb: c.suburb||'', state: c.state||'', postcode: c.postcode||'' })
+    setModal('edit')
+  }
+
   async function save() {
     if (!form.name) return alert('Name required')
     setSaving(true)
     try {
       const payload = {
         name: form.name, email: form.email||null,
-        phone: form.phone||null, city: form.city||null,
+        phone: form.phone_mobile||form.phone||null,
+        phone_mobile: form.phone_mobile||null, phone_work: form.phone_work||null,
+        prefix: form.prefix||null, first_name: form.first_name||null, last_name: form.last_name||null,
+        company: form.company||null, job_title: form.job_title||null,
+        address: form.street||form.address||null, street: form.street||null,
+        suburb: form.suburb||null, city: form.city||null,
+        state: form.state||null, postcode: form.postcode||null,
         country: form.country||null, notes: form.notes||null,
+        updated_at: new Date().toISOString(),
       }
-      const { error: saveErr } = await supabase.from('clients').insert(payload)
-      if (saveErr) throw saveErr
-      onRefresh(); setModal(false); setForm({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
+      if (modal === 'edit' && selected) {
+        const { error } = await supabase.from('clients').update(payload).eq('id', selected.id)
+        if (error) throw error
+        setSelected({ ...selected, ...payload })
+      } else {
+        const { error } = await supabase.from('clients').insert(payload)
+        if (error) throw error
+      }
+      await onRefresh()
+      setModal(false)
+    } catch(err) {
+      alert('Failed: ' + err.message)
     } finally { setSaving(false) }
   }
 
   return (
-    <div>
-      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:14 }}>
-        <button className="btn btn-primary" onClick={() => setModal(true)}>+ Add client</button>
-      </div>
-      <div className="card">
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Name</th><th>Company</th><th>Email</th><th>Phone</th><th>City</th><th>Invoices</th></tr></thead>
-            <tbody>
-              {clients.map(c => (
-                <tr key={c.id}>
-                  <td style={{ fontWeight:500 }}>{c.name}{c.prefix ? <span style={{fontWeight:400,color:'var(--muted)',fontSize:12}}> ({c.prefix})</span> : null}</td>
-                  <td style={{ fontSize:13, color:'var(--muted)' }}>{c.company||'—'}</td>
-                  <td style={{ fontSize:13, color:'var(--muted)' }}>{c.email||'—'}</td>
-                  <td style={{ fontSize:13, color:'var(--muted)' }}>{c.phone||c.phone_mobile||'—'}</td>
-                  <td style={{ fontSize:13, color:'var(--muted)' }}>{c.city||'—'}</td>
-                  <td style={{ fontSize:13 }}>{clientInvoiceCount[c.id]||0}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div style={{ display:'grid', gridTemplateColumns: selected ? '320px 1fr' : '1fr', gap:20 }}>
+      {/* Client list */}
+      <div>
+        <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+          <input className="form-input" placeholder="Search clients…" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1 }}/>
+          <button className="btn btn-primary" onClick={openAdd}>+ Add</button>
+        </div>
+        <div className="card" style={{ padding:0 }}>
+          {filtered.map(c => (
+            <div key={c.id}
+              onClick={() => setSelected(selected?.id === c.id ? null : c)}
+              style={{ padding:'12px 16px', borderBottom:'1px solid var(--line-soft)', cursor:'pointer',
+                background: selected?.id === c.id ? 'var(--surface-1,#f5f3f0)' : 'transparent',
+                display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div>
+                <div style={{ fontWeight:500, fontSize:13 }}>
+                  {c.prefix ? <span style={{ color:'var(--muted)', fontSize:12 }}>{c.prefix} </span> : null}
+                  {c.name}
+                </div>
+                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>
+                  {[c.company, c.city].filter(Boolean).join(' · ') || c.email || '—'}
+                </div>
+              </div>
+              <span style={{ fontSize:11, color:'var(--muted)', flexShrink:0, marginLeft:8 }}>
+                {clientInvoiceCount[c.id]||0} inv
+              </span>
+            </div>
+          ))}
+          {filtered.length === 0 && <div style={{ padding:32, textAlign:'center', color:'var(--muted)', fontSize:13 }}>No clients found</div>}
         </div>
       </div>
+
+      {/* Client detail panel */}
+      {selected && (
+        <div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+            <div>
+              <div style={{ fontWeight:600, fontSize:16 }}>{selected.prefix ? `${selected.prefix} ` : ''}{selected.name}</div>
+              {selected.company && <div style={{ fontSize:13, color:'var(--muted)' }}>{selected.company}{selected.job_title ? ` · ${selected.job_title}` : ''}</div>}
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button className="btn btn-outline btn-sm" onClick={() => openEdit(selected)}>Edit</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>✕</button>
+            </div>
+          </div>
+
+          {/* Contact info */}
+          <div className="card" style={{ padding:'16px 18px', marginBottom:14, display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+            {[
+              ['Email', selected.email],
+              ['Mobile', selected.phone_mobile||selected.phone],
+              ['Work phone', selected.phone_work],
+              ['City', selected.city],
+              ['State', selected.state],
+              ['Country', selected.country],
+              ['Address', selected.street||selected.address],
+              ['Notes', selected.notes],
+            ].filter(([,v]) => v).map(([label, value]) => (
+              <div key={label}>
+                <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:2 }}>{label}</div>
+                <div style={{ fontSize:13 }}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Invoice history */}
+          <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:8 }}>
+            Invoice history ({clientInvoices.length})
+          </div>
+          <div className="card" style={{ padding:0 }}>
+            {clientInvoices.length === 0
+              ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>No invoices yet</div>
+              : clientInvoices.map(inv => (
+                <div key={inv.id} style={{ padding:'11px 16px', borderBottom:'1px solid var(--line-soft)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{inv.invoice_number}</div>
+                    <div style={{ fontSize:11, color:'var(--muted)' }}>{inv.issue_date}</div>
+                  </div>
+                  <div style={{ textAlign:'right' }}>
+                    <div style={{ fontSize:13 }}>₦{Number(inv.total_ngn||inv.total||0).toLocaleString()}</div>
+                    <span style={{ fontSize:10, padding:'1px 6px', borderRadius:2, fontWeight:600,
+                      background: inv.status==='paid' ? '#edf7f0' : inv.status==='sent' ? '#fef9ec' : '#f0f0f0',
+                      color: inv.status==='paid' ? '#27ae60' : inv.status==='sent' ? '#b8862a' : '#666'
+                    }}>{inv.status}</span>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      )}
       {modal && (
         <div className="modal-overlay">
           <div className="modal modal-md">
