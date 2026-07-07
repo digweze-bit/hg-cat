@@ -16,16 +16,26 @@ export default function Catalogue() {
 
   useEffect(() => {
     async function load() {
-      const [a, w] = await Promise.all([
-        fetchAll('artists', { filters: [['visible','eq',true]], order: 'name' }),
-        fetchAll('artworks', { filters: [['visible','eq',true]], order: 'sort_order' }),
-      ])
+      const a = await fetchAll('artists', { select:'id,name,bio,portrait_url,nationality,born,died,updated_at,created_at,visible', filters: [['visible','eq',true]], order: 'name' })
       setArtists(a)
-      setArtworks(w)
       setLoading(false)
     }
     load()
   }, [])
+
+  // Load artworks for selected artist only
+  useEffect(() => {
+    if (!activeArtist) return
+    fetchAll('artworks', {
+      select:'id,title,artist_id,year,medium,dimensions,availability,image_url,price,sort_order',
+      filters: [['visible','eq',true],['artist_id','eq',activeArtist.id]],
+      order: 'sort_order'
+    }).then(w => setArtworks(prev => {
+      // Merge — keep other artists' works, replace this artist's
+      const others = prev.filter(x => x.artist_id !== activeArtist.id)
+      return [...others, ...w]
+    }))
+  }, [activeArtist?.id])
 
   const artistMap = useMemo(() =>
     Object.fromEntries(artists.map(a => [a.id, a])), [artists])
