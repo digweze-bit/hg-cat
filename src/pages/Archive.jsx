@@ -922,12 +922,43 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     })
   }
 
-  function generateAndPrint() {
+  async function generateAndPrint() {
     const artist = source === 'existing' ? artistMap[selectedArtwork?.artist_id] : { name: details.artistName }
     const artwork = source === 'existing' ? selectedArtwork : null
     const incEntries = evidencePool.filter(e => included.has(e.id))
-    const html = buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC, logo: LOGO_B64 })
-    // Use blob URL to avoid popup blocker
+
+    // Convert artwork image to base64 so it renders inside blob document
+    let imageDataUrl = null
+    const imgSrc = details.imageUrl || artwork?.image_url
+    if (imgSrc) {
+      try {
+        const resp = await fetch(imgSrc)
+        const blob2 = await resp.blob()
+        imageDataUrl = await new Promise(res => {
+          const r = new FileReader()
+          r.onload = () => res(r.result)
+          r.readAsDataURL(blob2)
+        })
+      } catch(_) { imageDataUrl = null }
+    }
+
+    // Also convert archive evidence images
+    const entriesWithImages = await Promise.all(incEntries.map(async ev => {
+      if (!ev.image_url) return ev
+      try {
+        const resp = await fetch(ev.image_url)
+        const blob2 = await resp.blob()
+        const dataUrl = await new Promise(res => {
+          const r = new FileReader()
+          r.onload = () => res(r.result)
+          r.readAsDataURL(blob2)
+        })
+        return { ...ev, image_url: dataUrl }
+      } catch(_) { return ev }
+    }))
+
+    const detailsWithImage = { ...details, imageUrl: imageDataUrl || details.imageUrl }
+    const html = buildProvDocHTML({ details: detailsWithImage, artist, artwork, provChain, incEntries: entriesWithImages, provScore, scC, logo: LOGO_B64 })
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -937,7 +968,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 10000)
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
   }
 
   const RELEVANCE_LABEL = { direct:'Linked', key_ref:'Key ref', keyword:'Title match', background:'Background' }
@@ -1299,12 +1330,12 @@ h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-app
 .ev-desc{font-family:-apple-system,sans-serif;font-size:12px;line-height:1.65;margin-top:6px;color:#3d3a36;}
 .ev-img{max-width:200px;margin-top:8px;border:1px solid #ddd9d1;border-radius:2px;}
 .footer{margin-top:40px;padding-top:14px;border-top:1px solid #ddd9d1;font-family:-apple-system,sans-serif;font-size:8.5px;color:#aaa;text-align:center;line-height:1.7;}
-@media print{body{padding:24px 28px;}}
+@media print{@page{margin:12mm 14mm;}body{padding:0;}header,footer{display:none!important;}}
 </style></head><body>
 
 <div class="header">
   <div>
-    ${logo ? '<img src="' + logo + '" alt="Hourglass Gallery" style="height:28px;object-fit:contain;object-position:left center;display:block;">' : '<div class="logo-text">Hourglass Gallery &middot; Lagos</div>'}
+    ${logo ? "<img src='" + logo + "' alt='Hourglass Gallery' style='height:28px;object-fit:contain;object-position:left center;display:block;'>" : '<div class="logo-text">Hourglass Gallery &middot; Lagos</div>'}
   </div>
 </div>
 
