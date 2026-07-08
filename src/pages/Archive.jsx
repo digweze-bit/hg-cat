@@ -1067,7 +1067,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       </div>
       <div className="form-group">
         <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>— narrative ownership context, shown in provenance section</span></label>
-        <textarea className="form-textarea" rows={3} value={provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026…" />
+        <textarea className="form-textarea" rows={3} value={details.provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026…" />
       </div>
       <div className="form-group">
         <label className="form-label">Exhibition history</label>
