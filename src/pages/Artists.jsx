@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
+import { cacheInvalidate } from '../lib/cache'
 import { useNavigate } from 'react-router-dom'
 
 const EMPTY = { name:'', nationality:'', medium:'', bio:'', born:'', died:'', portrait_url:'', link:'', sort_order:0 }
@@ -56,6 +57,7 @@ export default function Artists() {
 
   async function toggleVisible(artist) {
     await supabase.from('artists').update({ visible: !artist.visible }).eq('id', artist.id)
+    cacheInvalidate('artists')
     setArtists(prev => prev.map(a => a.id === artist.id ? { ...a, visible: !a.visible } : a))
   }
 
@@ -88,6 +90,7 @@ export default function Artists() {
       } else {
         await supabase.from('artists').insert({ ...form, visible: true })
       }
+      cacheInvalidate('artists')
       await load()
       closeModal()
     } catch (err) {
@@ -100,6 +103,7 @@ export default function Artists() {
   async function handleDelete(id) {
     if (!confirm('Delete this artist? This cannot be undone.')) return
     await supabase.from('artists').delete().eq('id', id)
+    cacheInvalidate('artists')
     setArtists(prev => prev.filter(a => a.id !== id))
   }
 

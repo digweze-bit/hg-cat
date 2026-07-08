@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
-import { LOGO_B64 } from '../lib/assets'
 import { useParams, useNavigate } from 'react-router-dom'
 
 // ── CONSTANTS ────────────────────────────────────────────────
@@ -47,7 +46,7 @@ export default function Archive() {
 
   // ── Load artists once
   useEffect(() => {
-    fetchAll('artists', { order: 'name' }).then(setArtists)
+    fetchAll('artists', { order: 'name', onUpdate: setArtists }).then(setArtists)
   }, [])
 
   // ── Load artworks, entries, provenance when artist changes
@@ -928,6 +927,9 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     setGenerating(true)
     setGenError(null)
     try {
+      // Load logo dynamically to avoid blocking Archive page load
+      let LOGO_B64 = null
+      try { const assets = await import('../lib/assets'); LOGO_B64 = assets.LOGO_B64 } catch(_) {}
       const artist = source === 'existing' ? artistMap[selectedArtwork?.artist_id] : { name: details.artistName }
       const artwork = source === 'existing' ? selectedArtwork : null
       const incEntries = evidencePool.filter(e => included.has(e.id))

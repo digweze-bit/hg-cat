@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { cacheInvalidate } from '../lib/cache'
 
 const CONSIGNOR_TYPES = ['Artist', 'Estate', 'Collector', 'Dealer', 'Institution', 'Other']
 const TERM_TYPES = ['commission', 'fixed']
@@ -75,6 +76,7 @@ export default function Consignors() {
     } else {
       await supabase.from('consignors').insert({ ...payload, created_at: new Date().toISOString() })
     }
+    cacheInvalidate('consignors')
     await load()
     setModal(false)
     setSaving(false)
@@ -85,6 +87,7 @@ export default function Consignors() {
     e.stopPropagation()
     if (!confirm(`Delete consignor "${c.name}"? This cannot be undone.`)) return
     await supabase.from('consignors').delete().eq('id', c.id)
+    cacheInvalidate('consignors')
     if (selected?.id === c.id) setSelected(null)
     await load()
   }

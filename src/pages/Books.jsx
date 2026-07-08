@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
+import { cacheInvalidate } from '../lib/cache'
 import { useAuth } from '../components/AuthProvider'
 
 const FORMATS = ['Hardcover','Paperback','Limited Edition','Artists Book','Catalogue','Journal','Other']
@@ -75,6 +76,7 @@ export default function Books() {
           })
         }
       }
+      cacheInvalidate('books')
       await load()
       setModal(null)
       setForm(EMPTY)
@@ -131,12 +133,14 @@ export default function Books() {
 
   async function toggleVisible(book) {
     await supabase.from('books').update({ visible: !book.visible }).eq('id', book.id)
+    cacheInvalidate('books')
     setBooks(prev => prev.map(b => b.id === book.id ? { ...b, visible: !b.visible } : b))
   }
 
   async function handleDelete(id) {
     if (!confirm('Delete this book? Stock history will also be deleted.')) return
     await supabase.from('books').delete().eq('id', id)
+    cacheInvalidate('books')
     setBooks(prev => prev.filter(b => b.id !== id))
   }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
+import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
 import { useAuth } from '../components/AuthProvider'
 
@@ -347,6 +348,7 @@ function ClientList({ clients, invoices, onRefresh }) {
         const { error } = await supabase.from('clients').insert(payload)
         if (error) throw error
       }
+      cacheInvalidate('clients')
       await onRefresh()
       setModal(false)
     } catch(err) {
@@ -1040,6 +1042,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
 
   async function updateStatus(status) {
     await supabase.from('invoices').update({ status, updated_at: new Date().toISOString() }).eq('id', inv.id)
+    cacheInvalidate('invoices')
     onSave(); onClose()
   }
 

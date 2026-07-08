@@ -7,31 +7,51 @@ export const supabase = createClient(
 )
 
 /**
- * Fetch all rows from a table with optional caching.
- * cache: true  = use session cache (default for read-heavy tables)
- * cache: false = always fetch fresh
+ * Fetch all rows with stale-while-revalidate caching.
+ *
+ * cache: true  (default) — return cached data immediately if available,
+ *                          then fetch fresh in background and call onUpdate(fresh)
+ * cache: false           — always fetch fresh, skip cache entirely
+ * onUpdate(data)         — optional callback when background refresh completes
  */
 export async function fetchAll(table, query = {}) {
-  const { select = '*', filters = [], order = 'created_at', ascending = true, cache = true } = query
+  const {
+    select = '*',
+    filters = [],
+    order = 'created_at',
+    ascending = true,
+    cache = true,
+    onUpdate = null,
+  } = query
 
-  // Build cache key from query params
   const cacheKey = `${table}:${select}:${JSON.stringify(filters)}:${order}:${ascending}`
 
-  if (cache) {
-    const cached = cacheGet(cacheKey)
-    if (cached) return cached
+  async function fetchFresh() {
+    let q = supabase.from(table).select(select).range(0, 4999)
+    filters.forEach(([col, op, val]) => { q = q.filter(col, op, val) })
+    q = q.order(order, { ascending })
+    const { data, error } = await q
+    if (error) throw error
+    return data || []
   }
 
-  let q = supabase.from(table).select(select).range(0, 4999)
-  filters.forEach(([col, op, val]) => { q = q.filter(col, op, val) })
-  q = q.order(order, { ascending })
+  if (!cache) return fetchFresh()
 
-  const { data, error } = await q
-  if (error) throw error
-  const result = data || []
+  const cached = cacheGet(cacheKey)
 
-  if (cache) cacheSet(cacheKey, result)
-  return result
+  if (cached) {
+    // Return cached data immediately, revalidate in background
+    fetchFresh().then(fresh => {
+      cacheSet(cacheKey, fresh)
+      if (onUpdate) onUpdate(fresh)
+    }).catch(() => {}) // silently ignore background fetch errors
+    return cached
+  }
+
+  // No cache — must fetch and wait
+  const fresh = await fetchFresh()
+  cacheSet(cacheKey, fresh)
+  return fresh
 }
 
 export async function getUser() {
