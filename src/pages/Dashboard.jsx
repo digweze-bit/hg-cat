@@ -10,24 +10,27 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function load() {
+      // Two parallel calls instead of seven
       const [
-        { count: totalArtists },
-        { count: totalArtworks },
-        { count: availableWorks },
-        { count: soldWorks },
-        { count: totalClients },
         { data: invoices },
-        { count: pendingInvoices },
+        [artists, artworks, clients],
       ] = await Promise.all([
-        supabase.from('artists').select('*', { count:'exact', head:true }),
-        supabase.from('artworks').select('*', { count:'exact', head:true }),
-        supabase.from('artworks').select('*', { count:'exact', head:true }).eq('availability','Available'),
-        supabase.from('artworks').select('*', { count:'exact', head:true }).eq('availability','Sold'),
-        supabase.from('clients').select('*', { count:'exact', head:true }),
         supabase.from('invoices').select('*, clients(name)').order('created_at', { ascending:false }).limit(5),
-        supabase.from('invoices').select('*', { count:'exact', head:true }).in('status',['sent','partial']),
+        Promise.all([
+          supabase.from('artists').select('id', { count:'exact', head:true }),
+          supabase.from('artworks').select('id,availability', { count:'exact' }).range(0,4999),
+          supabase.from('clients').select('id', { count:'exact', head:true }),
+        ])
       ])
-      setStats({ totalArtists, totalArtworks, availableWorks, soldWorks, totalClients, pendingInvoices })
+      const artworkData = artworks.data || []
+      setStats({
+        totalArtists:   artists.count || 0,
+        totalArtworks:  artworkData.length,
+        availableWorks: artworkData.filter(w => w.availability === 'Available').length,
+        soldWorks:      artworkData.filter(w => w.availability === 'Sold').length,
+        totalClients:   clients.count || 0,
+        pendingInvoices: (invoices||[]).filter(i => ['sent','partial'].includes(i.status)).length,
+      })
       setRecentInvoices(invoices || [])
       setLoading(false)
     }
