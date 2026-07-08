@@ -57,13 +57,12 @@ export default function Sales() {
         <div style={{ display:'flex', gap:8 }}>
           <button className="btn btn-outline" onClick={() => setModal('client')}>+ Client</button>
           <button className="btn btn-primary" onClick={async () => {
-          if (artworks.length === 0) {
-            const [w, a] = await Promise.all([
-              fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', order:'title' }),
-              fetchAll('artists', { order:'name' }),
-            ])
-            setArtworks(w); setArtists(a)
-          }
+          // Always load fresh — cache:false ensures no stale filtered data
+          const [w, a] = await Promise.all([
+            fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', order:'title', cache:false }),
+            fetchAll('artists', { order:'name' }),
+          ])
+          setArtworks(w); setArtists(a)
           setModal('invoice')
         }}>+ Invoice</button>
         </div>
@@ -403,6 +402,14 @@ function ClientList({ clients, invoices, onRefresh }) {
             </div>
             <div style={{ display:'flex', gap:8 }}>
               <button className="btn btn-outline btn-sm" onClick={() => openEdit(selected)}>Edit</button>
+              <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
+                onClick={async () => {
+                  if (!confirm(`Delete ${selected.name}? This cannot be undone.`)) return
+                  const { error } = await supabase.from('clients').delete().eq('id', selected.id)
+                  if (error) { alert('Cannot delete: ' + error.message); return }
+                  setSelected(null)
+                  await onRefresh()
+                }}>Delete</button>
               <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>✕</button>
             </div>
           </div>
@@ -766,10 +773,15 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
     }
   }
 
-  const filteredArtworks = artworks.filter(w =>
-    !artworkSearch || w.title?.toLowerCase().includes(artworkSearch.toLowerCase()) ||
-    artistMap[w.artist_id]?.name?.toLowerCase().includes(artworkSearch.toLowerCase())
-  ).slice(0, 10)
+  const filteredArtworks = artworks.filter(w => {
+    if (!artworkSearch) return false
+    const q = artworkSearch.toLowerCase()
+    const artistName = (artistMap[w.artist_id]?.name || '').toLowerCase()
+    return w.title?.toLowerCase().includes(q) ||
+      artistName.includes(q) ||
+      w.hg_code?.toLowerCase().includes(q) ||
+      w.medium?.toLowerCase().includes(q)
+  }).slice(0, 20).slice(0, 10)
 
   return (
     <div className="modal-overlay">
@@ -993,10 +1005,10 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
     async function load() {
       const [{ data: p }, { data: it }] = await Promise.all([
         supabase.from('payments').select('*').eq('invoice_id', inv.id).order('paid_at'),
-        supabase.from('invoice_items').select('*').eq('invoice_id', inv.id).order('sort_order'),
+        supabase.from('invoice_items').select('*, artworks(image_url)').eq('invoice_id', inv.id).order('sort_order'),
       ])
       setPayments(p || [])
-      setItems(it || [])
+      setItems((it || []).map(item => ({ ...item, image_url: item.image_url || item.artworks?.image_url || null })))
     }
     load()
   }, [inv.id])
@@ -1040,12 +1052,12 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
     let logoB64 = null
     try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_B64 } catch(_) {}
     const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'
-    document.body.appendChild(a); a.click(); document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 30000)
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (!w) { alert('Please allow popups for this site to print invoices'); return }
+    w.document.write(html)
+    w.document.close()
+    w.focus()
+    setTimeout(() => { w.print() }, 800)
   }
 
   return (
@@ -1061,7 +1073,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
           </div>
           <div style={{ display:'flex', gap:8 }}>
             <button className="btn btn-outline btn-sm" onClick={printInvoice}>Print / PDF</button>
-            {inv.status === 'cancelled' && (
+            {(inv.status === 'cancelled' || inv.status === 'draft') && (
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
                   if (!confirm('Permanently delete this invoice? This cannot be undone.')) return

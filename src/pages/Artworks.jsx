@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
+import { cacheInvalidate } from '../lib/cache'
 
 const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
@@ -24,7 +25,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible', order: 'sort_order' }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible', order: 'sort_order', cache:false }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -118,6 +119,7 @@ export default function Artworks() {
         const { data: codeData } = await supabase.rpc('next_hg_code')
         await supabase.from('artworks').insert({ ...payload, visible: true, hg_code: codeData })
       }
+      cacheInvalidate('artworks')
       await load()
       closeModal()
     } catch (err) {
@@ -377,10 +379,10 @@ export default function Artworks() {
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Location</label>
-                    <input className="form-input" value={form.location||''} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="e.g. Main Gallery" list="location-list" />
-                    <datalist id="location-list">
-                      {locations.map(l => <option key={l} value={l} />)}
-                    </datalist>
+                    <select className="form-select" value={form.location||''} onChange={e=>setForm(f=>({...f,location:e.target.value}))}>
+                      <option value="">— select —</option>
+                      {[...new Set([...DEFAULT_LOCATIONS, ...locations])].map(l => <option key={l} value={l}>{l}</option>)}
+                    </select>
                   </div>
                   <div className="form-group">
                     <label className="form-label">Availability</label>
