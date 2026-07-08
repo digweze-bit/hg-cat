@@ -432,7 +432,7 @@ export default function Archive() {
                                 {/* Completeness bar */}
                                 {sc !== null && (
                                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, background:'var(--white)', padding:'8px 12px', borderRadius:3 }}>
-                                    <span style={{ fontSize:11, color:'var(--muted)', whiteSpace:'nowrap' }}>Documentation completeness</span>
+                                    
                                     <div style={{ flex:1, height:4, background:'var(--line)', borderRadius:2, overflow:'hidden' }}>
                                       <div style={{ height:'100%', width:`${sc}%`, background:scC, borderRadius:2 }} />
                                     </div>
@@ -790,6 +790,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     artistName:'', title:'', year:'', medium:'', dimensions:'',
     catRef:'', location:'', condition:'', notes:'', provNotes:'',
     reportTitle:'', additionalNotes:'', exhibitionHistory:'', otherInfo:'',
+    imageUrl:'',
   })
 
   // Evidence selection
@@ -846,6 +847,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       condition: artwork.condition || '',
       notes: artwork.notes || '',
       provNotes: artwork.provNotes || '',
+      imageUrl: artwork.image_url || '',
       reportTitle: `Provenance Report — ${artwork.title}`,
     }))
     // Auto-select relevant archive evidence
@@ -1254,7 +1256,7 @@ function buildProvDocHTML({ details, artist, artwork, provChain, incEntries, pro
 
   function e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
 
-  const artworkImage = artwork?.image_url || null
+  const artworkImage = details.imageUrl || artwork?.image_url || null
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${e(title)}</title>
 <style>
@@ -1262,7 +1264,7 @@ function buildProvDocHTML({ details, artist, artwork, provChain, incEntries, pro
 body{font-family:Georgia,serif;color:#1a1714;max-width:800px;margin:0 auto;padding:40px 48px;font-size:14px;}
 .header{border-bottom:2px solid #1a1714;padding-bottom:14px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;}
 .logo-text{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:#9A6F3A;margin-bottom:3px;font-family:-apple-system,sans-serif;}
-.gen-date{font-size:10px;color:#aaa;font-family:-apple-system,sans-serif;}
+
 h1{font-size:26px;font-weight:400;margin:0 0 4px;}
 h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-apple-system,sans-serif;}
 .section-head{font-family:-apple-system,sans-serif;font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:#9A6F3A;border-bottom:1px solid #ddd9d1;padding-bottom:5px;margin:24px 0 12px;}
@@ -1295,9 +1297,8 @@ h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-app
 
 <div class="header">
   <div>
-    ${logo ? `<img src="${logo}" alt="Hourglass Gallery" style="height:28px;object-fit:contain;object-position:left center;display:block;">` : `<div class="logo-text">Hourglass Gallery · Lagos</div>`}
+    ${logo ? '<img src="' + logo + '" alt="Hourglass Gallery" style="height:28px;object-fit:contain;object-position:left center;display:block;">' : '<div class="logo-text">Hourglass Gallery &middot; Lagos</div>'}
   </div>
-  <div class="gen-date">Generated ${e(today)}</div>
 </div>
 
 <h1>${e(title)}</h1>
