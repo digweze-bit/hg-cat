@@ -59,7 +59,7 @@ export default function Sales() {
           <button className="btn btn-primary" onClick={async () => {
           if (artworks.length === 0) {
             const [w, a] = await Promise.all([
-              fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', filters:[['availability','neq','Sold']], order:'title' }),
+              fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', order:'title' }),
               fetchAll('artists', { order:'name' }),
             ])
             setArtworks(w); setArtists(a)
@@ -366,7 +366,12 @@ function ClientList({ clients, invoices, onRefresh }) {
         <div className="card" style={{ padding:0 }}>
           {filtered.map(c => (
             <div key={c.id}
-              onClick={() => setSelected(selected?.id === c.id ? null : c)}
+              onClick={async () => {
+                if (selected?.id === c.id) { setSelected(null); return }
+                // Fetch full client record so all fields are available in detail panel
+                const { data } = await supabase.from('clients').select('*').eq('id', c.id).single()
+                setSelected(data || c)
+              }}
               style={{ padding:'12px 16px', borderBottom:'1px solid var(--line-soft)', cursor:'pointer',
                 background: selected?.id === c.id ? 'var(--surface-1,#f5f3f0)' : 'transparent',
                 display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -499,20 +504,24 @@ function ClientList({ clients, invoices, onRefresh }) {
                   <input className="form-input" value={form.phone_work||''} onChange={e=>setForm(f=>({...f,phone_work:e.target.value}))} />
                 </div>
               </div>
+              <div className="form-group">
+                <label className="form-label">Street address</label>
+                <input className="form-input" value={form.street||''} onChange={e=>setForm(f=>({...f,street:e.target.value,address:e.target.value}))} placeholder="House number, street name"/>
+              </div>
               <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Street address</label>
-                  <input className="form-input" value={form.street||''} onChange={e=>setForm(f=>({...f,street:e.target.value,address:e.target.value}))} />
-                </div>
                 <div className="form-group">
                   <label className="form-label">City</label>
                   <input className="form-input" value={form.city||''} onChange={e=>setForm(f=>({...f,city:e.target.value}))} />
                 </div>
+                <div className="form-group">
+                  <label className="form-label">State / Province</label>
+                  <input className="form-input" value={form.state||''} onChange={e=>setForm(f=>({...f,state:e.target.value}))} />
+                </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">State</label>
-                  <input className="form-input" value={form.state||''} onChange={e=>setForm(f=>({...f,state:e.target.value}))} />
+                  <label className="form-label">Postcode</label>
+                  <input className="form-input" value={form.postcode||''} onChange={e=>setForm(f=>({...f,postcode:e.target.value}))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Country</label>
@@ -633,7 +642,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
   const [form, setForm] = useState({
     client_id:'', currency:'NGN', discount_type:'none', discount_value:0,
     vat_rate:0, issue_date: new Date().toISOString().split('T')[0],
-    due_date:'', notes:'', terms:'Payment due within 30 days of invoice date.'
+    due_date:'', notes:'', terms:''
   })
   const [items, setItems] = useState([]) // { artwork_id, title, artist_name, year, medium, dimensions, unit_price, quantity:1, discount:0 }
   const [artworkSearch, setArtworkSearch] = useState('')
@@ -882,8 +891,10 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                       {clients.filter(c=>c.name.toLowerCase().includes(clientSearch.toLowerCase())).map(c=>(
                         <div key={c.id} style={{padding:'9px 12px', cursor:'pointer', fontSize:13, borderBottom:'1px solid var(--line-soft)'}}
                           onMouseDown={()=>{ setForm(f=>({...f,client_id:c.id})); setClientSearch('') }}>
-                          {c.name}
-                          {c.email && <span style={{fontSize:11, color:'var(--muted)', marginLeft:8}}>{c.email}</span>}
+                          <div>{c.name}</div>
+                          <div style={{fontSize:11, color:'var(--muted)'}}>
+                            {[c.company, c.email, c.city].filter(Boolean).join(' · ')}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -1020,11 +1031,21 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
     onSave(); onClose()
   }
 
-  function printInvoice() {
-    const w = window.open('', '_blank')
-    w.document.write(buildInvoiceHTML(inv, client, items, payments))
-    w.document.close()
-    setTimeout(() => w.print(), 500)
+  async function saveNotes(notes) {
+    await supabase.from('invoices').update({ notes, updated_at: new Date().toISOString() }).eq('id', inv.id)
+    onSave()
+  }
+
+  async function printInvoice() {
+    let logoB64 = null
+    try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_B64 } catch(_) {}
+    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'
+    document.body.appendChild(a); a.click(); document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
   }
 
   return (
@@ -1034,12 +1055,20 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
           <div>
             <div className="modal-title">{inv.invoice_number}</div>
             <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>
-              {client?.name} · {inv.issue_date} ·{' '}
-              <span style={{ color: STATUS_COLORS[inv.status] }}>{inv.status}</span>
+              {client?.name}
+              {' · '}<span style={{ color: STATUS_COLORS[inv.status], fontWeight:500 }}>{inv.status}</span>
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
             <button className="btn btn-outline btn-sm" onClick={printInvoice}>Print / PDF</button>
+            {inv.status === 'cancelled' && (
+              <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
+                onClick={async () => {
+                  if (!confirm('Permanently delete this invoice? This cannot be undone.')) return
+                  await supabase.from('invoices').delete().eq('id', inv.id)
+                  onSave(); onClose()
+                }}>Delete</button>
+            )}
             <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
           </div>
         </div>
@@ -1197,38 +1226,34 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
   )
 }
 
-function buildInvoiceHTML(inv, client, items, payments) {
-  const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
+async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
   const bal = Number(inv.balance_due||0)
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${inv.invoice_number}</title>
-<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,sans-serif;color:#1a1714;padding:48px;max-width:760px;margin:0 auto;font-size:13px;}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;}
-.logo{font-family:Georgia,serif;font-size:22px;}
-.inv-no{font-size:20px;font-family:Georgia,serif;}
-table{width:100%;border-collapse:collapse;}
-th{padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;border-bottom:2px solid #1a1714;}
-td{padding:10px 12px;border-bottom:1px solid #ece8e1;}
-.total-row td{font-weight:600;font-size:15px;border-top:2px solid #1a1714;border-bottom:none;}
-.footer{margin-top:48px;padding-top:20px;border-top:1px solid #ddd9d1;font-size:11px;color:#6b6760;}
-@media print{body{padding:24px;}}
-</style></head><body>
-<div class="header">
-  <div><div class="logo">Hourglass Gallery</div><div style="font-size:11px;color:#6b6760;margin-top:4px">298A Akin Olugbade Street, Victoria Island, Lagos</div></div>
-  <div style="text-align:right"><div class="inv-no">${inv.invoice_number}</div><div style="color:#6b6760;font-size:12px;margin-top:4px">Issued: ${inv.issue_date}${inv.due_date?'  ·  Due: '+inv.due_date:''}</div></div>
-</div>
-${client ? `<div style="margin-bottom:28px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;margin-bottom:5px">Invoice to</div><div style="font-weight:500">${client.name}</div>${client.email?'<div>'+client.email+'</div>':''}${client.phone?'<div>'+client.phone+'</div>':''}${client.city?'<div>'+client.city+(client.country?', '+client.country:'')+'</div>':''}</div>` : ''}
-<table>
-  <thead><tr><th>Artwork</th><th>Artist</th><th>Year</th><th style="text-align:right">Price (${inv.currency})</th></tr></thead>
-  <tbody>
-    ${items.map(it => `<tr><td><strong>${it.title}</strong>${it.medium?'<br><span style="font-size:11px;color:#6b6760">'+it.medium+'</span>':''}</td><td>${it.artist_name||'—'}</td><td>${it.year||'—'}</td><td style="text-align:right">${formatAmount(it.line_total,inv.currency)}</td></tr>`).join('')}
-    ${Number(inv.vat_amount)>0?`<tr><td colspan="3" style="text-align:right;color:#6b6760">VAT (${inv.vat_rate}%)</td><td style="text-align:right">${formatAmount(inv.vat_amount,inv.currency)}</td></tr>`:''}
-    <tr class="total-row"><td colspan="3" style="text-align:right">Total</td><td style="text-align:right">${formatAmount(inv.total,inv.currency)}</td></tr>
-    ${payments.length>0?`<tr><td colspan="3" style="text-align:right;color:#2d6a4f">Amount paid</td><td style="text-align:right;color:#2d6a4f">${formatAmount(inv.amount_paid,inv.currency)}</td></tr>`:''}
-    ${bal>0?`<tr><td colspan="3" style="text-align:right;font-weight:600">Balance due</td><td style="text-align:right;font-weight:600;color:#92600a">${formatAmount(bal,inv.currency)}</td></tr>`:''}
-  </tbody>
-</table>
-${inv.terms?`<div style="margin-top:24px;font-size:12px;color:#6b6760">${inv.terms}</div>`:''}
-${payments.length>0?`<div style="margin-top:24px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #ece8e1;font-size:12px"><span>${p.paid_at} · ${p.method}${p.reference?' · ref: '+p.reference:''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
-<div class="footer"><div>Hourglass Gallery · info@hourglassgallery.com</div><div style="margin-top:3px">Generated ${today}</div></div>
+  function e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+  const itemsWithImages = await Promise.all(items.map(async it => {
+    if (!it.image_url) return it
+    try {
+      const resp = await fetch(it.image_url)
+      const blob = await resp.blob()
+      const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob) })
+      return { ...it, _imgData: dataUrl }
+    } catch(_) { return it }
+  }))
+  const logoHtml = logoB64
+    ? `<img src='${logoB64}' alt='Hourglass Gallery' style='height:32px;object-fit:contain;object-position:left center;display:block;'>`
+    : `<div style="font-family:Georgia,serif;font-size:22px;color:#1a1714;">Hourglass Gallery</div>`
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${e(inv.invoice_number)}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,Helvetica,sans-serif;color:#1a1714;padding:48px;max-width:800px;margin:0 auto;font-size:13px;}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;padding-bottom:24px;border-bottom:2px solid #1a1714;}.inv-no{font-size:20px;font-family:Georgia,serif;}table{width:100%;border-collapse:collapse;margin-top:8px;}th{padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;border-bottom:2px solid #1a1714;}td{padding:10px 12px;border-bottom:1px solid #ece8e1;vertical-align:top;}.total-row td{font-weight:600;font-size:15px;border-top:2px solid #1a1714;border-bottom:none;padding-top:14px;}.footer{margin-top:48px;padding-top:20px;border-top:1px solid #ddd9d1;font-size:11px;color:#6b6760;}.art-img{width:52px;height:52px;object-fit:cover;border-radius:2px;display:block;}@media print{@page{margin:14mm 16mm;}body{padding:0;}header,footer{display:none!important;}}</style></head><body>
+<div class="header"><div>${logoHtml}<div style="font-size:11px;color:#6b6760;margin-top:6px">298A Akin Olugbade Street, Victoria Island, Lagos</div></div><div style="text-align:right"><div class="inv-no">${e(inv.invoice_number)}</div><div style="color:#6b6760;font-size:12px;margin-top:4px">Issued: ${e(inv.issue_date)}</div>${inv.status==='paid'?'<div style="margin-top:4px;font-size:11px;font-weight:600;color:#27ae60">PAID</div>':''}</div></div>
+${client?`<div style="margin-bottom:28px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;margin-bottom:5px">Invoice to</div><div style="font-weight:600;font-size:14px;">${e(client.name)}</div>${client.company?`<div style="font-size:12px;color:#6b6760">${e(client.company)}</div>`:''  }${client.street||client.address?`<div style="font-size:12px">${e(client.street||client.address)}</div>`:''  }${client.city?`<div style="font-size:12px">${e(client.city)}${client.state?', '+e(client.state):''}${client.country?', '+e(client.country):''}</div>`:''  }${client.email?`<div style="font-size:12px;color:#6b6760">${e(client.email)}</div>`:''  }${client.phone||client.phone_mobile?`<div style="font-size:12px;color:#6b6760">${e(client.phone||client.phone_mobile)}</div>`:''  }</div>`:''}
+<table><thead><tr><th style="width:64px"></th><th>Artwork</th><th>Artist</th><th>Year</th><th style="text-align:right">Amount (${e(inv.currency)})</th></tr></thead><tbody>
+${itemsWithImages.map(it=>`<tr><td>${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div style="width:52px;height:52px;background:#f0ece7;border-radius:2px;"></div>'}</td><td><strong>${e(it.title)}</strong>${it.medium?`<br><span style="font-size:11px;color:#6b6760">${e(it.medium)}</span>`:''  }${it.dimensions?`<br><span style="font-size:11px;color:#6b6760">${e(it.dimensions)}</span>`:''  }</td><td style="font-size:12px">${e(it.artist_name||'—')}</td><td style="font-size:12px">${e(it.year||'—')}</td><td style="text-align:right">${formatAmount(it.line_total,inv.currency)}</td></tr>`).join('')}
+${Number(inv.vat_amount)>0?`<tr><td colspan="4" style="text-align:right;color:#6b6760">VAT (${inv.vat_rate}%)</td><td style="text-align:right">${formatAmount(inv.vat_amount,inv.currency)}</td></tr>`:''}
+<tr class="total-row"><td colspan="4" style="text-align:right">Total</td><td style="text-align:right">${formatAmount(inv.total,inv.currency)}</td></tr>
+${payments.length>0?`<tr><td colspan="4" style="text-align:right;color:#2d6a4f">Amount paid</td><td style="text-align:right;color:#2d6a4f">${formatAmount(inv.amount_paid,inv.currency)}</td></tr>`:''}
+${bal>0?`<tr><td colspan="4" style="text-align:right;font-weight:600">Balance due</td><td style="text-align:right;font-weight:600;color:#92600a">${formatAmount(bal,inv.currency)}</td></tr>`:''}
+</tbody></table>
+${inv.notes?`<div style="margin-top:24px;font-size:12px;color:#6b6760;padding:12px 14px;background:#f8f7f5;border-radius:3px;">${e(inv.notes)}</div>`:''}
+${payments.length>0?`<div style="margin-top:28px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ece8e1;font-size:12px"><span>${e(p.paid_at)} · ${e(p.method)}${p.reference?' · ref: '+e(p.reference):''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
+<div class="footer"><div>Hourglass Gallery · info@hourglassgallery.com · +234 (0)1 461 0090</div></div>
 </body></html>`
 }
