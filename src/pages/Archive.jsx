@@ -927,10 +927,17 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     const artwork = source === 'existing' ? selectedArtwork : null
     const incEntries = evidencePool.filter(e => included.has(e.id))
     const html = buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC, logo: LOGO_B64 })
-    const w = window.open('', '_blank', 'width=1000,height=750')
-    w.document.write(html)
-    w.document.close()
-    setTimeout(() => w.print(), 600)
+    // Use blob URL to avoid popup blocker
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
   }
 
   const RELEVANCE_LABEL = { direct:'Linked', key_ref:'Key ref', keyword:'Title match', background:'Background' }
