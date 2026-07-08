@@ -779,6 +779,8 @@ async function resizeImage(file, maxPx = 1200) {
 // ══════════════════════════════════════════════════════════════
 function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance, activeArtistId, onClose, onLoadArtist }) {
   const [step, setStep]           = useState(1) // 1=source, 2=artwork details, 3=select evidence, 4=preview
+  const [generating, setGenerating] = useState(false)
+  const [genError, setGenError]     = useState(null)
   const [source, setSource]       = useState('') // 'existing' | 'fresh'
   const [selectedArtistId, setSelectedArtistId] = useState(activeArtistId || '')
   const [selectedArtworkId, setSelectedArtworkId] = useState('')
@@ -923,52 +925,61 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
   }
 
   async function generateAndPrint() {
-    const artist = source === 'existing' ? artistMap[selectedArtwork?.artist_id] : { name: details.artistName }
-    const artwork = source === 'existing' ? selectedArtwork : null
-    const incEntries = evidencePool.filter(e => included.has(e.id))
+    setGenerating(true)
+    setGenError(null)
+    try {
+      const artist = source === 'existing' ? artistMap[selectedArtwork?.artist_id] : { name: details.artistName }
+      const artwork = source === 'existing' ? selectedArtwork : null
+      const incEntries = evidencePool.filter(e => included.has(e.id))
 
-    // Convert artwork image to base64 so it renders inside blob document
-    let imageDataUrl = null
-    const imgSrc = details.imageUrl || artwork?.image_url
-    if (imgSrc) {
-      try {
-        const resp = await fetch(imgSrc)
-        const blob2 = await resp.blob()
-        imageDataUrl = await new Promise(res => {
-          const r = new FileReader()
-          r.onload = () => res(r.result)
-          r.readAsDataURL(blob2)
-        })
-      } catch(_) { imageDataUrl = null }
+      // Convert artwork image to base64
+      let imageDataUrl = null
+      const imgSrc = details.imageUrl || artwork?.image_url
+      if (imgSrc) {
+        try {
+          const resp = await fetch(imgSrc)
+          const blob2 = await resp.blob()
+          imageDataUrl = await new Promise(res => {
+            const r = new FileReader()
+            r.onload = () => res(r.result)
+            r.readAsDataURL(blob2)
+          })
+        } catch(imgErr) { console.warn('Image fetch failed:', imgErr) }
+      }
+
+      // Convert archive evidence images
+      const entriesWithImages = await Promise.all(incEntries.map(async ev => {
+        if (!ev.image_url) return ev
+        try {
+          const resp = await fetch(ev.image_url)
+          const blob2 = await resp.blob()
+          const dataUrl = await new Promise(res => {
+            const r = new FileReader()
+            r.onload = () => res(r.result)
+            r.readAsDataURL(blob2)
+          })
+          return { ...ev, image_url: dataUrl }
+        } catch(_) { return ev }
+      }))
+
+      const detailsWithImage = { ...details, imageUrl: imageDataUrl || details.imageUrl }
+      const html = buildProvDocHTML({ details: detailsWithImage, artist, artwork, provChain, incEntries: entriesWithImages, provScore, scC, logo: LOGO_B64 })
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 30000)
+    } catch(err) {
+      console.error('Generate failed:', err)
+      setGenError(err.message)
+    } finally {
+      setGenerating(false)
     }
-
-    // Also convert archive evidence images
-    const entriesWithImages = await Promise.all(incEntries.map(async ev => {
-      if (!ev.image_url) return ev
-      try {
-        const resp = await fetch(ev.image_url)
-        const blob2 = await resp.blob()
-        const dataUrl = await new Promise(res => {
-          const r = new FileReader()
-          r.onload = () => res(r.result)
-          r.readAsDataURL(blob2)
-        })
-        return { ...ev, image_url: dataUrl }
-      } catch(_) { return ev }
-    }))
-
-    const detailsWithImage = { ...details, imageUrl: imageDataUrl || details.imageUrl }
-    const html = buildProvDocHTML({ details: detailsWithImage, artist, artwork, provChain, incEntries: entriesWithImages, provScore, scC, logo: LOGO_B64 })
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 30000)
   }
 
   const RELEVANCE_LABEL = { direct:'Linked', key_ref:'Key ref', keyword:'Title match', background:'Background' }
@@ -1209,8 +1220,14 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       <div style={{ fontSize:13, color:'var(--muted)', lineHeight:1.7 }}>
         The document will open in a new window, formatted for A4 printing. Use your browser's print dialog to save as PDF or print directly. The document includes the artwork record, provenance chain with completeness analysis, and all selected archive evidence.
       </div>
-      <button className="btn btn-gold" style={{ padding:'12px', justifyContent:'center', fontSize:14 }} onClick={generateAndPrint}>
-        📋 Generate & print provenance document
+      {genError && (
+        <div style={{ padding:'10px 14px', background:'#fef2f0', border:'1px solid #f5c2bb', borderRadius:3, fontSize:12, color:'#c0392b' }}>
+          ❌ Error: {genError}
+        </div>
+      )}
+      <button className="btn btn-gold" style={{ padding:'12px', justifyContent:'center', fontSize:14 }}
+        onClick={generateAndPrint} disabled={generating}>
+        {generating ? '⏳ Generating document…' : '📋 Generate & print provenance document'}
       </button>
     </div>
   )
