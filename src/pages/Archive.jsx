@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
+import { LOGO_B64 } from '../lib/assets'
 import { useParams, useNavigate } from 'react-router-dom'
 
 // ── CONSTANTS ────────────────────────────────────────────────
@@ -923,7 +924,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     const artist = source === 'existing' ? artistMap[selectedArtwork?.artist_id] : { name: details.artistName }
     const artwork = source === 'existing' ? selectedArtwork : null
     const incEntries = evidencePool.filter(e => included.has(e.id))
-    const html = buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC })
+    const html = buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC, logo: LOGO_B64 })
     const w = window.open('', '_blank', 'width=1000,height=750')
     w.document.write(html)
     w.document.close()
@@ -1246,7 +1247,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
 }
 
 // ── PROVENANCE DOCUMENT HTML ──────────────────────────────────
-function buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC }) {
+function buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC, logo }) {
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
   const title = details.reportTitle || `Provenance Report — ${details.title}`
   const gapCount = provChain.filter(p=>p.is_gap).length
@@ -1288,13 +1289,13 @@ h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-app
 .ev-meta{font-family:-apple-system,sans-serif;font-size:11px;color:#6b6760;}
 .ev-desc{font-family:-apple-system,sans-serif;font-size:12px;line-height:1.65;margin-top:6px;color:#3d3a36;}
 .ev-img{max-width:200px;margin-top:8px;border:1px solid #ddd9d1;border-radius:2px;}
-.footer{margin-top:40px;padding-top:14px;border-top:1px solid #ddd9d1;font-family:-apple-system,sans-serif;font-size:10px;color:#aaa;text-align:center;line-height:1.7;}
+.footer{margin-top:40px;padding-top:14px;border-top:1px solid #ddd9d1;font-family:-apple-system,sans-serif;font-size:8.5px;color:#aaa;text-align:center;line-height:1.7;}
 @media print{body{padding:24px 28px;}}
 </style></head><body>
 
 <div class="header">
   <div>
-    <div class="logo-text">Hourglass Gallery · Lagos</div>
+    ${logo ? `<img src="${logo}" alt="Hourglass Gallery" style="height:28px;object-fit:contain;object-position:left center;display:block;">` : `<div class="logo-text">Hourglass Gallery · Lagos</div>`}
   </div>
   <div class="gen-date">Generated ${e(today)}</div>
 </div>
@@ -1326,11 +1327,7 @@ h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-app
 <div class="section-head">Provenance</div>
 ${details.provNotes ? `<div class="prov-notes">${e(details.provNotes)}</div>` : ''}
 ${provChain.length ? `
-  ${provScore !== null ? `<div class="score-bar">
-    <span style="font-size:11px;color:#6b6760">Documentation completeness</span>
-    <div class="score-track"><div class="score-fill" style="width:${provScore}%;background:${scC}"></div></div>
-    <span style="font-size:12px;font-weight:600;color:${scC}">${provScore}%</span>
-  </div>` : ''}
+
   ${provChain.map(p => p.is_gap
     ? `<div class="prov-gap"><div class="gap-label">⚠ Gap in record · ${e(p.date_from||'')}${p.date_to?' – '+e(p.date_to):''}</div><div style="font-size:12px;color:#8B3A2A">${e(p.description||'No documentation available for this period')}</div></div>`
     : `<div class="prov-entry"><div class="prov-date">${e(p.date_from||'')}${p.date_to?' – '+e(p.date_to):' – present'} · ${e(p.entry_type||'')} · <span style="color:${p.verified?'#2d6a4f':'#92600a'}">${p.verified?'VERIFIED':'UNVERIFIED'}</span></div><div class="prov-owner">${e(p.owner||'Unknown')}</div><div class="prov-meta">${e(p.location||'')}${p.description?' — '+e(p.description.slice(0,120))+(p.description.length>120?'…':''):''}</div>${p.docs?.length?`<div class="prov-docs">Documents: ${p.docs.map(d=>e(d)).join(' · ')}</div>`:''}</div>`
