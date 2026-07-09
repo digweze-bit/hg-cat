@@ -26,7 +26,17 @@ export default function Sales() {
     const [[c, inv, bks], r] = await Promise.all([
       Promise.all([
         fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name' }),
-        supabase.from('invoices').select('*, clients(name), invoice_items(*)').order('created_at', { ascending: false }).limit(200).then(r => r.data || []),
+        (async () => {
+        const PAGE = 500; let all = [], offset = 0
+        while (true) {
+          const { data } = await supabase.from('invoices').select('*, clients(name), invoice_items(id,delivered)').order('created_at', { ascending: false }).range(offset, offset + PAGE - 1)
+          if (!data || data.length === 0) break
+          all = all.concat(data)
+          if (data.length < PAGE) break
+          offset += PAGE
+        }
+        return all
+      })(),
         supabase.from('books').select('id,title,author,price,stock_count,cover_url').eq('visible',true).order('title').then(r => r.data || []),
       ]),
       fetchLiveRates(),

@@ -27,12 +27,22 @@ export async function fetchAll(table, query = {}) {
   const cacheKey = `${table}:${select}:${JSON.stringify(filters)}:${order}:${ascending}`
 
   async function fetchFresh() {
-    let q = supabase.from(table).select(select).range(0, 4999)
-    filters.forEach(([col, op, val]) => { q = q.filter(col, op, val) })
-    q = q.order(order, { ascending })
-    const { data, error } = await q
-    if (error) throw error
-    return data || []
+    // Paginate in batches of 1000 to get all rows regardless of server limit
+    const PAGE = 1000
+    let allData = []
+    let offset = 0
+    while (true) {
+      let q = supabase.from(table).select(select).range(offset, offset + PAGE - 1)
+      filters.forEach(([col, op, val]) => { q = q.filter(col, op, val) })
+      q = q.order(order, { ascending })
+      const { data, error } = await q
+      if (error) throw error
+      if (!data || data.length === 0) break
+      allData = allData.concat(data)
+      if (data.length < PAGE) break  // last page
+      offset += PAGE
+    }
+    return allData
   }
 
   if (!cache) return fetchFresh()
