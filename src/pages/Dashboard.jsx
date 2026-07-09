@@ -13,21 +13,22 @@ export default function Dashboard() {
       // Two parallel calls instead of seven
       const [
         { data: invoices },
-        [artists, artworks, clients],
+        [artists, artworks, available, sold, clients],
       ] = await Promise.all([
         supabase.from('invoices').select('*, clients(name)').order('created_at', { ascending:false }).limit(5),
         Promise.all([
           supabase.from('artists').select('id', { count:'exact', head:true }),
-          supabase.from('artworks').select('id,availability', { count:'exact' }).range(0,4999),
+          supabase.from('artworks').select('id', { count:'exact', head:true }),
+          supabase.from('artworks').select('id', { count:'exact', head:true }).eq('availability','Available'),
+          supabase.from('artworks').select('id', { count:'exact', head:true }).eq('availability','Sold'),
           supabase.from('clients').select('id', { count:'exact', head:true }),
         ])
       ])
-      const artworkData = artworks.data || []
       setStats({
         totalArtists:   artists.count || 0,
-        totalArtworks:  artworkData.length,
-        availableWorks: artworkData.filter(w => w.availability === 'Available').length,
-        soldWorks:      artworkData.filter(w => w.availability === 'Sold').length,
+        totalArtworks:  artworks.count || 0,
+        availableWorks: available.count || 0,
+        soldWorks:      sold.count || 0,
         totalClients:   clients.count || 0,
         pendingInvoices: (invoices||[]).filter(i => ['sent','partial'].includes(i.status)).length,
       })
