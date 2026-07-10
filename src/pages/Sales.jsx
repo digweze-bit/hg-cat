@@ -249,44 +249,108 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
 }
 
 function InvoiceList({ invoices, onOpen, onRefresh }) {
-  const [search, setSearch] = useState('')
+  const [search, setSearch]           = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [sortKey, setSortKey]         = useState('date_desc')
 
-  const filtered = invoices.filter(i => {
-    if (statusFilter && i.status !== statusFilter) return false
-    if (search) {
-      const q = search.toLowerCase()
-      return i.invoice_number?.toLowerCase().includes(q) || i.clients?.name?.toLowerCase().includes(q)
+  const SORTS = [
+    { key:'date_desc',    label:'Date ↓' },
+    { key:'date_asc',     label:'Date ↑' },
+    { key:'amount_desc',  label:'Amount ↓' },
+    { key:'amount_asc',   label:'Amount ↑' },
+    { key:'balance_desc', label:'Balance ↓' },
+    { key:'client_az',    label:'Client A–Z' },
+    { key:'status',       label:'Status' },
+  ]
+
+  const filtered = useMemo(() => {
+    let list = invoices.filter(i => {
+      if (statusFilter && i.status !== statusFilter) return false
+      if (search) {
+        const q = search.toLowerCase()
+        return i.invoice_number?.toLowerCase().includes(q) ||
+          i.clients?.name?.toLowerCase().includes(q)
+      }
+      return true
+    })
+
+    switch (sortKey) {
+      case 'date_desc':    list = [...list].sort((a,b) => (b.issue_date||'').localeCompare(a.issue_date||'')); break
+      case 'date_asc':     list = [...list].sort((a,b) => (a.issue_date||'').localeCompare(b.issue_date||'')); break
+      case 'amount_desc':  list = [...list].sort((a,b) => (b.total_ngn||b.total||0) - (a.total_ngn||a.total||0)); break
+      case 'amount_asc':   list = [...list].sort((a,b) => (a.total_ngn||a.total||0) - (b.total_ngn||b.total||0)); break
+      case 'balance_desc': list = [...list].sort((a,b) => (b.balance_due||0) - (a.balance_due||0)); break
+      case 'client_az':    list = [...list].sort((a,b) => (a.clients?.name||'').localeCompare(b.clients?.name||'')); break
+      case 'status':       list = [...list].sort((a,b) => (a.status||'').localeCompare(b.status||'')); break
     }
-    return true
-  })
+    return list
+  }, [invoices, search, statusFilter, sortKey])
+
+  // Summary stats for filtered set
+  const stats = useMemo(() => ({
+    total:   filtered.reduce((s,i) => s + (i.total_ngn||i.total||0), 0),
+    paid:    filtered.reduce((s,i) => s + (i.amount_paid||0), 0),
+    balance: filtered.reduce((s,i) => s + (i.balance_due||0), 0),
+    count:   filtered.length,
+  }), [filtered])
 
   return (
     <div>
-      <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+      <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
         <input className="form-input" style={{ width:220 }} placeholder="Search invoices…" value={search} onChange={e=>setSearch(e.target.value)} />
-        <select className="form-select" style={{ width:160 }} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
+        <select className="form-select" style={{ width:140 }} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
           <option value="">All status</option>
           {['draft','sent','partial','paid','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+        <select className="form-select" style={{ width:140 }} value={sortKey} onChange={e=>setSortKey(e.target.value)}>
+          {SORTS.map(s => <option key={s.key} value={s.key}>{s.key === sortKey ? '✓ ' : ''}{s.label}</option>)}
+        </select>
+        <span style={{ fontSize:12, color:'var(--muted)', marginLeft:4 }}>
+          {stats.count} invoices · ₦{Math.round(stats.total).toLocaleString()} total
+          {stats.balance > 0 && <span style={{ color:'var(--amber)' }}> · ₦{Math.round(stats.balance).toLocaleString()} outstanding</span>}
+        </span>
       </div>
       <div className="card">
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Invoice</th><th>Client</th><th>Currency</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Date</th><th></th></tr>
+              <tr>
+                <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='date_desc'?'date_asc':'date_desc')}>
+                  Date {sortKey==='date_desc'?'↓':sortKey==='date_asc'?'↑':''}
+                </th>
+                <th>Invoice</th>
+                <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='client_az'?'date_desc':'client_az')}>
+                  Client {sortKey==='client_az'?'↑':''}
+                </th>
+                <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='amount_desc'?'amount_asc':'amount_desc')}>
+                  Total {sortKey==='amount_desc'?'↓':sortKey==='amount_asc'?'↑':''}
+                </th>
+                <th>Paid</th>
+                <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='balance_desc'?'date_desc':'balance_desc')}>
+                  Balance {sortKey==='balance_desc'?'↓':''}
+                </th>
+                <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='status'?'date_desc':'status')}>
+                  Status {sortKey==='status'?'↑':''}
+                </th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
               {filtered.map(inv => (
                 <tr key={inv.id} style={{ cursor:'pointer' }} onClick={() => requestAnimationFrame(() => onOpen(inv))}>
-                  <td style={{ fontFamily:'var(--font-serif)', fontWeight:500 }}>{inv.invoice_number}</td>
+                  <td style={{ fontSize:12, color:'var(--muted)', whiteSpace:'nowrap' }}>{inv.issue_date}</td>
+                  <td style={{ fontFamily:'var(--font-serif)', fontWeight:500, whiteSpace:'nowrap' }}>
+                    {inv.invoice_number}
+                    {inv.status==='paid' && inv.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered) &&
+                      <span title="Pending collection" style={{ marginLeft:6, color:'var(--amber)' }}>●</span>}
+                  </td>
                   <td>{inv.clients?.name || '—'}</td>
-                  <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.currency}</td>
-                  <td>{formatAmount(inv.total, inv.currency)}</td>
-                  <td style={{ color:'var(--green)' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>
-                  <td style={{ color: inv.balance_due > 0 ? 'var(--amber)' : 'var(--green)' }}>{formatAmount(inv.balance_due || 0, inv.currency)}</td>
+                  <td style={{ fontVariantNumeric:'tabular-nums' }}>{formatAmount(inv.total, inv.currency)}</td>
+                  <td style={{ color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>
+                  <td style={{ color: inv.balance_due > 0 ? 'var(--amber)' : 'var(--muted)', fontVariantNumeric:'tabular-nums' }}>
+                    {inv.balance_due > 0 ? formatAmount(inv.balance_due, inv.currency) : '—'}
+                  </td>
                   <td><span className="badge" style={{ background: STATUS_COLORS[inv.status]+'22', color: STATUS_COLORS[inv.status] }}>{inv.status}</span></td>
-                  <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.issue_date}</td>
                   <td><button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();onOpen(inv)}}>Open</button></td>
                 </tr>
               ))}
