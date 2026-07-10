@@ -308,7 +308,7 @@ export default function Artworks() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [page, setPage] = useState(0)
-  const PER_PAGE = 60
+  const PER_PAGE = 30
 
   async function load() {
     const [a, w] = await Promise.all([
@@ -552,7 +552,7 @@ export default function Artworks() {
                 <tr key={w.id}>
                   <td>
                     {w.image_url
-                      ? <img src={w.image_url} alt="" style={{ width:44, height:44, objectFit:'cover', objectPosition: w.image_position||'center', borderRadius:2, border:'1px solid var(--line)' }} />
+                      ? <img src={w.image_url} alt="" loading="lazy" decoding="async" style={{ width:44, height:44, objectFit:'cover', objectPosition: w.image_position||'center', borderRadius:2, border:'1px solid var(--line)' }} />
                       : <div style={{ width:44, height:44, background:'var(--parchment-2)', borderRadius:2, border:'1px solid var(--line)' }} />
                     }
                   </td>

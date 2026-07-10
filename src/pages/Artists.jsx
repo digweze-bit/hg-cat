@@ -172,7 +172,7 @@ export default function Artists() {
                     style={{ cursor:'pointer', background: selected?.id === a.id ? 'var(--surface-1,#f5f3f0)' : 'transparent' }}>
                     <td>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        {a.portrait_url && <img src={a.portrait_url} alt="" style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover' }} />}
+                        {a.portrait_url && <img src={a.portrait_url} alt="" loading="lazy" decoding="async" style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover' }} />}
                         <div>
                           <div style={{ fontWeight:500 }}>{a.name}</div>
                           {a.born && <div style={{ fontSize:11, color:'var(--muted)' }}>{a.born}{a.died ? '–'+a.died : ''}</div>}
@@ -245,7 +245,7 @@ export default function Artists() {
                 : artworks.filter(w => w.availability === 'Available').map(w => (
                   <div key={w.id} style={{ display:'flex', gap:10, padding:'10px 12px', borderBottom:'1px solid var(--line-soft)', alignItems:'center' }}>
                     {w.image_url
-                      ? <img src={w.image_url} alt="" style={{ width:44, height:44, objectFit:'cover', borderRadius:2, flexShrink:0 }} />
+                      ? <img src={w.image_url} alt="" loading="lazy" decoding="async" style={{ width:44, height:44, objectFit:'cover', borderRadius:2, flexShrink:0 }} />
                       : <div style={{ width:44, height:44, background:'var(--surface-1,#f0ece7)', borderRadius:2, flexShrink:0 }} />
                     }
                     <div style={{ flex:1, minWidth:0 }}>
