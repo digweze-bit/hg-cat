@@ -193,9 +193,9 @@ export default function ArtworkPage() {
 
               {/* Price + availability */}
               <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:24, paddingBottom:24, borderBottom:'1px solid #e8e3db' }}>
-                {artwork.price && (
+                {(artwork.price || artwork.retail_price) && (
                   <div style={{ fontFamily:"'Cormorant Garamond',Georgia,serif", fontSize:26, fontWeight:500, color:'#1a1714' }}>
-                    {artwork.price}
+                    {artwork.price || `₦${Number(artwork.retail_price).toLocaleString()}`}
                   </div>
                 )}
                 <span style={{

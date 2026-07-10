@@ -286,7 +286,9 @@ export default function Artworks() {
                       : <span>Gallery</span>
                     }
                   </td>
-                  <td style={{ fontSize:12, color:'var(--muted)' }}>{w.price || '—'}</td>
+                  <td style={{ fontSize:12, color:'var(--muted)' }}>
+                    {w.price || (w.retail_price ? `₦${Number(w.retail_price).toLocaleString()}` : '—')}
+                  </td>
                   <td>
                     <span className={`badge ${w.availability==='Available'?'badge-green':w.availability==='Sold'?'badge-red':'badge-amber'}`}>
                       {w.availability}
