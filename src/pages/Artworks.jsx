@@ -313,7 +313,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -398,7 +398,7 @@ export default function Artworks() {
         valuation:         form.valuation ? Number(form.valuation) : null,
         category:          form.category || null,
         image_url:         form.image_url || null,
-        description:       form.description || null,
+        writeup:           form.writeup || null,
         provenance:        form.provenance || null,
         exhibition_history:form.exhibition_history || null,
         tags:              form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
@@ -445,6 +445,7 @@ export default function Artworks() {
   function openEdit(artwork) {
     setForm({
       ...EMPTY, ...artwork,
+      writeup: artwork.writeup || '',
       tags: Array.isArray(artwork.tags) ? artwork.tags.join(', ') : '',
       ownership: artwork.ownership || 'gallery',
       consignment_price: artwork.consignment_price || '',

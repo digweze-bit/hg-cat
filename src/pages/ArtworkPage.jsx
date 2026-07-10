@@ -209,17 +209,9 @@ export default function ArtworkPage() {
                 </span>
               </div>
 
-              {/* Description */}
-              {artwork.writeup && (
-                <div style={{ marginBottom:32 }}>
-                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'.1em', textTransform:'uppercase', color:'#9a9490', marginBottom:10 }}>About this work</div>
-                  <div style={{ fontSize:14, color:'#3d3a36', lineHeight:1.75, whiteSpace:'pre-wrap' }}>{artwork.writeup}</div>
-                </div>
-              )}
-
               {/* Artist bio */}
               {artist?.bio && (
-                <div style={{ background:'#f7f4ef', borderRadius:3, padding:'20px 22px' }}>
+                <div style={{ background:'#f7f4ef', borderRadius:3, padding:'20px 22px', marginBottom:24 }}>
                   <div style={{ fontSize:11, fontWeight:600, letterSpacing:'.1em', textTransform:'uppercase', color:'#9a9490', marginBottom:10 }}>About the artist</div>
                   {artist.portrait_url && (
                     <img src={artist.portrait_url} alt={artist.name}
@@ -227,6 +219,14 @@ export default function ArtworkPage() {
                   )}
                   <div style={{ fontSize:13, color:'#3d3a36', lineHeight:1.75 }}>{artist.bio}</div>
                   <div style={{ clear:'both' }}/>
+                </div>
+              )}
+
+              {/* Writeup — below artist bio */}
+              {artwork.writeup && (
+                <div style={{ marginBottom:32 }}>
+                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'.1em', textTransform:'uppercase', color:'#9a9490', marginBottom:10 }}>About this work</div>
+                  <div style={{ fontSize:14, color:'#3d3a36', lineHeight:1.75, whiteSpace:'pre-wrap' }}>{artwork.writeup}</div>
                 </div>
               )}
             </div>
