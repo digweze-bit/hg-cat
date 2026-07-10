@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
+import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
 
 const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS']
@@ -7,6 +8,148 @@ const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixe
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
 const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
+
+// ── PRICE FIELDS COMPONENT ────────────────────────────────────
+function PriceFields({ form, setForm }) {
+  const [rates, setRates]           = useState(null)
+  const [rateLoading, setRateLoading] = useState(false)
+  const [inputCurrency, setInputCurrency] = useState('NGN')
+  const [rateOverride, setRateOverride]   = useState('')  // manual rate: 1 USD = X NGN
+  const [showConverter, setShowConverter] = useState(false)
+
+  const USD_CURRENCIES = ['NGN', 'USD', 'GBP', 'EUR']
+
+  async function loadRates() {
+    setRateLoading(true)
+    try {
+      const r = await fetchLiveRates()
+      setRates(r)
+    } catch(_) {}
+    setRateLoading(false)
+  }
+
+  // Convert input amount to NGN
+  function toNGN(amount, currency) {
+    if (!amount) return null
+    const n = Number(String(amount).replace(/,/g, ''))
+    if (isNaN(n)) return null
+    if (currency === 'NGN') return n
+    // Use manual override first, then live rate, then fallback
+    const rate = rateOverride ? Number(rateOverride) : (rates?.[currency] || null)
+    if (!rate) return null
+    return Math.round(n * rate)
+  }
+
+  function handlePriceChange(val, field) {
+    const ngnVal = toNGN(val, inputCurrency)
+    const updates = { [field]: ngnVal || val }  // store as NGN
+    if (field === 'retail_price' && ngnVal) {
+      updates.price = '₦' + ngnVal.toLocaleString()
+    }
+    setForm(f => ({ ...f, ...updates }))
+  }
+
+  // Display value in selected currency
+  function displayVal(ngnAmount) {
+    if (!ngnAmount) return ''
+    const n = Number(ngnAmount)
+    if (inputCurrency === 'NGN') return n
+    const rate = rateOverride ? Number(rateOverride) : (rates?.[inputCurrency] || null)
+    if (!rate) return n  // fallback to NGN
+    return Math.round(n / rate)
+  }
+
+  const currencySymbol = { NGN:'₦', USD:'$', GBP:'£', EUR:'€' }[inputCurrency] || '₦'
+
+  return (
+    <div>
+      {/* Currency selector row */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+        <span style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', fontWeight:600 }}>Pricing currency</span>
+        <div style={{ display:'flex', gap:4 }}>
+          {USD_CURRENCIES.map(c => (
+            <button key={c} type="button"
+              onClick={() => { setInputCurrency(c); if (c !== 'NGN' && !rates) loadRates() }}
+              style={{ padding:'3px 10px', fontSize:11, fontWeight:600, borderRadius:3, border:'1px solid',
+                background: inputCurrency === c ? 'var(--ink)' : 'transparent',
+                color: inputCurrency === c ? '#fff' : 'var(--muted)',
+                borderColor: inputCurrency === c ? 'var(--ink)' : 'var(--line-soft)',
+                cursor:'pointer' }}>
+              {c}
+            </button>
+          ))}
+        </div>
+        {inputCurrency !== 'NGN' && (
+          <button type="button" onClick={() => setShowConverter(!showConverter)}
+            style={{ fontSize:11, color:'var(--muted)', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
+            {showConverter ? 'hide rate' : 'set rate'}
+          </button>
+        )}
+      </div>
+
+      {/* Rate info / override */}
+      {inputCurrency !== 'NGN' && showConverter && (
+        <div style={{ background:'var(--surface-1,#f8f7f5)', borderRadius:4, padding:'10px 12px', marginBottom:10, fontSize:12 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+            <span style={{ color:'var(--muted)' }}>1 {inputCurrency} =</span>
+            <input className="form-input" type="number" value={rateOverride}
+              onChange={e => setRateOverride(e.target.value)}
+              placeholder={rates?.[inputCurrency] ? `${Math.round(rates[inputCurrency]).toLocaleString()} (live)` : 'enter rate'}
+              style={{ width:140, padding:'4px 8px', fontSize:12 }} />
+            <span style={{ color:'var(--muted)' }}>NGN</span>
+            <button type="button" onClick={loadRates} disabled={rateLoading}
+              style={{ fontSize:11, padding:'3px 8px', borderRadius:3, border:'1px solid var(--line-soft)', background:'none', cursor:'pointer', color:'var(--muted)' }}>
+              {rateLoading ? '…' : '↻ live rate'}
+            </button>
+          </div>
+          {rates?.[inputCurrency] && !rateOverride && (
+            <div style={{ color:'var(--muted)', fontSize:11 }}>
+              Live rate: 1 {inputCurrency} = ₦{Math.round(rates[inputCurrency]).toLocaleString()}
+              {' · '}₦{Number(form.retail_price||0).toLocaleString()} = {inputCurrency} {displayVal(form.retail_price)?.toLocaleString()}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Price inputs */}
+      <div className="form-row">
+        <div className="form-group">
+          <label className="form-label">Retail price ({currencySymbol})</label>
+          <input className="form-input" type="number"
+            value={displayVal(form.retail_price) || ''}
+            onChange={e => handlePriceChange(e.target.value, 'retail_price')}
+            placeholder="0" />
+          {inputCurrency !== 'NGN' && form.retail_price && (
+            <div style={{ fontSize:10, color:'var(--muted)', marginTop:3 }}>= ₦{Number(form.retail_price).toLocaleString()}</div>
+          )}
+        </div>
+        <div className="form-group">
+          <label className="form-label">Inventory / cost price ({currencySymbol})</label>
+          <input className="form-input" type="number"
+            value={displayVal(form.inventory_price) || ''}
+            onChange={e => handlePriceChange(e.target.value, 'inventory_price')}
+            placeholder="0" />
+        </div>
+      </div>
+      <div className="form-row">
+        <div className="form-group">
+          <label className="form-label">Valuation ({currencySymbol})</label>
+          <input className="form-input" type="number"
+            value={displayVal(form.valuation) || ''}
+            onChange={e => handlePriceChange(e.target.value, 'valuation')}
+            placeholder="0" />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Price display (public)</label>
+          <input className="form-input" value={form.price||''}
+            onChange={e => setForm(f => ({...f, price:e.target.value}))}
+            placeholder="e.g. ₦2,500,000 or POA" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 export default function Artworks() {
   const [artists, setArtists] = useState([])
@@ -371,26 +514,7 @@ export default function Artworks() {
                   <label className="form-label">Dimensions</label>
                   <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} />
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Retail price (₦)</label>
-                    <input className="form-input" type="number" value={form.retail_price||''} onChange={e=>setForm(f=>({...f,retail_price:e.target.value, price:e.target.value ? '₦'+Number(e.target.value).toLocaleString() : ''}))} placeholder="0" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Inventory / cost price (₦)</label>
-                    <input className="form-input" type="number" value={form.inventory_price||''} onChange={e=>setForm(f=>({...f,inventory_price:e.target.value}))} placeholder="0" />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Valuation (₦)</label>
-                    <input className="form-input" type="number" value={form.valuation||''} onChange={e=>setForm(f=>({...f,valuation:e.target.value}))} placeholder="0" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Price display (public)</label>
-                    <input className="form-input" value={form.price||''} onChange={e=>setForm(f=>({...f,price:e.target.value}))} placeholder="e.g. ₦2,500,000 or POA" />
-                  </div>
-                </div>
+                <PriceFields form={form} setForm={setForm} />
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Location</label>

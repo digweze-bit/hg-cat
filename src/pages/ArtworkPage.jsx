@@ -7,6 +7,8 @@ export default function ArtworkPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [artwork, setArtwork] = useState(null)
+  const [displayCurrency, setDisplayCurrency] = useState('NGN')
+  const [usdRate, setUsdRate] = useState(null)
   const [artist, setArtist]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [qrDataUrl, setQrDataUrl] = useState(null)
