@@ -300,7 +300,7 @@ export default function Artworks() {
   const [loading, setLoading] = useState(true)
   const [displayCurrency, setDisplayCurrency] = useState('NGN')
   const [usdRate, setUsdRate]       = useState(null)
-  const [filters, setFilters] = useState({ artist:'', availability:'', location:'', search:'', visible:'', ownership:'' })
+  const [filters, setFilters] = useState({ artist:'', availability:'Available', location:'', search:'', visible:'', ownership:'' })
   const [sortBy, setSortBy] = useState('recent') // 'recent' | 'az' | 'price_desc' | 'price_asc' | 'location'
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(EMPTY)
