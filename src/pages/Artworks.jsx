@@ -11,101 +11,134 @@ const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensi
 
 // ── PRICE FIELDS COMPONENT ────────────────────────────────────
 function PriceFields({ form, setForm }) {
-  const [rates, setRates]           = useState(null)
+  const [rates, setRates]             = useState(null)
   const [rateLoading, setRateLoading] = useState(false)
   const [inputCurrency, setInputCurrency] = useState('NGN')
-  const [rateOverride, setRateOverride]   = useState('')  // manual rate: 1 USD = X NGN
-  const [showConverter, setShowConverter] = useState(false)
+  const [rateInput, setRateInput]     = useState('')   // what user types
+  const [confirmedRate, setConfirmedRate] = useState(null) // set after clicking Set
+  const [rateMode, setRateMode]       = useState(null) // null | 'live' | 'fixed'
 
-  const USD_CURRENCIES = ['NGN', 'USD', 'GBP', 'EUR']
+  const DISPLAY_CURRENCIES = ['NGN', 'USD', 'GBP', 'EUR']
 
-  async function loadRates() {
+  async function loadLiveRate() {
     setRateLoading(true)
     try {
       const r = await fetchLiveRates()
       setRates(r)
-    } catch(_) {}
+      setRateMode('live')
+      setConfirmedRate(null)
+      setRateInput('')
+    } catch(_) { alert('Could not fetch live rate — check connection') }
     setRateLoading(false)
   }
 
-  // Convert input amount to NGN
+  function confirmFixedRate() {
+    const n = Number(rateInput)
+    if (!n || n <= 0) return alert('Enter a valid rate')
+    setConfirmedRate(n)
+    setRateMode('fixed')
+  }
+
+  // Active rate for the selected currency
+  function getRate(currency) {
+    if (currency === 'NGN') return 1
+    if (rateMode === 'fixed' && confirmedRate) return confirmedRate
+    if (rateMode === 'live' && rates?.[currency]) return rates[currency]
+    return null
+  }
+
   function toNGN(amount, currency) {
     if (!amount) return null
     const n = Number(String(amount).replace(/,/g, ''))
-    if (isNaN(n)) return null
+    if (isNaN(n) || n === 0) return null
     if (currency === 'NGN') return n
-    // Use manual override first, then live rate, then fallback
-    const rate = rateOverride ? Number(rateOverride) : (rates?.[currency] || null)
-    if (!rate) return null
-    return Math.round(n * rate)
+    const rate = getRate(currency)
+    return rate ? Math.round(n * rate) : null
+  }
+
+  function toDisplay(ngnAmount, currency) {
+    if (!ngnAmount) return ''
+    const n = Number(ngnAmount)
+    if (currency === 'NGN') return n
+    const rate = getRate(currency)
+    return rate ? Math.round(n / rate) : n
   }
 
   function handlePriceChange(val, field) {
     const ngnVal = toNGN(val, inputCurrency)
-    const updates = { [field]: ngnVal || val }  // store as NGN
+    const updates = {}
+    updates[field] = ngnVal !== null ? ngnVal : (val ? Number(val) : null)
     if (field === 'retail_price' && ngnVal) {
       updates.price = '₦' + ngnVal.toLocaleString()
     }
     setForm(f => ({ ...f, ...updates }))
   }
 
-  // Display value in selected currency
-  function displayVal(ngnAmount) {
-    if (!ngnAmount) return ''
-    const n = Number(ngnAmount)
-    if (inputCurrency === 'NGN') return n
-    const rate = rateOverride ? Number(rateOverride) : (rates?.[inputCurrency] || null)
-    if (!rate) return n  // fallback to NGN
-    return Math.round(n / rate)
-  }
-
-  const currencySymbol = { NGN:'₦', USD:'$', GBP:'£', EUR:'€' }[inputCurrency] || '₦'
+  const sym = { NGN:'₦', USD:'$', GBP:'£', EUR:'€' }[inputCurrency] || '₦'
+  const activeRate = getRate(inputCurrency)
+  const rateLabel = rateMode === 'live'
+    ? `Live: 1 ${inputCurrency} = ₦${Math.round(activeRate||0).toLocaleString()}`
+    : rateMode === 'fixed' && confirmedRate
+    ? `Fixed: 1 ${inputCurrency} = ₦${confirmedRate.toLocaleString()}`
+    : null
 
   return (
     <div>
-      {/* Currency selector row */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-        <span style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', fontWeight:600 }}>Pricing currency</span>
-        <div style={{ display:'flex', gap:4 }}>
-          {USD_CURRENCIES.map(c => (
-            <button key={c} type="button"
-              onClick={() => { setInputCurrency(c); if (c !== 'NGN' && !rates) loadRates() }}
-              style={{ padding:'3px 10px', fontSize:11, fontWeight:600, borderRadius:3, border:'1px solid',
-                background: inputCurrency === c ? 'var(--ink)' : 'transparent',
-                color: inputCurrency === c ? '#fff' : 'var(--muted)',
-                borderColor: inputCurrency === c ? 'var(--ink)' : 'var(--line-soft)',
-                cursor:'pointer' }}>
-              {c}
-            </button>
-          ))}
-        </div>
-        {inputCurrency !== 'NGN' && (
-          <button type="button" onClick={() => setShowConverter(!showConverter)}
-            style={{ fontSize:11, color:'var(--muted)', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>
-            {showConverter ? 'hide rate' : 'set rate'}
+      {/* Currency selector */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, flexWrap:'wrap' }}>
+        <span style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', fontWeight:600 }}>Input currency</span>
+        {DISPLAY_CURRENCIES.map(c => (
+          <button key={c} type="button"
+            onClick={() => setInputCurrency(c)}
+            style={{ padding:'3px 10px', fontSize:11, fontWeight:600, borderRadius:3, border:'1px solid',
+              background: inputCurrency === c ? 'var(--ink)' : 'transparent',
+              color: inputCurrency === c ? '#fff' : 'var(--muted)',
+              borderColor: inputCurrency === c ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
+            {c}
           </button>
-        )}
+        ))}
       </div>
 
-      {/* Rate info / override */}
-      {inputCurrency !== 'NGN' && showConverter && (
-        <div style={{ background:'var(--surface-1,#f8f7f5)', borderRadius:4, padding:'10px 12px', marginBottom:10, fontSize:12 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
-            <span style={{ color:'var(--muted)' }}>1 {inputCurrency} =</span>
-            <input className="form-input" type="number" value={rateOverride}
-              onChange={e => setRateOverride(e.target.value)}
-              placeholder={rates?.[inputCurrency] ? `${Math.round(rates[inputCurrency]).toLocaleString()} (live)` : 'enter rate'}
-              style={{ width:140, padding:'4px 8px', fontSize:12 }} />
-            <span style={{ color:'var(--muted)' }}>NGN</span>
-            <button type="button" onClick={loadRates} disabled={rateLoading}
-              style={{ fontSize:11, padding:'3px 8px', borderRadius:3, border:'1px solid var(--line-soft)', background:'none', cursor:'pointer', color:'var(--muted)' }}>
-              {rateLoading ? '…' : '↻ live rate'}
+      {/* Rate section — only shown for non-NGN */}
+      {inputCurrency !== 'NGN' && (
+        <div style={{ background:'var(--surface-1,#f8f7f5)', borderRadius:4, padding:'10px 14px', marginBottom:12 }}>
+          <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+            {/* Live rate button */}
+            <button type="button" onClick={loadLiveRate} disabled={rateLoading}
+              style={{ fontSize:11, padding:'4px 10px', borderRadius:3, border:'1px solid var(--line-soft)',
+                background: rateMode==='live' ? 'var(--ink)' : 'transparent',
+                color: rateMode==='live' ? '#fff' : 'var(--muted)', cursor:'pointer', fontWeight:600 }}>
+              {rateLoading ? '…' : '↻ Live rate'}
             </button>
+
+            <span style={{ color:'var(--muted)', fontSize:11 }}>or fixed:</span>
+
+            {/* Fixed rate input + Set button */}
+            <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+              <span style={{ fontSize:11, color:'var(--muted)' }}>1 {inputCurrency} =</span>
+              <input className="form-input" type="number" value={rateInput}
+                onChange={e => setRateInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && confirmFixedRate()}
+                placeholder="e.g. 1650" style={{ width:100, padding:'4px 8px', fontSize:12 }} />
+              <span style={{ fontSize:11, color:'var(--muted)' }}>NGN</span>
+              <button type="button" onClick={confirmFixedRate}
+                style={{ fontSize:11, padding:'4px 10px', borderRadius:3,
+                  background: rateMode==='fixed' ? '#27ae60' : 'var(--ink)',
+                  color:'#fff', border:'none', cursor:'pointer', fontWeight:600 }}>
+                {rateMode==='fixed' ? '✓ Set' : 'Set'}
+              </button>
+            </div>
           </div>
-          {rates?.[inputCurrency] && !rateOverride && (
-            <div style={{ color:'var(--muted)', fontSize:11 }}>
-              Live rate: 1 {inputCurrency} = ₦{Math.round(rates[inputCurrency]).toLocaleString()}
-              {' · '}₦{Number(form.retail_price||0).toLocaleString()} = {inputCurrency} {displayVal(form.retail_price)?.toLocaleString()}
+
+          {/* Active rate display */}
+          {rateLabel && (
+            <div style={{ marginTop:6, fontSize:11, color: rateMode==='fixed' ? '#27ae60' : 'var(--muted)', fontWeight:500 }}>
+              {rateLabel}
+            </div>
+          )}
+          {inputCurrency !== 'NGN' && !activeRate && (
+            <div style={{ marginTop:6, fontSize:11, color:'var(--amber,#b8862a)' }}>
+              ⚠ Set a rate to convert prices
             </div>
           )}
         </div>
@@ -114,28 +147,30 @@ function PriceFields({ form, setForm }) {
       {/* Price inputs */}
       <div className="form-row">
         <div className="form-group">
-          <label className="form-label">Retail price ({currencySymbol})</label>
+          <label className="form-label">Retail price ({sym})</label>
           <input className="form-input" type="number"
-            value={displayVal(form.retail_price) || ''}
+            value={toDisplay(form.retail_price, inputCurrency) || ''}
             onChange={e => handlePriceChange(e.target.value, 'retail_price')}
             placeholder="0" />
-          {inputCurrency !== 'NGN' && form.retail_price && (
-            <div style={{ fontSize:10, color:'var(--muted)', marginTop:3 }}>= ₦{Number(form.retail_price).toLocaleString()}</div>
+          {inputCurrency !== 'NGN' && form.retail_price && activeRate && (
+            <div style={{ fontSize:10, color:'var(--muted)', marginTop:3 }}>
+              = ₦{Number(form.retail_price).toLocaleString()}
+            </div>
           )}
         </div>
         <div className="form-group">
-          <label className="form-label">Inventory / cost price ({currencySymbol})</label>
+          <label className="form-label">Inventory / cost ({sym})</label>
           <input className="form-input" type="number"
-            value={displayVal(form.inventory_price) || ''}
+            value={toDisplay(form.inventory_price, inputCurrency) || ''}
             onChange={e => handlePriceChange(e.target.value, 'inventory_price')}
             placeholder="0" />
         </div>
       </div>
       <div className="form-row">
         <div className="form-group">
-          <label className="form-label">Valuation ({currencySymbol})</label>
+          <label className="form-label">Valuation ({sym})</label>
           <input className="form-input" type="number"
-            value={displayVal(form.valuation) || ''}
+            value={toDisplay(form.valuation, inputCurrency) || ''}
             onChange={e => handlePriceChange(e.target.value, 'valuation')}
             placeholder="0" />
         </div>
@@ -143,7 +178,7 @@ function PriceFields({ form, setForm }) {
           <label className="form-label">Price display (public)</label>
           <input className="form-input" value={form.price||''}
             onChange={e => setForm(f => ({...f, price:e.target.value}))}
-            placeholder="e.g. ₦2,500,000 or POA" />
+            placeholder="₦2,500,000 · $1,500 · or POA" />
         </div>
       </div>
     </div>
@@ -271,15 +306,21 @@ export default function Artworks() {
       if (modal === 'edit') {
         await supabase.from('artworks').update(payload).eq('id', editId)
       } else {
-        // Auto-generate HG code for new artworks
-        const { data: codeData } = await supabase.rpc('next_hg_code')
-        await supabase.from('artworks').insert({ ...payload, visible: true, hg_code: codeData })
+        // Auto-generate HG code — fail gracefully if sequence not set up
+        let hgCode = payload.hg_code || null
+        if (!hgCode) {
+          const { data: codeData, error: rpcErr } = await supabase.rpc('next_hg_code')
+          if (rpcErr) console.warn('HG code generation failed:', rpcErr.message)
+          else hgCode = codeData
+        }
+        const { error: insertErr } = await supabase.from('artworks').insert({ ...payload, visible: true, hg_code: hgCode })
+        if (insertErr) throw insertErr
       }
       cacheInvalidate('artworks')
       await load()
       closeModal()
     } catch (err) {
-      alert('Save failed: ' + err.message)
+      alert('Save failed: ' + (err.message || JSON.stringify(err)))
     } finally {
       setSaving(false)
     }
