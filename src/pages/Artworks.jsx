@@ -186,6 +186,114 @@ function PriceFields({ form, setForm }) {
 }
 
 
+// ── CURRENCY TOGGLE ───────────────────────────────────────────
+function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRate }) {
+  const [showRate, setShowRate]       = useState(false)
+  const [fixedInput, setFixedInput]   = useState('')
+  const [rateMode, setRateMode]       = useState(null)   // 'live' | 'fixed'
+  const [loading, setLoading]         = useState(false)
+
+  async function fetchLive() {
+    setLoading(true)
+    try {
+      const r = await fetchLiveRates()
+      const rate = r?.USD
+      if (!rate) throw new Error('No USD rate')
+      setUsdRate(rate)
+      setRateMode('live')
+      setFixedInput('')
+      setDisplayCurrency('USD')
+    } catch(_) { alert('Could not fetch live rate') }
+    setLoading(false)
+  }
+
+  function applyFixed() {
+    const n = Number(fixedInput)
+    if (!n || n <= 0) return alert('Enter a valid rate')
+    setUsdRate(n)
+    setRateMode('fixed')
+    setDisplayCurrency('USD')
+  }
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:6, marginRight:8, position:'relative' }}>
+      {/* NGN button */}
+      <button type="button" onClick={() => { setDisplayCurrency('NGN'); setShowRate(false) }}
+        style={{ padding:'4px 10px', fontSize:11, fontWeight:600, borderRadius:3, border:'1px solid',
+          background: displayCurrency==='NGN' ? 'var(--ink)' : 'transparent',
+          color: displayCurrency==='NGN' ? '#fff' : 'var(--muted)',
+          borderColor: displayCurrency==='NGN' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
+        ₦ NGN
+      </button>
+
+      {/* USD button */}
+      <button type="button"
+        onClick={() => { setShowRate(s => !s); if (usdRate) setDisplayCurrency('USD') }}
+        style={{ padding:'4px 10px', fontSize:11, fontWeight:600, borderRadius:3, border:'1px solid',
+          background: displayCurrency==='USD' ? 'var(--ink)' : 'transparent',
+          color: displayCurrency==='USD' ? '#fff' : 'var(--muted)',
+          borderColor: displayCurrency==='USD' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
+        $ USD {usdRate && displayCurrency==='USD' ? `· ${rateMode==='fixed'?'fixed':'live'}` : '▾'}
+      </button>
+
+      {/* Rate picker dropdown */}
+      {showRate && (
+        <div style={{ position:'absolute', top:'calc(100% + 6px)', right:0, zIndex:200,
+          background:'var(--bg)', border:'1px solid var(--line-soft)', borderRadius:5,
+          padding:'12px 14px', width:280, boxShadow:'0 4px 20px rgba(0,0,0,.12)' }}>
+          <div style={{ fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:10 }}>
+            USD conversion rate
+          </div>
+
+          {/* Live rate */}
+          <button type="button" onClick={fetchLive} disabled={loading}
+            style={{ width:'100%', padding:'8px 12px', borderRadius:4, border:'1px solid var(--line-soft)',
+              background: rateMode==='live' ? 'var(--ink)' : 'var(--surface-1,#f8f7f5)',
+              color: rateMode==='live' ? '#fff' : 'var(--ink)',
+              cursor:'pointer', fontSize:12, fontWeight:600, marginBottom:8, textAlign:'left' }}>
+            {loading ? '⏳ Fetching…' : rateMode==='live' && usdRate
+              ? `✓ Live rate · 1 USD = ₦${Math.round(usdRate).toLocaleString()}`
+              : '↻ Fetch live rate'}
+          </button>
+
+          {/* Fixed rate */}
+          <div style={{ fontSize:11, color:'var(--muted)', marginBottom:6 }}>
+            or enter a fixed rate:
+          </div>
+          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+            <span style={{ fontSize:11, color:'var(--muted)', whiteSpace:'nowrap' }}>1 USD =</span>
+            <input className="form-input" type="number" value={fixedInput}
+              onChange={e => setFixedInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && applyFixed()}
+              placeholder={usdRate && rateMode==='fixed' ? String(Math.round(usdRate)) : 'e.g. 1650'}
+              style={{ flex:1, padding:'5px 8px', fontSize:12 }} />
+            <span style={{ fontSize:11, color:'var(--muted)' }}>NGN</span>
+            <button type="button" onClick={applyFixed}
+              style={{ padding:'5px 12px', borderRadius:3, border:'none', fontSize:11, fontWeight:700,
+                background: rateMode==='fixed' ? '#27ae60' : 'var(--ink)', color:'#fff', cursor:'pointer',
+                whiteSpace:'nowrap' }}>
+              {rateMode==='fixed' ? '✓ Set' : 'Set'}
+            </button>
+          </div>
+
+          {rateMode==='fixed' && usdRate && (
+            <div style={{ marginTop:6, fontSize:11, color:'#27ae60', fontWeight:500 }}>
+              Fixed: 1 USD = ₦{Math.round(usdRate).toLocaleString()}
+            </div>
+          )}
+
+          <button type="button" onClick={() => setShowRate(false)}
+            style={{ marginTop:10, width:'100%', padding:'5px', fontSize:11, color:'var(--muted)',
+              background:'none', border:'none', cursor:'pointer' }}>
+            Close
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 export default function Artworks() {
   const [artists, setArtists] = useState([])
   const [artworks, setArtworks] = useState([])
@@ -210,7 +318,10 @@ export default function Artworks() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    fetchLiveRates().then(r => setUsdRate(r?.USD || null)).catch(() => {})
+  }, [])
 
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
   const locations = useMemo(() => [...new Set(artworks.map(w => w.location).filter(Boolean))].sort(), [artworks])
@@ -471,7 +582,14 @@ export default function Artworks() {
                     }
                   </td>
                   <td style={{ fontSize:12, color:'var(--muted)' }}>
-                    {w.price || (w.retail_price ? `₦${Number(w.retail_price).toLocaleString()}` : '—')}
+                    {(() => {
+                      const ngn = Number(w.retail_price) || 0
+                      if (!ngn) return w.price || '—'
+                      if (displayCurrency === 'USD' && usdRate) {
+                        return `$${Math.round(ngn / usdRate).toLocaleString()}`
+                      }
+                      return w.price || `₦${ngn.toLocaleString()}`
+                    })()}
                   </td>
                   <td>
                     <span className={`badge ${w.availability==='Available'?'badge-green':w.availability==='Sold'?'badge-red':'badge-amber'}`}>
