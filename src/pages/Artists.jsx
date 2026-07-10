@@ -7,53 +7,68 @@ const EMPTY = { name:'', nationality:'', medium:'', bio:'', born:'', died:'', po
 
 export default function Artists() {
   const navigate = useNavigate()
-  const [artists, setArtists] = useState([])
-  const [artworks, setArtworks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [sortBy, setSortBy] = useState('az') // 'az' | 'sold' | 'most'
-  const [modal, setModal] = useState(null)
-  const [form, setForm] = useState(EMPTY)
-  const [editId, setEditId] = useState(null)
-  const [saving, setSaving] = useState(false)
+  const [artists, setArtists]     = useState([])
+  const [counts, setCounts]       = useState({}) // { artist_id: { total, available, sold } }
+  const [loading, setLoading]     = useState(true)
+  const [search, setSearch]       = useState('')
+  const [sortBy, setSortBy]       = useState('az')
+  const [modal, setModal]         = useState(null)
+  const [form, setForm]           = useState(EMPTY)
+  const [editId, setEditId]       = useState(null)
+  const [saving, setSaving]       = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [selected, setSelected]   = useState(null)  // artist being viewed
+  const [artworks, setArtworks]   = useState([])    // artworks for selected artist
+  const [awLoading, setAwLoading] = useState(false)
 
   async function load() {
-    const [a, w] = await Promise.all([
+    // Fetch artists + a lightweight count of works per artist
+    // Use select with count instead of fetching all artwork rows
+    const [a, countData] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { order: 'sort_order' }),
+      supabase.from('artworks')
+        .select('artist_id, availability')
+        .range(0, 4999),
     ])
     setArtists(a)
-    setArtworks(w)
+
+    // Build counts from lightweight query
+    const c = {}
+    ;(countData.data || []).forEach(w => {
+      if (!c[w.artist_id]) c[w.artist_id] = { total:0, available:0, sold:0 }
+      c[w.artist_id].total++
+      if (w.availability === 'Available') c[w.artist_id].available++
+      if (w.availability === 'Sold') c[w.artist_id].sold++
+    })
+    setCounts(c)
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  // Work counts and sold counts per artist
-  const workCounts = useMemo(() => {
-    const counts = {}
-    artworks.forEach(w => { counts[w.artist_id] = (counts[w.artist_id] || 0) + 1 })
-    return counts
-  }, [artworks])
-
-  const soldCounts = useMemo(() => {
-    const counts = {}
-    artworks.filter(w => w.availability === 'Sold').forEach(w => {
-      counts[w.artist_id] = (counts[w.artist_id] || 0) + 1
-    })
-    return counts
-  }, [artworks])
+  async function loadArtistArtworks(artist) {
+    setSelected(artist)
+    setArtworks([])
+    setAwLoading(true)
+    const { data } = await supabase
+      .from('artworks')
+      .select('id,title,year,medium,dimensions,availability,image_url,price,retail_price,hg_code,location')
+      .eq('artist_id', artist.id)
+      .eq('visible', true)
+      .order('sort_order')
+    setArtworks(data || [])
+    setAwLoading(false)
+  }
 
   const filtered = useMemo(() => {
     let list = artists.filter(a =>
       !search || a.name?.toLowerCase().includes(search.toLowerCase())
     )
-    if (sortBy === 'az') list = [...list].sort((a, b) => a.name.localeCompare(b.name))
-    if (sortBy === 'sold') list = [...list].sort((a, b) => (soldCounts[b.id] || 0) - (soldCounts[a.id] || 0))
-    if (sortBy === 'most') list = [...list].sort((a, b) => (workCounts[b.id] || 0) - (workCounts[a.id] || 0))
+    if (sortBy === 'az')   list = [...list].sort((a,b) => a.name.localeCompare(b.name))
+    if (sortBy === 'sold') list = [...list].sort((a,b) => (counts[b.id]?.sold||0) - (counts[a.id]?.sold||0))
+    if (sortBy === 'most') list = [...list].sort((a,b) => (counts[b.id]?.total||0) - (counts[a.id]?.total||0))
     return list
-  }, [artists, search, sortBy, workCounts, soldCounts])
+  }, [artists, search, sortBy, counts])
 
   async function toggleVisible(artist) {
     await supabase.from('artists').update({ visible: !artist.visible }).eq('id', artist.id)
@@ -66,7 +81,6 @@ export default function Artists() {
     if (!file) return
     setUploading(true)
     try {
-      // Resize before upload
       const resized = await resizeImage(file, 800)
       const ext = file.name.split('.').pop()
       const path = `portraits/${Date.now()}.${ext}`
@@ -74,11 +88,8 @@ export default function Artists() {
       if (error) throw error
       const { data: { publicUrl } } = supabase.storage.from('artist-portraits').getPublicUrl(path)
       setForm(f => ({ ...f, portrait_url: publicUrl }))
-    } catch (err) {
-      alert('Upload failed: ' + err.message)
-    } finally {
-      setUploading(false)
-    }
+    } catch (err) { alert('Upload failed: ' + err.message) }
+    finally { setUploading(false) }
   }
 
   async function handleSave() {
@@ -93,29 +104,24 @@ export default function Artists() {
       cacheInvalidate('artists')
       await load()
       closeModal()
-    } catch (err) {
-      alert('Save failed: ' + err.message)
-    } finally {
-      setSaving(false)
-    }
+    } catch (err) { alert('Save failed: ' + err.message) }
+    finally { setSaving(false) }
   }
 
-  async function handleDelete(id) {
+  function handleDelete(id) {
     if (!confirm('Delete this artist? This cannot be undone.')) return
-    await supabase.from('artists').delete().eq('id', id)
-    cacheInvalidate('artists')
     setArtists(prev => prev.filter(a => a.id !== id))
+    if (selected?.id === id) setSelected(null)
+    cacheInvalidate('artists')
+    supabase.from('artists').delete().eq('id', id).then(({ error }) => {
+      if (error) { alert('Delete failed: ' + error.message); load() }
+    })
   }
 
-  function openEdit(artist) {
-    setForm({ ...EMPTY, ...artist })
-    setEditId(artist.id)
-    setModal('edit')
-  }
-
+  function openEdit(artist) { setForm({ ...EMPTY, ...artist }); setEditId(artist.id); setModal('edit') }
   function closeModal() { setModal(null); setForm(EMPTY); setEditId(null) }
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading artists…</div>
+  if (loading) return <div style={{ color:'var(--muted)', padding:32 }}>Loading artists…</div>
 
   return (
     <div>
@@ -127,69 +133,147 @@ export default function Artists() {
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artist</button>
       </div>
 
-      <div style={{ display:'flex', gap:10, marginBottom:20, alignItems:'center' }}>
-        <input className="form-input" style={{ maxWidth:300 }} placeholder="Search artists…" value={search} onChange={e=>setSearch(e.target.value)} />
-        <div style={{ display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden', marginLeft:8 }}>
-          {[['az','A – Z'],['most','Most works'],['sold','Frequently sold']].map(([key, label]) => (
+      <div style={{ display:'flex', gap:10, marginBottom:20, alignItems:'center', flexWrap:'wrap' }}>
+        <input className="form-input" style={{ maxWidth:260 }} placeholder="Search artists…" value={search} onChange={e=>setSearch(e.target.value)} />
+        <div style={{ display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
+          {[['az','A – Z'],['most','Most works'],['sold','Most sold']].map(([key,label]) => (
             <button key={key} onClick={() => setSortBy(key)}
-              style={{ padding:'6px 14px', fontSize:12, cursor:'pointer', fontFamily:'var(--font-sans)', border:'none', borderRight:'1px solid var(--line)', background: sortBy===key ? 'var(--ink)' : 'var(--white)', color: sortBy===key ? 'var(--white)' : 'var(--muted)', transition:'all 150ms' }}>
+              style={{ padding:'6px 12px', fontSize:12, cursor:'pointer', border:'none',
+                borderRight:'1px solid var(--line)',
+                background: sortBy===key ? 'var(--ink)' : 'var(--white)',
+                color: sortBy===key ? 'var(--white)' : 'var(--muted)' }}>
               {label}
             </button>
           ))}
         </div>
-        <span style={{ fontSize:13, color:'var(--muted)', marginLeft:4 }}>{filtered.length} artists</span>
+        <span style={{ fontSize:12, color:'var(--muted)' }}>{filtered.length} artists</span>
       </div>
 
-      <div className="card">
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Artist</th><th>Nationality</th><th>Medium</th>
-                <th>Works</th><th>Sold</th>
-                <th>Visible</th><th style={{ width:160 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(a => (
-                <tr key={a.id}>
-                  <td>
-                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                      {a.portrait_url && <img src={a.portrait_url} alt="" style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover' }} />}
-                      <div>
-                        <div style={{ fontWeight:500 }}>{a.name}</div>
-                        {a.born && <div style={{ fontSize:11, color:'var(--muted)' }}>{a.born}{a.died ? '–'+a.died : ''}</div>}
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ color:'var(--muted)', fontSize:13 }}>{a.nationality || '—'}</td>
-                  <td style={{ color:'var(--muted)', fontSize:13 }}>{a.medium || '—'}</td>
-                  <td style={{ fontSize:13 }}>{workCounts[a.id] || 0}</td>
-                  <td style={{ fontSize:13, color: soldCounts[a.id] ? 'var(--green)' : 'var(--muted)' }}>{soldCounts[a.id] || 0}</td>
-                  <td>
-                    <button
-                      onClick={() => toggleVisible(a)}
-                      style={{ fontSize:18, cursor:'pointer', background:'none', border:'none',
-                               color: a.visible ? 'var(--green)' : 'var(--line)' }}
-                      title={a.visible ? 'Visible — click to hide' : 'Hidden — click to show'}
-                    >
-                      {a.visible ? '◉' : '○'}
-                    </button>
-                  </td>
-                  <td>
-                    <div style={{ display:'flex', gap:6 }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(a)}>Edit</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/admin/archive/${a.id}`)}>Archive</button>
-                      <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => handleDelete(a.id)}>Del</button>
-                    </div>
-                  </td>
+      {/* Two-panel layout when artist selected */}
+      <div style={{ display:'grid', gridTemplateColumns: selected ? '1fr 380px' : '1fr', gap:20 }}>
+
+        {/* Artist table */}
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Artist</th><th>Nationality</th><th>Medium</th>
+                  <th>Available</th><th>Sold</th><th>Visible</th>
+                  <th style={{ width:160 }}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filtered.map(a => (
+                  <tr key={a.id}
+                    onClick={() => selected?.id === a.id ? setSelected(null) : loadArtistArtworks(a)}
+                    style={{ cursor:'pointer', background: selected?.id === a.id ? 'var(--surface-1,#f5f3f0)' : 'transparent' }}>
+                    <td>
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        {a.portrait_url && <img src={a.portrait_url} alt="" style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover' }} />}
+                        <div>
+                          <div style={{ fontWeight:500 }}>{a.name}</div>
+                          {a.born && <div style={{ fontSize:11, color:'var(--muted)' }}>{a.born}{a.died ? '–'+a.died : ''}</div>}
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ color:'var(--muted)', fontSize:13 }}>{a.nationality || '—'}</td>
+                    <td style={{ color:'var(--muted)', fontSize:13 }}>{a.medium || '—'}</td>
+                    <td style={{ fontSize:13, color:'var(--green,#27ae60)', fontWeight: counts[a.id]?.available ? 600 : 400 }}>
+                      {counts[a.id]?.available || 0}
+                    </td>
+                    <td style={{ fontSize:13, color:'var(--muted)' }}>{counts[a.id]?.sold || 0}</td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <button onClick={() => toggleVisible(a)}
+                        style={{ fontSize:18, cursor:'pointer', background:'none', border:'none',
+                          color: a.visible ? 'var(--green)' : 'var(--line)' }}>
+                        {a.visible ? '◉' : '○'}
+                      </button>
+                    </td>
+                    <td onClick={e => e.stopPropagation()}>
+                      <div style={{ display:'flex', gap:4 }}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(a)}>Edit</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/admin/archive/${a.id}`)}>Archive</button>
+                        <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => handleDelete(a.id)}>Del</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* Artist detail panel */}
+        {selected && (
+          <div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
+              <div>
+                <div style={{ fontWeight:600, fontSize:16 }}>{selected.name}</div>
+                <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>
+                  {[selected.nationality, selected.medium, selected.born && `b. ${selected.born}`].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>✕</button>
+            </div>
+
+            {/* Counts */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:14 }}>
+              {[
+                ['Total', counts[selected.id]?.total || 0, 'var(--ink)'],
+                ['Available', counts[selected.id]?.available || 0, 'var(--green,#27ae60)'],
+                ['Sold', counts[selected.id]?.sold || 0, 'var(--muted)'],
+              ].map(([label, val, color]) => (
+                <div key={label} className="card" style={{ padding:'10px 12px', textAlign:'center' }}>
+                  <div style={{ fontSize:20, fontWeight:700, color }}>{val}</div>
+                  <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginTop:2 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Available artworks */}
+            <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:8, fontWeight:600 }}>
+              Available works
+            </div>
+            <div className="card" style={{ padding:0, maxHeight:500, overflowY:'auto' }}>
+              {awLoading
+                ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>Loading…</div>
+                : artworks.filter(w => w.availability === 'Available').length === 0
+                ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>No available works</div>
+                : artworks.filter(w => w.availability === 'Available').map(w => (
+                  <div key={w.id} style={{ display:'flex', gap:10, padding:'10px 12px', borderBottom:'1px solid var(--line-soft)', alignItems:'center' }}>
+                    {w.image_url
+                      ? <img src={w.image_url} alt="" style={{ width:44, height:44, objectFit:'cover', borderRadius:2, flexShrink:0 }} />
+                      : <div style={{ width:44, height:44, background:'var(--surface-1,#f0ece7)', borderRadius:2, flexShrink:0 }} />
+                    }
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.title}</div>
+                      <div style={{ fontSize:11, color:'var(--muted)', marginTop:1 }}>
+                        {[w.year, w.medium, w.location].filter(Boolean).join(' · ')}
+                      </div>
+                      {(w.price || w.retail_price) && (
+                        <div style={{ fontSize:12, color:'var(--ink)', fontWeight:500, marginTop:2 }}>
+                          {w.price || `₦${Number(w.retail_price).toLocaleString()}`}
+                        </div>
+                      )}
+                    </div>
+                    {w.hg_code && (
+                      <div style={{ fontSize:10, color:'var(--gold,#b8862a)', fontWeight:600, flexShrink:0 }}>{w.hg_code}</div>
+                    )}
+                  </div>
+                ))
+              }
+            </div>
+
+            <div style={{ marginTop:10, display:'flex', gap:8 }}>
+              <button className="btn btn-outline btn-sm" style={{ flex:1 }} onClick={() => openEdit(selected)}>Edit artist</button>
+              <button className="btn btn-outline btn-sm" style={{ flex:1 }} onClick={() => navigate(`/admin/archive/${selected.id}`)}>Archive</button>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Edit / Add modal */}
       {modal && (
         <div className="modal-overlay">
           <div className="modal modal-lg">
