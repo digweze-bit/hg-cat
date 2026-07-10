@@ -22,26 +22,28 @@ export default function Artists() {
   const [awLoading, setAwLoading] = useState(false)
 
   async function load() {
-    // Fetch artists + a lightweight count of works per artist
-    // Use select with count instead of fetching all artwork rows
-    const [a, countData] = await Promise.all([
-      fetchAll('artists', { order: 'name' }),
-      supabase.from('artworks')
-        .select('artist_id, availability')
-        .range(0, 4999),
-    ])
+    // Fetch artists first — show immediately
+    const a = await fetchAll('artists', { order: 'name' })
     setArtists(a)
+    setLoading(false)
 
-    // Build counts from lightweight query
+    // Then fetch counts in background — only 2 tiny queries
+    const [avail, sold] = await Promise.all([
+      supabase.from('artworks').select('artist_id').eq('availability', 'Available'),
+      supabase.from('artworks').select('artist_id').eq('availability', 'Sold'),
+    ])
     const c = {}
-    ;(countData.data || []).forEach(w => {
+    ;(avail.data || []).forEach(w => {
       if (!c[w.artist_id]) c[w.artist_id] = { total:0, available:0, sold:0 }
+      c[w.artist_id].available++
       c[w.artist_id].total++
-      if (w.availability === 'Available') c[w.artist_id].available++
-      if (w.availability === 'Sold') c[w.artist_id].sold++
+    })
+    ;(sold.data || []).forEach(w => {
+      if (!c[w.artist_id]) c[w.artist_id] = { total:0, available:0, sold:0 }
+      c[w.artist_id].sold++
+      c[w.artist_id].total++
     })
     setCounts(c)
-    setLoading(false)
   }
 
   useEffect(() => { load() }, [])

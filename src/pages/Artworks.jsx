@@ -318,10 +318,7 @@ export default function Artworks() {
     setLoading(false)
   }
 
-  useEffect(() => {
-    load()
-    fetchLiveRates().then(r => setUsdRate(r?.USD || null)).catch(() => {})
-  }, [])
+  useEffect(() => { load() }, [])
 
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
   const locations = useMemo(() => [...new Set(artworks.map(w => w.location).filter(Boolean))].sort(), [artworks])

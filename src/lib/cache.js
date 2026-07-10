@@ -10,16 +10,17 @@
 const memory = new Map()
 
 const TTL = {
-  artists:    15 * 60 * 1000,  // 15 min
-  artworks:    5 * 60 * 1000,  // 5 min (invalidated on write anyway)
-  clients:     5 * 60 * 1000,
-  invoices:    2 * 60 * 1000,
-  books:       5 * 60 * 1000,
-  consignors: 15 * 60 * 1000,
-  default:     3 * 60 * 1000,
+  artists:    60 * 60 * 1000,  // 1 hour — invalidated on write
+  artworks:   30 * 60 * 1000,  // 30 min — invalidated on write
+  clients:    15 * 60 * 1000,  // 15 min
+  invoices:    5 * 60 * 1000,  // 5 min — changes more often
+  books:      30 * 60 * 1000,
+  consignors: 60 * 60 * 1000,
+  default:    10 * 60 * 1000,
 }
 
-const LS_PREFIX = 'hgcat_cache_'
+const CACHE_VERSION = 'v2'
+const LS_PREFIX = `hgcat_cache_${CACHE_VERSION}_`
 const LS_MAX_SIZE = 2 * 1024 * 1024 // 2MB per key — localStorage limit is ~5MB total
 
 export function cacheGet(key) {

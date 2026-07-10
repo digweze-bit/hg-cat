@@ -7,12 +7,8 @@ export const supabase = createClient(
 )
 
 /**
- * Fetch all rows with stale-while-revalidate caching.
- *
- * cache: true  (default) — return cached data immediately if available,
- *                          then fetch fresh in background and call onUpdate(fresh)
- * cache: false           — always fetch fresh, skip cache entirely
- * onUpdate(data)         — optional callback when background refresh completes
+ * Fetch rows with stale-while-revalidate caching.
+ * Returns cache immediately if available, revalidates in background.
  */
 export async function fetchAll(table, query = {}) {
   const {
@@ -27,10 +23,12 @@ export async function fetchAll(table, query = {}) {
   const cacheKey = `${table}:${select}:${JSON.stringify(filters)}:${order}:${ascending}`
 
   async function fetchFresh() {
-    // Paginate in batches of 1000 to get all rows regardless of server limit
-    const PAGE = 1000
-    let allData = []
+    // Single request — Supabase Pro allows up to 1000 rows by default
+    // For larger tables we paginate, but only if needed
+    let all = []
     let offset = 0
+    const PAGE = 1000
+
     while (true) {
       let q = supabase.from(table).select(select).range(offset, offset + PAGE - 1)
       filters.forEach(([col, op, val]) => { q = q.filter(col, op, val) })
@@ -38,36 +36,28 @@ export async function fetchAll(table, query = {}) {
       const { data, error } = await q
       if (error) throw error
       if (!data || data.length === 0) break
-      allData = allData.concat(data)
-      if (data.length < PAGE) break  // last page
+      all = all.concat(data)
+      if (data.length < PAGE) break  // last page, stop
       offset += PAGE
+      if (offset > 20000) break      // safety cap — no table should exceed 20k rows here
     }
-    return allData
+    return all
   }
 
   if (!cache) return fetchFresh()
 
   const cached = cacheGet(cacheKey)
-
   if (cached) {
-    // Return cached data immediately, revalidate in background
+    // Return cache immediately, revalidate silently in background
     fetchFresh().then(fresh => {
       cacheSet(cacheKey, fresh)
       if (onUpdate) onUpdate(fresh)
-    }).catch(() => {}) // silently ignore background fetch errors
+    }).catch(() => {})
     return cached
   }
 
-  // No cache — must fetch and wait
+  // No cache — must wait
   const fresh = await fetchFresh()
   cacheSet(cacheKey, fresh)
   return fresh
-}
-
-export async function getUser() {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data: profile } = await supabase
-    .from('profiles').select('*').eq('id', user.id).single()
-  return { ...user, profile }
 }
