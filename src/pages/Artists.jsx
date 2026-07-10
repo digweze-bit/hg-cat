@@ -72,10 +72,13 @@ export default function Artists() {
     return list
   }, [artists, search, sortBy, counts])
 
-  async function toggleVisible(artist) {
-    await supabase.from('artists').update({ visible: !artist.visible }).eq('id', artist.id)
-    cacheInvalidate('artists')
+  function toggleVisible(artist) {
     setArtists(prev => prev.map(a => a.id === artist.id ? { ...a, visible: !a.visible } : a))
+    cacheInvalidate('artists')
+    supabase.from('artists').update({ visible: !artist.visible }).eq('id', artist.id)
+      .then(({ error }) => {
+        if (error) setArtists(prev => prev.map(a => a.id === artist.id ? { ...a, visible: artist.visible } : a))
+      })
   }
 
   async function handlePortraitUpload(e) {

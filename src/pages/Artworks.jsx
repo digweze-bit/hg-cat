@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
@@ -306,6 +306,7 @@ export default function Artworks() {
   const [form, setForm] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
   const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
   const [uploading, setUploading] = useState(false)
   const [page, setPage] = useState(0)
   const PER_PAGE = 30
@@ -381,6 +382,8 @@ export default function Artworks() {
 
   async function handleSave() {
     if (!form.title) return alert('Title is required')
+    if (savingRef.current) return  // prevent double-click
+    savingRef.current = true
     setSaving(true)
     try {
       const payload = {
@@ -414,7 +417,10 @@ export default function Artworks() {
         updated_at:        new Date().toISOString(),
       }
       if (modal === 'edit') {
-        await supabase.from('artworks').update(payload).eq('id', editId)
+        const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
+        if (updateErr) throw updateErr
+        // Update in-state immediately — don't wait for reload
+        setArtworks(prev => prev.map(w => w.id === editId ? { ...w, ...payload } : w))
       } else {
         // Auto-generate HG code — fail gracefully if sequence not set up
         let hgCode = payload.hg_code || null
@@ -427,7 +433,7 @@ export default function Artworks() {
         if (insertErr) throw insertErr
       }
       cacheInvalidate('artworks')
-      await load()
+      if (modal !== 'edit') await load()  // only reload for new artworks
       closeModal()
     } catch (err) {
       alert('Save failed: ' + (err.message || JSON.stringify(err)))
@@ -443,6 +449,7 @@ export default function Artworks() {
   }
 
   function openEdit(artwork) {
+    console.log('Opening edit, writeup:', artwork.writeup)
     setForm({
       ...EMPTY, ...artwork,
       writeup: artwork.writeup || '',

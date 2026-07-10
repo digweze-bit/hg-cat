@@ -376,11 +376,14 @@ function ClientList({ clients, invoices, onRefresh }) {
         <div className="card" style={{ padding:0 }}>
           {filtered.map(c => (
             <div key={c.id}
-              onClick={async () => {
+              onClick={() => {
                 if (selected?.id === c.id) { setSelected(null); return }
-                // Fetch full client record so all fields are available in detail panel
-                const { data } = await supabase.from('clients').select('*').eq('id', c.id).single()
-                setSelected(data || c)
+                setSelected(c)  // show immediately with basic data
+                requestAnimationFrame(() => {
+                  // Then fetch full record in background
+                  supabase.from('clients').select('*').eq('id', c.id).single()
+                    .then(({ data }) => { if (data) setSelected(data) })
+                })
               }}
               style={{ padding:'12px 16px', borderBottom:'1px solid var(--line-soft)', cursor:'pointer',
                 background: selected?.id === c.id ? 'var(--surface-1,#f5f3f0)' : 'transparent',
@@ -1084,7 +1087,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            <button className="btn btn-outline btn-sm" onClick={printInvoice}>Print / PDF</button>
+            <button className="btn btn-outline btn-sm" onClick={() => requestAnimationFrame(printInvoice)}>Print / PDF</button>
             {(inv.status === 'cancelled' || inv.status === 'draft') && (
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
@@ -1195,7 +1198,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {['draft','sent','partial','paid','cancelled'].map(s => (
                   <button key={s} className={`btn btn-sm ${inv.status === s ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={() => updateStatus(s)} style={{ textTransform:'capitalize' }}>{s}</button>
+                    onClick={() => requestAnimationFrame(() => updateStatus(s)} style={{ textTransform:'capitalize' }}>{s}</button>
                 ))}
               </div>
             </div>
