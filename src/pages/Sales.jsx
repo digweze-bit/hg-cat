@@ -67,14 +67,13 @@ export default function Sales() {
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <button className="btn btn-outline" onClick={() => setModal('client')}>+ Client</button>
-          <button className="btn btn-primary" onClick={async () => {
-          // Always load fresh — cache:false ensures no stale filtered data
-          const [w, a] = await Promise.all([
+          <button className="btn btn-primary" onClick={() => {
+          // Open modal immediately — load artworks in background
+          setModal('invoice')
+          Promise.all([
             fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', order:'title', cache:false }),
             fetchAll('artists', { order:'name' }),
-          ])
-          setArtworks(w); setArtists(a)
-          setModal('invoice')
+          ]).then(([w, a]) => { setArtworks(w); setArtists(a) })
         }}>+ Invoice</button>
         </div>
       </div>
@@ -234,7 +233,7 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
                       <td>
                         <button className="btn btn-ghost btn-sm" onClick={() => {
                           const fullInv = invoices.find(i => i.id === it.invoice_id)
-                          if (fullInv) onOpen(fullInv)
+                          if (fullInv) { requestAnimationFrame(() => onOpen(fullInv)) }
                         }}>Open invoice</button>
                       </td>
                     </tr>
@@ -279,7 +278,7 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
             </thead>
             <tbody>
               {filtered.map(inv => (
-                <tr key={inv.id} style={{ cursor:'pointer' }} onClick={() => onOpen(inv)}>
+                <tr key={inv.id} style={{ cursor:'pointer' }} onClick={() => requestAnimationFrame(() => onOpen(inv))}>
                   <td style={{ fontFamily:'var(--font-serif)', fontWeight:500 }}>{inv.invoice_number}</td>
                   <td>{inv.clients?.name || '—'}</td>
                   <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.currency}</td>
