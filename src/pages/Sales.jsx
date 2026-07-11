@@ -19,7 +19,8 @@ export default function Sales() {
   const [rates, setRates] = useState({})
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
-  const [activeInvoice, setActiveInvoice] = useState(null) // invoice being viewed/edited
+  const [activeInvoice, setActiveInvoice] = useState(null)
+  const [editingInvoice, setEditingInvoice] = useState(null) // invoice being viewed/edited
 
   async function load() {
     // Load core data and exchange rates in parallel — rates won't block the page
@@ -116,7 +117,7 @@ export default function Sales() {
       {modal === 'client' && (
         <ClientModal onClose={() => setModal(null)} onSave={load} />
       )}
-      {modal === 'invoice' && (
+      {(modal === 'invoice' || editingInvoice) && (
         <InvoiceModal
           clients={clients}
           artworks={artworks}
@@ -126,6 +127,15 @@ export default function Sales() {
           userId={user?.id}
           onClose={() => setModal(null)}
           onSave={load}
+        />
+      )}
+      {editingInvoice && (
+        <InvoiceModal
+          clients={clients} artworks={artworks} artistMap={artistMap}
+          books={books} rates={rates} userId={userId}
+          editInvoice={editingInvoice}
+          onClose={() => setEditingInvoice(null)}
+          onSave={() => { load(); setEditingInvoice(null) }}
         />
       )}
       {modal === 'invoice-detail' && activeInvoice && (
@@ -720,11 +730,24 @@ function ClientModal({ onClose, onSave }) {
 }
 
 // ── INVOICE MODAL (create new) ───────────────────────────────
-function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onClose, onSave }) {
-  const [form, setForm] = useState({
+function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onClose, onSave, editInvoice=null }) {
+  const isEdit = !!editInvoice
+  const [form, setForm] = useState(editInvoice ? {
+    client_id:      editInvoice.client_id || '',
+    currency:       editInvoice.currency || 'NGN',
+    discount_type:  editInvoice.discount_type || 'none',
+    discount_value: editInvoice.discount_value || 0,
+    vat_rate:       editInvoice.vat_rate || 0,
+    issue_date:     editInvoice.issue_date || new Date().toISOString().split('T')[0],
+    due_date:       editInvoice.due_date || '',
+    notes:          editInvoice.notes || '',
+    terms:          editInvoice.terms || '',
+    keep_currency:  editInvoice.keep_currency ?? (editInvoice.currency !== 'NGN'),
+    fixed_rate:     editInvoice.exchange_rate || null,
+  } : {
     client_id:'', currency:'NGN', discount_type:'none', discount_value:0,
     vat_rate:0, issue_date: new Date().toISOString().split('T')[0],
-    due_date:'', notes:'', terms:''
+    due_date:'', notes:'', terms:'', keep_currency:false, fixed_rate:null,
   })
   const [items, setItems] = useState([]) // { artwork_id, title, artist_name, year, medium, dimensions, unit_price, quantity:1, discount:0 }
   const [artworkSearch, setArtworkSearch] = useState('')
@@ -733,7 +756,31 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
   const [saving, setSaving] = useState(false)
 
   const rateLabel = getRateLabel(form.currency, rates)
-  const exchangeRate = rates[form.currency] || 1
+  const exchangeRate = form.fixed_rate || rates[form.currency] || 1
+
+  // Load existing items when editing
+  useEffect(() => {
+    if (!isEdit) return
+    supabase.from('invoice_items').select('*').eq('invoice_id', editInvoice.id).order('sort_order')
+      .then(({ data }) => {
+        if (data) setItems(data.map(it => ({
+          id: it.id,
+          artwork_id: it.artwork_id,
+          book_id: it.book_id,
+          item_type: it.item_type || 'artwork',
+          title: it.title,
+          artist_name: it.artist_name,
+          year: it.year,
+          medium: it.medium,
+          dimensions: it.dimensions,
+          unit_price: it.unit_price,
+          quantity: it.quantity || 1,
+          discount: it.discount || 0,
+          ownership: it.ownership || 'gallery',
+          commission_rate: it.commission_rate,
+        })))
+      })
+  }, [isEdit])
 
   function addArtwork(artwork) {
     if (items.find(i => i.artwork_id === artwork.id)) return
@@ -799,7 +846,8 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
         invoice_number: invoiceNumber,
         client_id: form.client_id,
         currency: form.currency,
-        exchange_rate: exchangeRate,
+        exchange_rate: form.keep_currency ? null : (form.fixed_rate || exchangeRate),
+        keep_currency: form.keep_currency || false,
         base_currency: 'NGN',
         subtotal,
         discount_type: form.discount_type,
@@ -862,7 +910,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
     <div className="modal-overlay">
       <div className="modal modal-xl" style={{ maxHeight:'94vh' }}>
         <div className="modal-header">
-          <div className="modal-title">New invoice</div>
+          <div className="modal-title">{isEdit ? `Edit ${editInvoice.invoice_number}` : 'New invoice'}</div>
           <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
         </div>
         <div className="modal-body" style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:24 }}>
@@ -990,12 +1038,43 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               )}
             </div>
             <div className="form-group">
-              <label className="form-label">Currency</label>
-              <select className="form-select" value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}>
+              <label className="form-label">Invoice currency</label>
+              <select className="form-select" value={form.currency} onChange={e=>setForm(f=>({...f, currency:e.target.value, keep_currency: e.target.value !== 'NGN', fixed_rate:null }))}>
                 {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
               </select>
-              {rateLabel && <div style={{ fontSize:11, color:'var(--muted)', marginTop:4 }}>{rateLabel}</div>}
             </div>
+            {form.currency !== 'NGN' && (
+              <div className="form-group">
+                <label className="form-label">NGN conversion</label>
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer' }}>
+                    <input type="radio" checked={!form.keep_currency} onChange={() => setForm(f=>({...f, keep_currency:false}))} />
+                    Convert to NGN
+                  </label>
+                  {!form.keep_currency && (
+                    <div style={{ marginLeft:20, display:'flex', gap:8, alignItems:'center' }}>
+                      <div style={{ fontSize:12, color:'var(--muted)' }}>
+                        {rates[form.currency] ? `Live: 1 ${form.currency} = ₦${Math.round(rates[form.currency]).toLocaleString()}` : 'No live rate'}
+                      </div>
+                      <span style={{ color:'var(--muted)', fontSize:12 }}>or fixed:</span>
+                      <input className="form-input" type="number" style={{ width:100, padding:'4px 8px', fontSize:12 }}
+                        placeholder="e.g. 1650" value={form.fixed_rate || ''}
+                        onChange={e => setForm(f=>({...f, fixed_rate: e.target.value ? Number(e.target.value) : null}))} />
+                      <span style={{ fontSize:12, color:'var(--muted)' }}>NGN</span>
+                    </div>
+                  )}
+                  <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer' }}>
+                    <input type="radio" checked={!!form.keep_currency} onChange={() => setForm(f=>({...f, keep_currency:true, fixed_rate:null}))} />
+                    Keep in {form.currency} — create foreign currency receivable
+                  </label>
+                  {form.keep_currency && (
+                    <div style={{ marginLeft:20, fontSize:11, color:'var(--amber,#b8862a)', padding:'6px 10px', background:'#fef9ec', borderRadius:3 }}>
+                      Invoice and balance will remain in {form.currency}. Payments must be recorded in {form.currency}.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Issue date</label>
@@ -1059,7 +1138,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
         </div>
         <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Creating…':'Create invoice'}</button>
+          <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? (isEdit?'Saving…':'Creating…') : (isEdit?'Save changes':'Create invoice')}</button>
         </div>
       </div>
     </div>
@@ -1067,7 +1146,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
 }
 
 // ── INVOICE DETAIL (view, add payment, print) ────────────────
-function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }) {
+function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit }) {
   const [payments, setPayments] = useState([])
   const [items, setItems] = useState([])
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
