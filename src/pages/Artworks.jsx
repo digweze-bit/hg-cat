@@ -966,7 +966,7 @@ ${body}
   if (!w) { alert('Please allow popups to print'); return }
   w.document.write(html)
   w.document.close()
-  setTimeout(() => w.print(), mode === 'fullpage' ? 2000 : 800)
+  setTimeout(() => w.print(), mode === 'fullpage' ? 2500 : 800)
 }
 
 
