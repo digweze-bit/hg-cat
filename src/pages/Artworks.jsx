@@ -537,7 +537,7 @@ export default function Artworks() {
         <span style={{ fontSize:13, color:'var(--muted)' }}>{filtered.length} results</span>
         <button
           className="btn btn-outline btn-sm"
-          onClick={() => printArtworkList(sorted, artistMap, filters)}
+          onClick={() => { const mode = window.confirm('Thumbnail list (OK) or Full page one artwork per page (Cancel)?') ? 'thumbnail' : 'fullpage'; printArtworkList(sorted, artistMap, filters, mode) }}
           title="Print current filtered list"
         >
           🖨 Print list
