@@ -1127,7 +1127,11 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
     onSave()
   }
 
+  const [printing, setPrinting] = useState(false)
+
   async function printInvoice() {
+    setPrinting(true)
+    await new Promise(r => setTimeout(r, 10)) // yield to browser for repaint
     let logoB64 = null
     try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_B64 } catch(_) {}
     const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
@@ -1151,7 +1155,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            <button className="btn btn-outline btn-sm" onClick={() => requestAnimationFrame(printInvoice)}>Print / PDF</button>
+            <button className="btn btn-outline btn-sm" onClick={() => requestAnimationFrame(printInvoice)} disabled={printing}>{printing ? 'Preparing…' : 'Print / PDF'}</button>
             {(inv.status === 'cancelled' || inv.status === 'draft') && (
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
