@@ -1259,7 +1259,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave }
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {['draft','sent','partial','paid','cancelled'].map(s => (
                   <button key={s} className={`btn btn-sm ${inv.status === s ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={() => requestAnimationFrame(() => updateStatus(s)} style={{ textTransform:'capitalize' }}>{s}</button>
+                    onClick={() => requestAnimationFrame(() => updateStatus(s))} style={{ textTransform:'capitalize' }}>{s}</button>
                 ))}
               </div>
             </div>
