@@ -306,7 +306,6 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
           {SORTS.map(s => <option key={s.key} value={s.key}>{s.key === sortKey ? '✓ ' : ''}{s.label}</option>)}
         </select>
         <span style={{ fontSize:12, color:'var(--muted)', marginLeft:4 }}>{filtered.length} invoices</span>
-        </span>
       </div>
       <div className="card">
         <div className="table-wrap">
