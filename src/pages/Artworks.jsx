@@ -178,7 +178,7 @@ function PriceFields({ form, setForm }) {
           <label className="form-label">Price display (public)</label>
           <input className="form-input" value={form.price||''}
             onChange={e => setForm(f => ({...f, price:e.target.value}))}
-            placeholder="â‚¦2,500,000 Â· $1,500 Â· or POA" />
+            placeholder="â‚¦2,500,000 · $1,500 · or POA" />
         </div>
       </div>
     </div>
@@ -233,7 +233,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
           background: displayCurrency==='USD' ? 'var(--ink)' : 'transparent',
           color: displayCurrency==='USD' ? '#fff' : 'var(--muted)',
           borderColor: displayCurrency==='USD' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
-        $ USD {usdRate && displayCurrency==='USD' ? `Â· ${rateMode==='fixed'?'fixed':'live'}` : 'â–¾'}
+        $ USD {usdRate && displayCurrency==='USD' ? `· ${rateMode==='fixed'?'fixed':'live'}` : 'â–¾'}
       </button>
 
       {/* Rate picker dropdown */}
@@ -251,8 +251,8 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               background: rateMode==='live' ? 'var(--ink)' : 'var(--surface-1,#f8f7f5)',
               color: rateMode==='live' ? '#fff' : 'var(--ink)',
               cursor:'pointer', fontSize:12, fontWeight:600, marginBottom:8, textAlign:'left' }}>
-            {loading ? 'â³ Fetchingâ€¦' : rateMode==='live' && usdRate
-              ? `âœ“ Live rate Â· 1 USD = â‚¦${Math.round(usdRate).toLocaleString()}`
+            {loading ? '⏳ Fetchingâ€¦' : rateMode==='live' && usdRate
+              ? `âœ“ Live rate · 1 USD = â‚¦${Math.round(usdRate).toLocaleString()}`
               : 'â†» Fetch live rate'}
           </button>
 
@@ -492,7 +492,7 @@ export default function Artworks() {
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Artworks</div>
-          <div className="page-subtitle">{artworks.length} total Â· {artworks.filter(w=>w.visible).length} visible Â· {artworks.filter(w=>w.availability==='Available').length} available</div>
+          <div className="page-subtitle">{artworks.length} total · {artworks.filter(w=>w.visible).length} visible · {artworks.filter(w=>w.availability==='Available').length} available</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artwork</button>
       </div>
@@ -611,7 +611,7 @@ export default function Artworks() {
                   <td style={{ fontSize:13, color:'var(--muted)' }}>
                     {w.ownership === 'consignment'
                       ? <span title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
-                          Consignment{w.consignment_price ? ` Â· â‚¦${Number(w.consignment_price).toLocaleString()}` : ''}
+                          Consignment{w.consignment_price ? ` · â‚¦${Number(w.consignment_price).toLocaleString()}` : ''}
                         </span>
                       : <span>Gallery</span>
                     }
@@ -771,7 +771,7 @@ export default function Artworks() {
                           <input className="form-input" type="number" min={0} max={100} value={form.commission_rate||40} onChange={e=>setForm(f=>({...f,commission_rate:e.target.value}))} />
                           {form.consignment_price && form.commission_rate && (
                             <div style={{ fontSize:10, color:'var(--muted)', marginTop:4 }}>
-                              Gallery earns â‚¦{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} Â· Owner receives â‚¦{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}
+                              Gallery earns â‚¦{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} · Owner receives â‚¦{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}
                             </div>
                           )}
                         </div>
@@ -870,7 +870,7 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
     filters.availability && `Status: ${filters.availability}`,
     filters.ownership && `Ownership: ${filters.ownership}`,
     filters.search && `Search: "${filters.search}"`,
-  ].filter(Boolean).join(' Â· ')
+  ].filter(Boolean).join(' · ')
 
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
 
@@ -888,8 +888,8 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
           <td style="width:64px;padding:8px 6px 8px 0">${img}</td>
           <td style="padding:8px 10px">
             <div style="font-weight:600;font-size:12px">${escH(w.title)}</div>
-            <div style="color:#666;font-size:11px;margin-top:2px">${escH(artist)}${w.year ? ` Â· ${escH(w.year)}` : ''}</div>
-            ${w.medium ? `<div style="color:#888;font-size:10px">${escH(w.medium)}${w.dimensions ? ` Â· ${escH(w.dimensions)}` : ''}</div>` : ''}
+            <div style="color:#666;font-size:11px;margin-top:2px">${escH(artist)}${w.year ? ` · ${escH(w.year)}` : ''}</div>
+            ${w.medium ? `<div style="color:#888;font-size:10px">${escH(w.medium)}${w.dimensions ? ` · ${escH(w.dimensions)}` : ''}</div>` : ''}
           </td>
           <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.location || 'â€”')}</td>
           <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.hg_code || 'â€”')}</td>
@@ -961,7 +961,7 @@ body{font-family:-apple-system,sans-serif;color:#1a1714;padding:${mode === 'full
   <div style="font-family:Georgia,serif;font-size:16px;margin-bottom:2px">Hourglass Gallery</div>
   <div style="font-size:13px;font-weight:600;margin:6px 0 2px">${escH(title)}</div>
   ${subtitle ? `<div style="font-size:11px;color:#888">${escH(subtitle)}</div>` : ''}
-  <div style="font-size:10px;color:#aaa;margin-top:3px">Generated ${today} Â· ${artworks.length} work${artworks.length !== 1 ? 's' : ''} Â· ${mode === 'thumbnail' ? 'Thumbnail list' : 'Full page'}</div>
+  <div style="font-size:10px;color:#aaa;margin-top:3px">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''} · ${mode === 'thumbnail' ? 'Thumbnail list' : 'Full page'}</div>
 </div>
 ${body}
 </body></html>`
