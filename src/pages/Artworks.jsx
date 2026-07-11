@@ -314,7 +314,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,created_at', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,hg_code,location,tags,series,sort_order,visible,created_at', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -454,11 +454,14 @@ export default function Artworks() {
     setArtworks(prev => prev.filter(w => w.id !== id))
   }
 
-  function openEdit(artwork) {
-    console.log('Opening edit, writeup:', artwork.writeup)
+  async function openEdit(artwork) {
+    // Fetch full record with all fields for editing
+    const { data: full } = await supabase.from('artworks').select('*').eq('id', artwork.id).single()
+    const aw = full || artwork
+    console.log('Opening edit, writeup:', aw.writeup)
     setForm({
-      ...EMPTY, ...artwork,
-      writeup: artwork.writeup || '',
+      ...EMPTY, ...aw,
+      writeup: aw.writeup || '',
       tags: Array.isArray(artwork.tags) ? artwork.tags.join(', ') : '',
       ownership: artwork.ownership || 'gallery',
       consignment_price: artwork.consignment_price || '',
