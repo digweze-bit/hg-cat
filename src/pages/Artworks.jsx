@@ -894,30 +894,32 @@ function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail') {
     body = artworks.map((w, i) => {
       const artist = artistMap[w.artist_id]
       const img = w.image_url
-        ? `<img src="${w.image_url}" style="max-width:100%;max-height:65vh;object-fit:contain;display:block;margin:0 auto;">`
-        : `<div style="width:100%;height:400px;background:#f0ece7;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:48px">⬜</div>`
-      return `
-        <div style="page-break-after:${i < artworks.length - 1 ? 'always' : 'auto'};min-height:90vh;display:flex;flex-direction:column;justify-content:space-between;padding:24px 0">
-          <div style="text-align:center;margin-bottom:24px">${img}</div>
-          <div style="border-top:1px solid #e8e3db;padding-top:18px">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start">
-              <div>
-                <div style="font-family:Georgia,serif;font-size:22px;font-weight:400;color:#1a1714;margin-bottom:4px">${escH(w.title)}</div>
-                <div style="font-size:14px;color:#444;margin-bottom:8px">${escH(artist?.name || '—')}</div>
-                <div style="font-size:12px;color:#888">
-                  ${[w.year, w.medium, w.dimensions].filter(Boolean).map(escH).join(' · ')}
-                </div>
-                ${w.hg_code ? `<div style="font-size:11px;color:#b8862a;margin-top:6px;font-weight:600">${escH(w.hg_code)}</div>` : ''}
-              </div>
-              <div style="text-align:right">
-                ${(w.price || w.retail_price) ? `<div style="font-size:20px;font-weight:600;color:#1a1714">₦${Number(w.retail_price||0).toLocaleString()}</div>` : ''}
-                <div style="font-size:11px;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'};margin-top:4px;font-weight:500">${escH(w.availability || '')}</div>
-                ${w.location ? `<div style="font-size:11px;color:#aaa;margin-top:4px">${escH(w.location)}</div>` : ''}
-              </div>
+        ? `<img src="${w.image_url}" style="display:block;margin:20px auto;max-width:500px;max-height:500px;object-fit:contain;">`
+        : `<div style="width:400px;height:400px;background:#f0ece7;margin:20px auto;border-radius:4px;"></div>`
+      const price = w.retail_price ? '₦' + Number(w.retail_price).toLocaleString() : (w.price || '')
+      return `<div style="page-break-after:always;padding:32px 40px;">
+        <div style="border-bottom:2px solid #1a1714;padding-bottom:10px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:baseline;">
+          <span style="font-family:Georgia,serif;font-size:16px;">Hourglass Gallery</span>
+          <span style="font-size:10px;color:#aaa;">${escH(w.hg_code || '')}</span>
+        </div>
+        ${img}
+        <div style="margin-top:24px;border-top:1px solid #e8e3db;padding-top:16px;">
+          <div style="font-family:Georgia,serif;font-size:24px;font-weight:400;margin-bottom:6px;">${escH(w.title)}</div>
+          <div style="font-size:14px;color:#444;margin-bottom:12px;">${escH(artist?.name || '—')}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;">
+            <div style="font-size:12px;color:#888;line-height:1.8;">
+              ${w.year ? `<div>Year: ${escH(w.year)}</div>` : ''}
+              ${w.medium ? `<div>Medium: ${escH(w.medium)}</div>` : ''}
+              ${w.dimensions ? `<div>Dimensions: ${escH(w.dimensions)}</div>` : ''}
+              ${w.location ? `<div>Location: ${escH(w.location)}</div>` : ''}
+            </div>
+            <div style="text-align:right;">
+              ${price ? `<div style="font-size:22px;font-weight:600;color:#1a1714;">${escH(price)}</div>` : ''}
+              <div style="font-size:12px;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'};margin-top:4px;font-weight:500;">${escH(w.availability || '')}</div>
             </div>
           </div>
-          <div style="text-align:center;font-size:9px;color:#ccc;margin-top:12px">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
-        </div>`
+        </div>
+      </div>`
     }).join('')
   }
 
@@ -944,7 +946,7 @@ ${body}
   if (!w) { alert('Please allow popups to print'); return }
   w.document.write(html)
   w.document.close()
-  setTimeout(() => w.print(), 800)
+  setTimeout(() => w.print(), mode === 'fullpage' ? 2500 : 800)
 }
 
 
