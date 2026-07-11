@@ -233,7 +233,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
           background: displayCurrency==='USD' ? 'var(--ink)' : 'transparent',
           color: displayCurrency==='USD' ? '#fff' : 'var(--muted)',
           borderColor: displayCurrency==='USD' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
-        $ USD {usdRate && displayCurrency==='USD' ? `· ${rateMode==='fixed'?'fixed':'live'}` : 'â–¾'}
+        $ USD {usdRate && displayCurrency==='USD' ? `· ${rateMode==='fixed'?'fixed':'live'}` : '–¾'}
       </button>
 
       {/* Rate picker dropdown */}
@@ -541,7 +541,7 @@ export default function Artworks() {
         <span style={{ fontSize:13, color:'var(--muted)' }}>{filtered.length} results</span>
         <div style={{ position:'relative' }}>
           <button className="btn btn-outline btn-sm" onClick={() => setPrintMenu(m => !m)}>
-            âŽ™ Print list â–¾
+            âŽ™ Print list –¾
           </button>
           {printMenu && (
             <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', zIndex:100,
@@ -635,7 +635,7 @@ export default function Artworks() {
                     <button
                       onClick={() => toggleVisible(w)}
                       style={{ fontSize:18, cursor:'pointer', background:'none', border:'none', color: w.visible ? 'var(--green)' : 'var(--line)' }}
-                    >{w.visible ? 'â—‰' : 'â—‹'}</button>
+                    >{w.visible ? '◉' : '○'}</button>
                   </td>
                   <td>
                     <div style={{ display:'flex', gap:5 }}>
