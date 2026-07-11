@@ -314,7 +314,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,created_at', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -347,7 +347,13 @@ export default function Artworks() {
   const sorted = useMemo(() => {
     let list = [...filtered]
     if (sortBy === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
-    else if (sortBy === 'recent') list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    else if (sortBy === 'recent') list.sort((a, b) => {
+      // Use numeric part of hg_code if available, else fall back to id comparison
+      const numA = a.hg_code ? parseInt(a.hg_code.replace(/[^0-9]/g,'')) || 0 : 0
+      const numB = b.hg_code ? parseInt(b.hg_code.replace(/[^0-9]/g,'')) || 0 : 0
+      if (numB !== numA) return numB - numA
+      return (b.id || '').localeCompare(a.id || '')
+    })
     else if (sortBy === 'price_desc') list.sort((a, b) => parsePrice(b.price) - parsePrice(a.price))
     else if (sortBy === 'price_asc') list.sort((a, b) => parsePrice(a.price) - parsePrice(b.price))
     else if (sortBy === 'location') list.sort((a, b) => (a.location || 'zzz').localeCompare(b.location || 'zzz'))
@@ -829,7 +835,7 @@ export default function Artworks() {
   )
 }
 
-function printArtworkList(artworks, artistMap, filters) {
+function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail') {
   const title = filters.location
     ? `Artwork List — ${filters.location}`
     : filters.artist
@@ -843,53 +849,104 @@ function printArtworkList(artworks, artistMap, filters) {
   ].filter(Boolean).join(' · ')
 
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
-  const rows = artworks.map((w, i) => `
-    <tr>
-      <td>${i + 1}</td>
-      <td><strong>${escH(w.title)}</strong>${w.series ? `<br><span style="color:#888;font-size:10px">${escH(w.series)}</span>` : ''}</td>
-      <td>${escH(artistMap[w.artist_id]?.name || '—')}</td>
-      <td>${escH(w.year || '—')}</td>
-      <td>${escH(w.medium || '—')}</td>
-      <td>${escH(w.dimensions || '—')}</td>
-      <td>${escH(w.location || '—')}</td>
-      <td style="color:${w.availability === 'Available' ? '#2d6a4f' : w.availability === 'Sold' ? '#8b1a1a' : '#92600a'};font-weight:500">${escH(w.availability || '—')}</td>
-      <td>${escH(w.price || '—')}</td>
-    </tr>`).join('')
+
+  let body = ''
+
+  if (mode === 'thumbnail') {
+    // Thumbnail list — compact rows with small images
+    const rows = artworks.map((w, i) => {
+      const artist = artistMap[w.artist_id]?.name || '—'
+      const img = w.image_url
+        ? `<img src="${w.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:2px;border:1px solid #e8e3db;">`
+        : `<div style="width:60px;height:60px;background:#f0ece7;border-radius:2px;border:1px solid #e8e3db;"></div>`
+      return `
+        <tr>
+          <td style="width:64px;padding:8px 6px 8px 0">${img}</td>
+          <td style="padding:8px 10px">
+            <div style="font-weight:600;font-size:12px">${escH(w.title)}</div>
+            <div style="color:#666;font-size:11px;margin-top:2px">${escH(artist)}${w.year ? ` · ${escH(w.year)}` : ''}</div>
+            ${w.medium ? `<div style="color:#888;font-size:10px">${escH(w.medium)}${w.dimensions ? ` · ${escH(w.dimensions)}` : ''}</div>` : ''}
+          </td>
+          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.location || '—')}</td>
+          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.hg_code || '—')}</td>
+          <td style="padding:8px 10px;font-size:12px;font-weight:500;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'}">${escH(w.availability || '—')}</td>
+          <td style="padding:8px 10px;font-size:12px">${escH(w.price || (w.retail_price ? '₦' + Number(w.retail_price).toLocaleString() : '—'))}</td>
+        </tr>`
+    }).join('')
+
+    body = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="border-bottom:2px solid #1a1714">
+            <th style="padding:8px 6px 8px 0;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;width:64px"></th>
+            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">Artwork</th>
+            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">Location</th>
+            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">HG Code</th>
+            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">Status</th>
+            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">Price</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`
+
+  } else {
+    // Full page — one artwork per page, large image
+    body = artworks.map((w, i) => {
+      const artist = artistMap[w.artist_id]
+      const img = w.image_url
+        ? `<img src="${w.image_url}" style="max-width:100%;max-height:65vh;object-fit:contain;display:block;margin:0 auto;">`
+        : `<div style="width:100%;height:400px;background:#f0ece7;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:48px">⬜</div>`
+      return `
+        <div style="page-break-after:${i < artworks.length - 1 ? 'always' : 'auto'};min-height:90vh;display:flex;flex-direction:column;justify-content:space-between;padding:24px 0">
+          <div style="text-align:center;margin-bottom:24px">${img}</div>
+          <div style="border-top:1px solid #e8e3db;padding-top:18px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start">
+              <div>
+                <div style="font-family:Georgia,serif;font-size:22px;font-weight:400;color:#1a1714;margin-bottom:4px">${escH(w.title)}</div>
+                <div style="font-size:14px;color:#444;margin-bottom:8px">${escH(artist?.name || '—')}</div>
+                <div style="font-size:12px;color:#888">
+                  ${[w.year, w.medium, w.dimensions].filter(Boolean).map(escH).join(' · ')}
+                </div>
+                ${w.hg_code ? `<div style="font-size:11px;color:#b8862a;margin-top:6px;font-weight:600">${escH(w.hg_code)}</div>` : ''}
+              </div>
+              <div style="text-align:right">
+                ${(w.price || w.retail_price) ? `<div style="font-size:20px;font-weight:600;color:#1a1714">₦${Number(w.retail_price||0).toLocaleString()}</div>` : ''}
+                <div style="font-size:11px;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'};margin-top:4px;font-weight:500">${escH(w.availability || '')}</div>
+                ${w.location ? `<div style="font-size:11px;color:#aaa;margin-top:4px">${escH(w.location)}</div>` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:9px;color:#ccc;margin-top:12px">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
+        </div>`
+    }).join('')
+  }
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,sans-serif;color:#1a1714;padding:32px 40px;font-size:12px;}
-.header{margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid #1a1714;}
-.logo{font-family:Georgia,serif;font-size:18px;margin-bottom:2px;}
-.report-title{font-size:14px;font-weight:600;margin:8px 0 2px;}
-.subtitle{font-size:11px;color:#888;}
-.meta{font-size:10px;color:#aaa;margin-top:4px;}
-table{width:100%;border-collapse:collapse;margin-top:8px;}
-th{padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;border-bottom:2px solid #1a1714;background:#f9f8f6;}
-td{padding:7px 10px;border-bottom:1px solid #ece8e1;font-size:11px;vertical-align:top;}
-tr:nth-child(even) td{background:#faf9f7;}
-.footer{margin-top:24px;padding-top:12px;border-top:1px solid #ddd9d1;font-size:10px;color:#aaa;text-align:center;}
-@media print{body{padding:16px 20px;}th{background:#f0ece4 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+body{font-family:-apple-system,sans-serif;color:#1a1714;padding:${mode === 'fullpage' ? '20px 32px' : '24px 32px'};font-size:12px;}
+.header{margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1a1714;}
+@media print{
+  body{padding:12px 20px;}
+  ${mode === 'fullpage' ? '@page{margin:0;size:A4 portrait;}' : ''}
+}
 </style></head><body>
 <div class="header">
-  <div class="logo">Hourglass Gallery</div>
-  <div class="report-title">${escH(title)}</div>
-  ${subtitle ? `<div class="subtitle">${escH(subtitle)}</div>` : ''}
-  <div class="meta">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''}</div>
+  <div style="font-family:Georgia,serif;font-size:16px;margin-bottom:2px">Hourglass Gallery</div>
+  <div style="font-size:13px;font-weight:600;margin:6px 0 2px">${escH(title)}</div>
+  ${subtitle ? `<div style="font-size:11px;color:#888">${escH(subtitle)}</div>` : ''}
+  <div style="font-size:10px;color:#aaa;margin-top:3px">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''} · ${mode === 'thumbnail' ? 'Thumbnail list' : 'Full page'}</div>
 </div>
-<table>
-  <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Year</th><th>Medium</th><th>Dimensions</th><th>Location</th><th>Status</th><th>Price</th></tr></thead>
-  <tbody>${rows}</tbody>
-</table>
-<div class="footer">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
+${body}
 </body></html>`
 
   const w = window.open('', '_blank', 'width=1100,height=750')
+  if (!w) { alert('Please allow popups to print'); return }
   w.document.write(html)
   w.document.close()
-  setTimeout(() => w.print(), 500)
+  setTimeout(() => w.print(), 800)
 }
+
 
 function escH(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
