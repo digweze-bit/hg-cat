@@ -535,13 +535,31 @@ export default function Artworks() {
           ))}
         </div>
         <span style={{ fontSize:13, color:'var(--muted)' }}>{filtered.length} results</span>
-        <button
-          className="btn btn-outline btn-sm"
-          onClick={() => { const mode = window.confirm('Thumbnail list (OK) or Full page one artwork per page (Cancel)?') ? 'thumbnail' : 'fullpage'; printArtworkList(sorted, artistMap, filters, mode) }}
-          title="Print current filtered list"
-        >
-          🖨 Print list
-        </button>
+        <div style={{ position:'relative' }}>
+          <button className="btn btn-outline btn-sm" onClick={() => setPrintMenu(m => !m)}>
+            ⎙ Print list ▾
+          </button>
+          {printMenu && (
+            <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', zIndex:100,
+              background:'var(--bg,#fff)', border:'1px solid var(--line-soft)', borderRadius:4,
+              boxShadow:'0 4px 16px rgba(0,0,0,.12)', minWidth:200, overflow:'hidden' }}
+              onMouseLeave={() => setPrintMenu(false)}>
+              <button style={{ display:'block', width:'100%', padding:'11px 16px', textAlign:'left',
+                fontSize:13, cursor:'pointer', border:'none', background:'none', color:'var(--ink)',
+                borderBottom:'1px solid var(--line-soft)' }}
+                onClick={() => { setPrintMenu(false); setTimeout(() => printArtworkList(sorted, artistMap, filters, 'thumbnail'), 10) }}>
+                <div style={{ fontWeight:600 }}>Thumbnail list</div>
+                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Compact with small images</div>
+              </button>
+              <button style={{ display:'block', width:'100%', padding:'11px 16px', textAlign:'left',
+                fontSize:13, cursor:'pointer', border:'none', background:'none', color:'var(--ink)' }}
+                onClick={() => { setPrintMenu(false); setTimeout(() => printArtworkList(sorted, artistMap, filters, 'fullpage'), 10) }}>
+                <div style={{ fontWeight:600 }}>Full page</div>
+                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>One large artwork per page</div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -835,7 +853,9 @@ export default function Artworks() {
   )
 }
 
-function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail') {
+async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail') {
+  // Yield to browser so UI can update before heavy work
+  await new Promise(r => setTimeout(r, 50))
   const title = filters.location
     ? `Artwork List — ${filters.location}`
     : filters.artist
