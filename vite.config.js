@@ -8,6 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        cacheId: 'hgcat-1783848589',  // Changes on every build = forces cache clear
         // Precache the app shell — everything needed to render the UI
         // Exclude heavy chunks that are only needed occasionally
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
