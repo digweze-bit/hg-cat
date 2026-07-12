@@ -251,7 +251,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               background: rateMode==='live' ? 'var(--ink)' : 'var(--surface-1,#f8f7f5)',
               color: rateMode==='live' ? '#fff' : 'var(--ink)',
               cursor:'pointer', fontSize:12, fontWeight:600, marginBottom:8, textAlign:'left' }}>
-            {loading ? 'â³ Fetchingâ€¦' : rateMode==='live' && usdRate
+            {loading ? '⏳ Fetchingâ€¦' : rateMode==='live' && usdRate
               ? `âœ“ Live rate Â· 1 USD = â‚¦${Math.round(usdRate).toLocaleString()}`
               : 'â†» Fetch live rate'}
           </button>
@@ -528,7 +528,7 @@ export default function Artworks() {
           {[
             ['recent','Most recent'],
             ['az','A â€“ Z'],
-            ['price_desc','Price â†“'],
+            ['price_desc','Price ↓'],
             ['price_asc','Price â†‘'],
             ['location','Location'],
           ].map(([key, label]) => (
@@ -573,10 +573,10 @@ export default function Artworks() {
                 <th style={{ width:60 }}>Image</th>
                 <th style={{ cursor:'pointer', color: sortBy==='az'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('az'); setPage(0) }}>Title {sortBy==='az'?'â†‘':''}</th>
                 <th>Artist</th>
-                <th style={{ cursor:'pointer', color: sortBy==='recent'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('recent'); setPage(0) }}>Year {sortBy==='recent'?'â†“':''}</th>
+                <th style={{ cursor:'pointer', color: sortBy==='recent'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('recent'); setPage(0) }}>Year {sortBy==='recent'?'↓':''}</th>
                 <th style={{ cursor:'pointer', color: sortBy==='location'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('location'); setPage(0) }}>Location {sortBy==='location'?'â†‘':''}</th>
                 <th>Ownership</th>
-                <th style={{ cursor:'pointer', color: ['price_desc','price_asc'].includes(sortBy)?'var(--ink)':'inherit' }} onClick={() => { setSortBy(sortBy==='price_desc'?'price_asc':'price_desc'); setPage(0) }}>Price {sortBy==='price_desc'?'â†“':sortBy==='price_asc'?'â†‘':''}</th>
+                <th style={{ cursor:'pointer', color: ['price_desc','price_asc'].includes(sortBy)?'var(--ink)':'inherit' }} onClick={() => { setSortBy(sortBy==='price_desc'?'price_asc':'price_desc'); setPage(0) }}>Price {sortBy==='price_desc'?'↓':sortBy==='price_asc'?'â†‘':''}</th>
                 <th>Status</th><th>Visible</th>
                 <th style={{ width:120 }}>Actions</th>
               </tr>
