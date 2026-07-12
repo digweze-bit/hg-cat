@@ -540,7 +540,7 @@ export default function Artworks() {
         </div>
         <span style={{ fontSize:13, color:'var(--muted)' }}>{filtered.length} results</span>
         <div style={{ position:'relative' }}>
-          <button className="btn btn-outline btn-sm" onClick={() =>Print list ▾</button>
+          <button className="btn btn-outline btn-sm" onClick={() => setPrintMenu(m => !m)}>Print list</button>
           {printMenu && (
             <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', zIndex:100,
               background:'var(--bg,#fff)', border:'1px solid var(--line-soft)', borderRadius:4,
