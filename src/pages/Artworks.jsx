@@ -108,7 +108,7 @@ function PriceFields({ form, setForm }) {
               style={{ fontSize:11, padding:'4px 10px', borderRadius:3, border:'1px solid var(--line-soft)',
                 background: rateMode==='live' ? 'var(--ink)' : 'transparent',
                 color: rateMode==='live' ? '#fff' : 'var(--muted)', cursor:'pointer', fontWeight:600 }}>
-              {rateLoading ? 'â€¦' : 'â†» Live rate'}
+              {rateLoading ? '…' : 'â†» Live rate'}
             </button>
 
             <span style={{ color:'var(--muted)', fontSize:11 }}>or fixed:</span>
@@ -251,7 +251,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               background: rateMode==='live' ? 'var(--ink)' : 'var(--surface-1,#f8f7f5)',
               color: rateMode==='live' ? '#fff' : 'var(--ink)',
               cursor:'pointer', fontSize:12, fontWeight:600, marginBottom:8, textAlign:'left' }}>
-            {loading ? '⏳ Fetchingâ€¦' : rateMode==='live' && usdRate
+            {loading ? '⏳ Fetching…' : rateMode==='live' && usdRate
               ? `âœ“ Live rate Â· 1 USD = â‚¦${Math.round(usdRate).toLocaleString()}`
               : 'â†» Fetch live rate'}
           </button>
@@ -485,7 +485,7 @@ export default function Artworks() {
 
   const sf = (key, val) => { setFilters(f => ({...f, [key]: val})); setPage(0) }
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading artworksâ€¦</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading artworks…</div>
 
   return (
     <div>
@@ -499,7 +499,7 @@ export default function Artworks() {
 
       {/* Filters */}
       <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:18 }}>
-        <input className="form-input" style={{ width:220 }} placeholder="Searchâ€¦" value={filters.search} onChange={e=>sf('search',e.target.value)} />
+        <input className="form-input" style={{ width:220 }} placeholder="Search…" value={filters.search} onChange={e=>sf('search',e.target.value)} />
         <select className="form-select" style={{ width:180 }} value={filters.artist} onChange={e=>sf('artist',e.target.value)}>
           <option value="">All artists</option>
           {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -527,9 +527,9 @@ export default function Artworks() {
         <div style={{ marginLeft:'auto', display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
           {[
             ['recent','Most recent'],
-            ['az','A â€“ Z'],
+            ['az','A — Z'],
             ['price_desc','Price ↓'],
-            ['price_asc','Price â†‘'],
+            ['price_asc','Price ↑'],
             ['location','Location'],
           ].map(([key, label]) => (
             <button key={key} onClick={() => { setSortBy(key); setPage(0) }}
@@ -571,12 +571,12 @@ export default function Artworks() {
             <thead>
               <tr>
                 <th style={{ width:60 }}>Image</th>
-                <th style={{ cursor:'pointer', color: sortBy==='az'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('az'); setPage(0) }}>Title {sortBy==='az'?'â†‘':''}</th>
+                <th style={{ cursor:'pointer', color: sortBy==='az'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('az'); setPage(0) }}>Title {sortBy==='az'?'↑':''}</th>
                 <th>Artist</th>
                 <th style={{ cursor:'pointer', color: sortBy==='recent'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('recent'); setPage(0) }}>Year {sortBy==='recent'?'↓':''}</th>
-                <th style={{ cursor:'pointer', color: sortBy==='location'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('location'); setPage(0) }}>Location {sortBy==='location'?'â†‘':''}</th>
+                <th style={{ cursor:'pointer', color: sortBy==='location'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('location'); setPage(0) }}>Location {sortBy==='location'?'↑':''}</th>
                 <th>Ownership</th>
-                <th style={{ cursor:'pointer', color: ['price_desc','price_asc'].includes(sortBy)?'var(--ink)':'inherit' }} onClick={() => { setSortBy(sortBy==='price_desc'?'price_asc':'price_desc'); setPage(0) }}>Price {sortBy==='price_desc'?'↓':sortBy==='price_asc'?'â†‘':''}</th>
+                <th style={{ cursor:'pointer', color: ['price_desc','price_asc'].includes(sortBy)?'var(--ink)':'inherit' }} onClick={() => { setSortBy(sortBy==='price_desc'?'price_asc':'price_desc'); setPage(0) }}>Price {sortBy==='price_desc'?'↓':sortBy==='price_asc'?'↑':''}</th>
                 <th>Status</th><th>Visible</th>
                 <th style={{ width:120 }}>Actions</th>
               </tr>
@@ -819,7 +819,7 @@ export default function Artworks() {
                 <div className="form-group">
                   <label className="form-label">Artwork image</label>
                   <input type="file" accept="image/*" onChange={handleImageUpload} />
-                  {uploading && <div style={{ fontSize:11, color:'var(--muted)' }}>Uploadingâ€¦</div>}
+                  {uploading && <div style={{ fontSize:11, color:'var(--muted)' }}>Uploading…</div>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Image URL (or paste after upload)</label>
@@ -845,7 +845,7 @@ export default function Artworks() {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Savingâ€¦' : 'Save artwork'}
+                {saving ? 'Saving…' : 'Save artwork'}
               </button>
             </div>
           </div>
