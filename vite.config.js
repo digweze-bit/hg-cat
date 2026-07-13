@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-        cacheId: 'hgcat-v9',  // Bump to force cache clear
-        cacheId: 'hgcat-1783848589',  // Changes on every build = forces cache clear
+      workbox: {
+        cacheId: 'hgcat-v9',
+
         // Precache the app shell — everything needed to render the UI
         // Exclude heavy chunks that are only needed occasionally
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
