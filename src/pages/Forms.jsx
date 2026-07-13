@@ -614,8 +614,8 @@ export default function Forms() {
                 </div>
               )}
 
-              {/* STEP 3 — Recipient & details */}
-              {step === 3 && (
+              {/* STEP 3 — Recipient & details (not for catalogue) */}
+              {step === 3 && bType !== 'catalogue' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                   <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:4 }}>Recipient</div>
                   <div className="form-row">
@@ -757,7 +757,7 @@ export default function Forms() {
               )}
 
               {/* STEP 4 — Gallery signature */}
-              {step === 4 && (
+              {step === 4 && bType !== 'catalogue' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                   <div style={{ fontSize:13, color:'var(--muted)' }}>Choose how Hourglass Gallery signs this document.</div>
                   <div style={{ display:'flex', gap:12 }}>
@@ -923,7 +923,7 @@ export default function Forms() {
                   disabled={
                     (step === 1 && !bType) ||
                     (step === 2 && bArtworks.length === 0) ||
-                    (step === 3 && !bRecipient.name)
+                    (step === 3 && !bRecipient.name && bType !== 'catalogue')
                   }>
                   Next →
                 </button>
