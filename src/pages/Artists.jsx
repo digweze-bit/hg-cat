@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { useNavigate } from 'react-router-dom'
@@ -133,7 +133,7 @@ export default function Artists() {
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Artists</div>
-          <div className="page-subtitle">{artists.length} artists \u00B7 {artists.filter(a=>a.visible).length} visible</div>
+          <div className="page-subtitle">{artists.length} artists {'\u00B7'} {artists.filter(a=>a.visible).length} visible</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artist</button>
       </div>
