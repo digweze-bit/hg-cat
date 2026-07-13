@@ -69,17 +69,17 @@ function PriceFields({ form, setForm }) {
     const updates = {}
     updates[field] = ngnVal !== null ? ngnVal : (val ? Number(val) : null)
     if (field === 'retail_price' && ngnVal) {
-      updates.price = 'â‚¦' + ngnVal.toLocaleString()
+      updates.price = '₦' + ngnVal.toLocaleString()
     }
     setForm(f => ({ ...f, ...updates }))
   }
 
-  const sym = { NGN:'â‚¦', USD:'$', GBP:'£', EUR:'â‚¬' }[inputCurrency] || 'â‚¦'
+  const sym = { NGN:'₦', USD:'$', GBP:'£', EUR:'â‚¬' }[inputCurrency] || '₦'
   const activeRate = getRate(inputCurrency)
   const rateLabel = rateMode === 'live'
-    ? `Live: 1 ${inputCurrency} = â‚¦${Math.round(activeRate||0).toLocaleString()}`
+    ? `Live: 1 ${inputCurrency} = ₦${Math.round(activeRate||0).toLocaleString()}`
     : rateMode === 'fixed' && confirmedRate
-    ? `Fixed: 1 ${inputCurrency} = â‚¦${confirmedRate.toLocaleString()}`
+    ? `Fixed: 1 ${inputCurrency} = ₦${confirmedRate.toLocaleString()}`
     : null
 
   return (
@@ -154,7 +154,7 @@ function PriceFields({ form, setForm }) {
             placeholder="0" />
           {inputCurrency !== 'NGN' && form.retail_price && activeRate && (
             <div style={{ fontSize:10, color:'var(--muted)', marginTop:3 }}>
-              = â‚¦{Number(form.retail_price).toLocaleString()}
+              = ₦{Number(form.retail_price).toLocaleString()}
             </div>
           )}
         </div>
@@ -178,7 +178,7 @@ function PriceFields({ form, setForm }) {
           <label className="form-label">Price display (public)</label>
           <input className="form-input" value={form.price||''}
             onChange={e => setForm(f => ({...f, price:e.target.value}))}
-            placeholder="â‚¦2,500,000 · $1,500 · or POA" />
+            placeholder="₦2,500,000 · $1,500 · or POA" />
         </div>
       </div>
     </div>
@@ -223,7 +223,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
           background: displayCurrency==='NGN' ? 'var(--ink)' : 'transparent',
           color: displayCurrency==='NGN' ? '#fff' : 'var(--muted)',
           borderColor: displayCurrency==='NGN' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
-        â‚¦ NGN
+        ₦ NGN
       </button>
 
       {/* USD button */}
@@ -252,7 +252,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               color: rateMode==='live' ? '#fff' : 'var(--ink)',
               cursor:'pointer', fontSize:12, fontWeight:600, marginBottom:8, textAlign:'left' }}>
             {loading ? '⏳ Fetching…' : rateMode==='live' && usdRate
-              ? `âœ“ Live rate · 1 USD = â‚¦${Math.round(usdRate).toLocaleString()}`
+              ? `âœ“ Live rate · 1 USD = ₦${Math.round(usdRate).toLocaleString()}`
               : 'â†» Fetch live rate'}
           </button>
 
@@ -278,7 +278,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
 
           {rateMode==='fixed' && usdRate && (
             <div style={{ marginTop:6, fontSize:11, color:'#27ae60', fontWeight:500 }}>
-              Fixed: 1 USD = â‚¦{Math.round(usdRate).toLocaleString()}
+              Fixed: 1 USD = ₦{Math.round(usdRate).toLocaleString()}
             </div>
           )}
 
@@ -609,7 +609,7 @@ export default function Artworks() {
                   <td style={{ fontSize:13, color:'var(--muted)' }}>
                     {w.ownership === 'consignment'
                       ? <span title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
-                          Consignment{w.consignment_price ? ` · â‚¦${Number(w.consignment_price).toLocaleString()}` : ''}
+                          Consignment{w.consignment_price ? ` · ₦${Number(w.consignment_price).toLocaleString()}` : ''}
                         </span>
                       : <span>Gallery</span>
                     }
@@ -621,7 +621,7 @@ export default function Artworks() {
                       if (displayCurrency === 'USD' && usdRate) {
                         return `$${Math.round(ngn / usdRate).toLocaleString()}`
                       }
-                      return w.price || `â‚¦${ngn.toLocaleString()}`
+                      return w.price || `₦${ngn.toLocaleString()}`
                     })()}
                   </td>
                   <td>
@@ -761,7 +761,7 @@ export default function Artworks() {
                       </div>
                       <div className="form-row">
                         <div className="form-group">
-                          <label className="form-label">Consignment price (â‚¦) <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:'var(--amber)', fontSize:10 }}>— minimum agreed with owner, not shown publicly</span></label>
+                          <label className="form-label">Consignment price (₦) <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:'var(--amber)', fontSize:10 }}>— minimum agreed with owner, not shown publicly</span></label>
                           <input className="form-input" type="number" value={form.consignment_price||''} onChange={e=>setForm(f=>({...f,consignment_price:e.target.value}))} placeholder="0" />
                         </div>
                         <div className="form-group">
@@ -769,7 +769,7 @@ export default function Artworks() {
                           <input className="form-input" type="number" min={0} max={100} value={form.commission_rate||40} onChange={e=>setForm(f=>({...f,commission_rate:e.target.value}))} />
                           {form.consignment_price && form.commission_rate && (
                             <div style={{ fontSize:10, color:'var(--muted)', marginTop:4 }}>
-                              Gallery earns â‚¦{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} · Owner receives â‚¦{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}
+                              Gallery earns ₦{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} · Owner receives ₦{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}
                             </div>
                           )}
                         </div>
@@ -786,7 +786,7 @@ export default function Artworks() {
                   </label>
                   {form.is_framed && (
                     <div className="form-group" style={{ marginBottom:0, maxWidth:200 }}>
-                      <label className="form-label">Frame cost (â‚¦)</label>
+                      <label className="form-label">Frame cost (₦)</label>
                       <input className="form-input" type="number" value={form.frame_cost||''} onChange={e=>setForm(f=>({...f,frame_cost:e.target.value}))} placeholder="0"/>
                     </div>
                   )}
@@ -892,7 +892,7 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
           <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.location || '—')}</td>
           <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.hg_code || '—')}</td>
           <td style="padding:8px 10px;font-size:12px;font-weight:500;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'}">${escH(w.availability || '—')}</td>
-          <td style="padding:8px 10px;font-size:12px">${escH(w.price || (w.retail_price ? 'â‚¦' + Number(w.retail_price).toLocaleString() : '—'))}</td>
+          <td style="padding:8px 10px;font-size:12px">${escH(w.price || (w.retail_price ? '₦' + Number(w.retail_price).toLocaleString() : '—'))}</td>
         </tr>`
     }).join('')
 
@@ -918,7 +918,7 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
       const img = w.image_url
         ? `<img src="${w.image_url}" style="display:block;margin:20px auto;max-width:500px;max-height:500px;object-fit:contain;">`
         : `<div style="width:400px;height:400px;background:#f0ece7;margin:20px auto;border-radius:4px;"></div>`
-      const price = w.retail_price ? 'â‚¦' + Number(w.retail_price).toLocaleString() : (w.price || '')
+      const price = w.retail_price ? '₦' + Number(w.retail_price).toLocaleString() : (w.price || '')
       return `<div style="page-break-after:always;padding:32px 40px;">
         <div style="border-bottom:2px solid #1a1714;padding-bottom:10px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:baseline;">
           <span style="font-family:Georgia,serif;font-size:16px;">Hourglass Gallery</span>
