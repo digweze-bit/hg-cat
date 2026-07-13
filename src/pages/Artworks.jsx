@@ -9,7 +9,7 @@ const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Stora
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
 const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
 
-// \u00E2\u201D\u20AC\u00E2\u201D\u20AC PRICE FIELDS COMPONENT \u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC
+// â”€â”€ PRICE FIELDS COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function PriceFields({ form, setForm }) {
   const [rates, setRates]             = useState(null)
   const [rateLoading, setRateLoading] = useState(false)
@@ -28,7 +28,7 @@ function PriceFields({ form, setForm }) {
       setRateMode('live')
       setConfirmedRate(null)
       setRateInput('')
-    } catch(_) { alert('Could not fetch live rate \u2014 check connection') }
+    } catch(_) { alert('Could not fetch live rate — check connection') }
     setRateLoading(false)
   }
 
@@ -69,17 +69,17 @@ function PriceFields({ form, setForm }) {
     const updates = {}
     updates[field] = ngnVal !== null ? ngnVal : (val ? Number(val) : null)
     if (field === 'retail_price' && ngnVal) {
-      updates.price = '\u20A6' + ngnVal.toLocaleString()
+      updates.price = '₦' + ngnVal.toLocaleString()
     }
     setForm(f => ({ ...f, ...updates }))
   }
 
-  const sym = { NGN:'\u20A6', USD:'$', GBP:'\u00A3', EUR:'\u00E2\u201A\u00AC' }[inputCurrency] || '\u20A6'
+  const sym = { NGN:'₦', USD:'$', GBP:'£', EUR:'â‚¬' }[inputCurrency] || '₦'
   const activeRate = getRate(inputCurrency)
   const rateLabel = rateMode === 'live'
-    ? `Live: 1 ${inputCurrency} = \u20A6${Math.round(activeRate||0).toLocaleString()}`
+    ? `Live: 1 ${inputCurrency} = ₦${Math.round(activeRate||0).toLocaleString()}`
     : rateMode === 'fixed' && confirmedRate
-    ? `Fixed: 1 ${inputCurrency} = \u20A6${confirmedRate.toLocaleString()}`
+    ? `Fixed: 1 ${inputCurrency} = ₦${confirmedRate.toLocaleString()}`
     : null
 
   return (
@@ -99,7 +99,7 @@ function PriceFields({ form, setForm }) {
         ))}
       </div>
 
-      {/* Rate section \u2014 only shown for non-NGN */}
+      {/* Rate section — only shown for non-NGN */}
       {inputCurrency !== 'NGN' && (
         <div style={{ background:'var(--surface-1,#f8f7f5)', borderRadius:4, padding:'10px 14px', marginBottom:12 }}>
           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
@@ -108,7 +108,7 @@ function PriceFields({ form, setForm }) {
               style={{ fontSize:11, padding:'4px 10px', borderRadius:3, border:'1px solid var(--line-soft)',
                 background: rateMode==='live' ? 'var(--ink)' : 'transparent',
                 color: rateMode==='live' ? '#fff' : 'var(--muted)', cursor:'pointer', fontWeight:600 }}>
-              {rateLoading ? '\u2026' : '\u00E2\u2020\u00BB Live rate'}
+              {rateLoading ? '…' : 'â†» Live rate'}
             </button>
 
             <span style={{ color:'var(--muted)', fontSize:11 }}>or fixed:</span>
@@ -125,7 +125,7 @@ function PriceFields({ form, setForm }) {
                 style={{ fontSize:11, padding:'4px 10px', borderRadius:3,
                   background: rateMode==='fixed' ? '#27ae60' : 'var(--ink)',
                   color:'#fff', border:'none', cursor:'pointer', fontWeight:600 }}>
-                {rateMode==='fixed' ? '\u00E2\u0153\u201C Set' : 'Set'}
+                {rateMode==='fixed' ? 'âœ“ Set' : 'Set'}
               </button>
             </div>
           </div>
@@ -138,7 +138,7 @@ function PriceFields({ form, setForm }) {
           )}
           {inputCurrency !== 'NGN' && !activeRate && (
             <div style={{ marginTop:6, fontSize:11, color:'var(--amber,#b8862a)' }}>
-              {'\u00E2'}{'\u0161'}{'\u00A0'} Set a rate to convert prices
+              âš  Set a rate to convert prices
             </div>
           )}
         </div>
@@ -154,7 +154,7 @@ function PriceFields({ form, setForm }) {
             placeholder="0" />
           {inputCurrency !== 'NGN' && form.retail_price && activeRate && (
             <div style={{ fontSize:10, color:'var(--muted)', marginTop:3 }}>
-              = \u20A6{Number(form.retail_price).toLocaleString()}
+              = ₦{Number(form.retail_price).toLocaleString()}
             </div>
           )}
         </div>
@@ -178,7 +178,7 @@ function PriceFields({ form, setForm }) {
           <label className="form-label">Price display (public)</label>
           <input className="form-input" value={form.price||''}
             onChange={e => setForm(f => ({...f, price:e.target.value}))}
-            placeholder="\u20A62,500,000 \u00B7 $1,500 \u00B7 or POA" />
+            placeholder="₦2,500,000 · $1,500 · or POA" />
         </div>
       </div>
     </div>
@@ -186,7 +186,7 @@ function PriceFields({ form, setForm }) {
 }
 
 
-// \u00E2\u201D\u20AC\u00E2\u201D\u20AC CURRENCY TOGGLE \u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC\u00E2\u201D\u20AC
+// â”€â”€ CURRENCY TOGGLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRate }) {
   const [showRate, setShowRate]       = useState(false)
   const [fixedInput, setFixedInput]   = useState('')
@@ -223,7 +223,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
           background: displayCurrency==='NGN' ? 'var(--ink)' : 'transparent',
           color: displayCurrency==='NGN' ? '#fff' : 'var(--muted)',
           borderColor: displayCurrency==='NGN' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
-        \u20A6 NGN
+        ₦ NGN
       </button>
 
       {/* USD button */}
@@ -233,7 +233,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
           background: displayCurrency==='USD' ? 'var(--ink)' : 'transparent',
           color: displayCurrency==='USD' ? '#fff' : 'var(--muted)',
           borderColor: displayCurrency==='USD' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
-        $ USD {usdRate && displayCurrency==='USD' ? `\u00B7 ${rateMode==='fixed'?'fixed':'live'}` : '\u00E2\u2013\u00BE'}
+        $ USD {usdRate && displayCurrency==='USD' ? `· ${rateMode==='fixed'?'fixed':'live'}` : 'â–¾'}
       </button>
 
       {/* Rate picker dropdown */}
@@ -251,9 +251,9 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               background: rateMode==='live' ? 'var(--ink)' : 'var(--surface-1,#f8f7f5)',
               color: rateMode==='live' ? '#fff' : 'var(--ink)',
               cursor:'pointer', fontSize:12, fontWeight:600, marginBottom:8, textAlign:'left' }}>
-            {loading ? '\u23F3 Fetching\u2026' : rateMode==='live' && usdRate
-              ? `\u00E2\u0153\u201C Live rate \u00B7 1 USD = \u20A6${Math.round(usdRate).toLocaleString()}`
-              : '\u00E2\u2020\u00BB Fetch live rate'}
+            {loading ? '⏳ Fetching…' : rateMode==='live' && usdRate
+              ? `âœ“ Live rate · 1 USD = ₦${Math.round(usdRate).toLocaleString()}`
+              : 'â†» Fetch live rate'}
           </button>
 
           {/* Fixed rate */}
@@ -272,13 +272,13 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               style={{ padding:'5px 12px', borderRadius:3, border:'none', fontSize:11, fontWeight:700,
                 background: rateMode==='fixed' ? '#27ae60' : 'var(--ink)', color:'#fff', cursor:'pointer',
                 whiteSpace:'nowrap' }}>
-              {rateMode==='fixed' ? '\u00E2\u0153\u201C Set' : 'Set'}
+              {rateMode==='fixed' ? 'âœ“ Set' : 'Set'}
             </button>
           </div>
 
           {rateMode==='fixed' && usdRate && (
             <div style={{ marginTop:6, fontSize:11, color:'#27ae60', fontWeight:500 }}>
-              Fixed: 1 USD = \u20A6{Math.round(usdRate).toLocaleString()}
+              Fixed: 1 USD = ₦{Math.round(usdRate).toLocaleString()}
             </div>
           )}
 
@@ -426,10 +426,10 @@ export default function Artworks() {
       if (modal === 'edit') {
         const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
         if (updateErr) throw updateErr
-        // Update in-state immediately \u2014 don't wait for reload
+        // Update in-state immediately — don't wait for reload
         setArtworks(prev => prev.map(w => w.id === editId ? { ...w, ...payload } : w))
       } else {
-        // Auto-generate HG code \u2014 fail gracefully if sequence not set up
+        // Auto-generate HG code — fail gracefully if sequence not set up
         let hgCode = payload.hg_code || null
         if (!hgCode) {
           const { data: codeData, error: rpcErr } = await supabase.rpc('next_hg_code')
@@ -485,21 +485,21 @@ export default function Artworks() {
 
   const sf = (key, val) => { setFilters(f => ({...f, [key]: val})); setPage(0) }
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading artworks{'\u2026'}</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading artworks…</div>
 
   return (
     <div>
       <div className="page-header flex items-center justify-between">
         <div>
-
-          <div className="page-subtitle">{artworks.length} total {'\u00B7'} {artworks.filter(w=>w.visible).length} visible {'\u00B7'} {artworks.filter(w=>w.availability==='Available').length} available</div>
+          <div className="page-title">Artworks</div>
+          <div className="page-subtitle">{artworks.length} total · {artworks.filter(w=>w.visible).length} visible · {artworks.filter(w=>w.availability==='Available').length} available</div>
         </div>
+        <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artwork</button>
       </div>
 
       {/* Filters */}
-      <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
-        <input className="form-input" style={{ width:220 }} placeholder="Search..." value={filters.search} onChange={e=>sf('search',e.target.value)} />
-
+      <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:18 }}>
+        <input className="form-input" style={{ width:220 }} placeholder="Search…" value={filters.search} onChange={e=>sf('search',e.target.value)} />
         <select className="form-select" style={{ width:180 }} value={filters.artist} onChange={e=>sf('artist',e.target.value)}>
           <option value="">All artists</option>
           {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -527,9 +527,9 @@ export default function Artworks() {
         <div style={{ marginLeft:'auto', display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
           {[
             ['recent','Most recent'],
-            ['az','A \u2014 Z'],
-            ['price_desc','Price \u2193'],
-            ['price_asc','Price \u2191'],
+            ['az','A — Z'],
+            ['price_desc','Price ↓'],
+            ['price_asc','Price ↑'],
             ['location','Location'],
           ].map(([key, label]) => (
             <button key={key} onClick={() => { setSortBy(key); setPage(0) }}
@@ -571,12 +571,12 @@ export default function Artworks() {
             <thead>
               <tr>
                 <th style={{ width:60 }}>Image</th>
-                <th style={{ cursor:'pointer', color: sortBy==='az'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('az'); setPage(0) }}>Title {sortBy==='az'?'\u2191':''}</th>
+                <th style={{ cursor:'pointer', color: sortBy==='az'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('az'); setPage(0) }}>Title {sortBy==='az'?'↑':''}</th>
                 <th>Artist</th>
-                <th style={{ cursor:'pointer', color: sortBy==='recent'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('recent'); setPage(0) }}>Year {sortBy==='recent'?'\u2193':''}</th>
-                <th style={{ cursor:'pointer', color: sortBy==='location'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('location'); setPage(0) }}>Location {sortBy==='location'?'\u2191':''}</th>
+                <th style={{ cursor:'pointer', color: sortBy==='recent'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('recent'); setPage(0) }}>Year {sortBy==='recent'?'↓':''}</th>
+                <th style={{ cursor:'pointer', color: sortBy==='location'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('location'); setPage(0) }}>Location {sortBy==='location'?'↑':''}</th>
                 <th>Ownership</th>
-                <th style={{ cursor:'pointer', color: ['price_desc','price_asc'].includes(sortBy)?'var(--ink)':'inherit' }} onClick={() => { setSortBy(sortBy==='price_desc'?'price_asc':'price_desc'); setPage(0) }}>Price {sortBy==='price_desc'?'\u2193':sortBy==='price_asc'?'\u2191':''}</th>
+                <th style={{ cursor:'pointer', color: ['price_desc','price_asc'].includes(sortBy)?'var(--ink)':'inherit' }} onClick={() => { setSortBy(sortBy==='price_desc'?'price_asc':'price_desc'); setPage(0) }}>Price {sortBy==='price_desc'?'↓':sortBy==='price_asc'?'↑':''}</th>
                 <th>Status</th><th>Visible</th>
                 <th style={{ width:120 }}>Actions</th>
               </tr>
@@ -600,16 +600,16 @@ export default function Artworks() {
                       {w.hg_code && <span style={{ fontSize:10, color:'var(--gold,#b8862a)', fontWeight:600, letterSpacing:'.04em' }}>{w.hg_code}</span>}
                       {w.medium && <span style={{ fontSize:11, color:'var(--muted)' }}>{w.medium}</span>}
                       {w.category && <span style={{ fontSize:10, color:'var(--muted)', background:'var(--surface-0,#f8f7f5)', padding:'0 5px', borderRadius:2 }}>{w.category}</span>}
-                      {w.is_framed && <span style={{ fontSize:10, color:'var(--muted)' }}>{'\u00F0'}{'\u0178'}{'\u2013'}{'\u00BC'} Framed</span>}
+                      {w.is_framed && <span style={{ fontSize:10, color:'var(--muted)' }}>ðŸ–¼ Framed</span>}
                     </div>
                   </td>
-                  <td><span style={{ fontSize:12, background:'var(--parchment-2)', padding:'2px 8px', borderRadius:3, color:'var(--ink)' }}>{artistMap[w.artist_id]?.name || '\u2014'}</span></td>
-                  <td style={{ fontSize:13, color:'var(--muted)' }}>{w.year || '\u2014'}</td>
-                  <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || '\u2014'}</td>
+                  <td><span style={{ fontSize:12, background:'var(--parchment-2)', padding:'2px 8px', borderRadius:3, color:'var(--ink)' }}>{artistMap[w.artist_id]?.name || '—'}</span></td>
+                  <td style={{ fontSize:13, color:'var(--muted)' }}>{w.year || '—'}</td>
+                  <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || '—'}</td>
                   <td style={{ fontSize:13, color:'var(--muted)' }}>
                     {w.ownership === 'consignment'
                       ? <span title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
-                          Consignment{w.consignment_price ? ` \u00B7 \u20A6${Number(w.consignment_price).toLocaleString()}` : ''}
+                          Consignment{w.consignment_price ? ` · ₦${Number(w.consignment_price).toLocaleString()}` : ''}
                         </span>
                       : <span>Gallery</span>
                     }
@@ -617,11 +617,11 @@ export default function Artworks() {
                   <td style={{ fontSize:12, color:'var(--muted)' }}>
                     {(() => {
                       const ngn = Number(w.retail_price) || 0
-                      if (!ngn) return w.price || '\u2014'
+                      if (!ngn) return w.price || '—'
                       if (displayCurrency === 'USD' && usdRate) {
                         return `$${Math.round(ngn / usdRate).toLocaleString()}`
                       }
-                      return w.price || `\u20A6${ngn.toLocaleString()}`
+                      return w.price || `₦${ngn.toLocaleString()}`
                     })()}
                   </td>
                   <td>
@@ -633,7 +633,7 @@ export default function Artworks() {
                     <button
                       onClick={() => toggleVisible(w)}
                       style={{ fontSize:18, cursor:'pointer', background:'none', border:'none', color: w.visible ? 'var(--green)' : 'var(--line)' }}
-                    >{w.visible ? '\u25C9' : '\u25CB'}</button>
+                    >{w.visible ? '◉' : '○'}</button>
                   </td>
                   <td>
                     <div style={{ display:'flex', gap:5 }}>
@@ -648,12 +648,13 @@ export default function Artworks() {
         </div>
 
         {/* Pagination */}
-        <div style={{ display:'flex', gap:12, alignItems:'center', justifyContent:'center', padding:'16px 0' }}>
-          <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => setPage(p => p-1)}>&larr; Prev</button>
-          <span style={{ fontSize:12, color:'var(--muted)' }}>Page {page+1} of {totalPages}</span>
-          <button className="btn btn-ghost btn-sm" disabled={page >= totalPages-1} onClick={() => setPage(p => p+1)}>Next &rarr;</button>
-        </div>
-
+        {totalPages > 1 && (
+          <div style={{ padding:'14px 20px', borderTop:'1px solid var(--line)', display:'flex', alignItems:'center', gap:8, justifyContent:'center' }}>
+            <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => setPage(p => p-1)}>â† Prev</button>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Page {page+1} of {totalPages}</span>
+            <button className="btn btn-ghost btn-sm" disabled={page >= totalPages-1} onClick={() => setPage(p => p+1)}>Next â†’</button>
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Modal */}
@@ -661,8 +662,8 @@ export default function Artworks() {
         <div className="modal-overlay">
           <div className="modal modal-xl">
             <div className="modal-header">
-              <div className="modal-title">{modal === 'edit' ? `Edit \u2014 ${form.title}` : 'Add artwork'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={closeModal}>{'\u00E2'}{'\u0153'}{'\u2022'}</button>
+              <div className="modal-title">{modal === 'edit' ? `Edit — ${form.title}` : 'Add artwork'}</div>
+              <button className="btn btn-ghost btn-icon" onClick={closeModal}>âœ•</button>
             </div>
             <div className="modal-body" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
               {/* Left */}
@@ -674,7 +675,7 @@ export default function Artworks() {
                 <div className="form-group">
                   <label className="form-label">Artist</label>
                   <select className="form-select" value={form.artist_id||''} onChange={e=>setForm(f=>({...f,artist_id:e.target.value}))}>
-                    <option value="">{'\u2014'} select {'\u2014'}</option>
+                    <option value="">— select —</option>
                     {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                 </div>
@@ -696,7 +697,7 @@ export default function Artworks() {
                   <div className="form-group">
                     <label className="form-label">Category</label>
                     <select className="form-select" value={form.category||''} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
-                      <option value="">{'\u2014'} select {'\u2014'}</option>
+                      <option value="">— select —</option>
                       {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
@@ -710,7 +711,7 @@ export default function Artworks() {
                   <div className="form-group">
                     <label className="form-label">Location</label>
                     <select className="form-select" value={form.location||''} onChange={e=>setForm(f=>({...f,location:e.target.value}))}>
-                      <option value="">{'\u2014'} select {'\u2014'}</option>
+                      <option value="">— select —</option>
                       {[...new Set([...DEFAULT_LOCATIONS, ...locations])].map(l => <option key={l} value={l}>{l}</option>)}
                     </select>
                   </div>
@@ -760,7 +761,7 @@ export default function Artworks() {
                       </div>
                       <div className="form-row">
                         <div className="form-group">
-                          <label className="form-label">Consignment price ({'\u20A6'}) <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:'var(--amber)', fontSize:10 }}>{'\u2014'} minimum agreed with owner, not shown publicly</span></label>
+                          <label className="form-label">Consignment price (₦) <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:'var(--amber)', fontSize:10 }}>— minimum agreed with owner, not shown publicly</span></label>
                           <input className="form-input" type="number" value={form.consignment_price||''} onChange={e=>setForm(f=>({...f,consignment_price:e.target.value}))} placeholder="0" />
                         </div>
                         <div className="form-group">
@@ -768,7 +769,7 @@ export default function Artworks() {
                           <input className="form-input" type="number" min={0} max={100} value={form.commission_rate||40} onChange={e=>setForm(f=>({...f,commission_rate:e.target.value}))} />
                           {form.consignment_price && form.commission_rate && (
                             <div style={{ fontSize:10, color:'var(--muted)', marginTop:4 }}>
-                              Gallery earns \u20A6{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} \u00B7 Owner receives \u20A6{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}
+                              Gallery earns ₦{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} · Owner receives ₦{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}
                             </div>
                           )}
                         </div>
@@ -785,7 +786,7 @@ export default function Artworks() {
                   </label>
                   {form.is_framed && (
                     <div className="form-group" style={{ marginBottom:0, maxWidth:200 }}>
-                      <label className="form-label">Frame cost ({'\u20A6'})</label>
+                      <label className="form-label">Frame cost (₦)</label>
                       <input className="form-input" type="number" value={form.frame_cost||''} onChange={e=>setForm(f=>({...f,frame_cost:e.target.value}))} placeholder="0"/>
                     </div>
                   )}
@@ -797,7 +798,7 @@ export default function Artworks() {
                 </div>
               </div>
 
-              {/* Right \u2014 image + metadata */}
+              {/* Right — image + metadata */}
               <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
                 {/* HG Code display */}
                 {modal === 'edit' && form.hg_code && (
@@ -812,13 +813,13 @@ export default function Artworks() {
                   </div>
                 )}
                 <div className="form-group">
-                  <label className="form-label">Tessera / legacy ID <span style={{ fontWeight:400, color:'var(--muted)', textTransform:'none', letterSpacing:0, fontSize:10 }}>{'\u2014'} for cross-reference only</span></label>
+                  <label className="form-label">Tessera / legacy ID <span style={{ fontWeight:400, color:'var(--muted)', textTransform:'none', letterSpacing:0, fontSize:10 }}>— for cross-reference only</span></label>
                   <input className="form-input" value={form.tessera_id||''} onChange={e=>setForm(f=>({...f,tessera_id:e.target.value}))} placeholder="e.g. DA(S)/HG/377"/>
                 </div>
                 <div className="form-group">
                   <label className="form-label">Artwork image</label>
                   <input type="file" accept="image/*" onChange={handleImageUpload} />
-                  {uploading && <div style={{ fontSize:11, color:'var(--muted)' }}>Uploading{'\u2026'}</div>}
+                  {uploading && <div style={{ fontSize:11, color:'var(--muted)' }}>Uploading…</div>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Image URL (or paste after upload)</label>
@@ -844,7 +845,7 @@ export default function Artworks() {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving\u2026' : 'Save artwork'}
+                {saving ? 'Saving…' : 'Save artwork'}
               </button>
             </div>
           </div>
@@ -858,25 +859,25 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
   // Yield to browser so UI can update before heavy work
   await new Promise(r => setTimeout(r, 50))
   const title = filters.location
-    ? `Artwork List \u2014 ${filters.location}`
+    ? `Artwork List — ${filters.location}`
     : filters.artist
-      ? `Artwork List \u2014 ${artistMap[filters.artist]?.name || 'Artist'}`
-      : 'Artwork List \u2014 All Works'
+      ? `Artwork List — ${artistMap[filters.artist]?.name || 'Artist'}`
+      : 'Artwork List — All Works'
 
   const subtitle = [
     filters.availability && `Status: ${filters.availability}`,
     filters.ownership && `Ownership: ${filters.ownership}`,
     filters.search && `Search: "${filters.search}"`,
-  ].filter(Boolean).join(' \u00B7 ')
+  ].filter(Boolean).join(' · ')
 
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
 
   let body = ''
 
   if (mode === 'thumbnail') {
-    // Thumbnail list \u2014 compact rows with small images
+    // Thumbnail list — compact rows with small images
     const rows = artworks.map((w, i) => {
-      const artist = artistMap[w.artist_id]?.name || '\u2014'
+      const artist = artistMap[w.artist_id]?.name || '—'
       const img = w.image_url
         ? `<img src="${w.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:2px;border:1px solid #e8e3db;">`
         : `<div style="width:60px;height:60px;background:#f0ece7;border-radius:2px;border:1px solid #e8e3db;"></div>`
@@ -885,13 +886,13 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
           <td style="width:64px;padding:8px 6px 8px 0">${img}</td>
           <td style="padding:8px 10px">
             <div style="font-weight:600;font-size:12px">${escH(w.title)}</div>
-            <div style="color:#666;font-size:11px;margin-top:2px">${escH(artist)}${w.year ? ` \u00B7 ${escH(w.year)}` : ''}</div>
-            ${w.medium ? `<div style="color:#888;font-size:10px">${escH(w.medium)}${w.dimensions ? ` \u00B7 ${escH(w.dimensions)}` : ''}</div>` : ''}
+            <div style="color:#666;font-size:11px;margin-top:2px">${escH(artist)}${w.year ? ` · ${escH(w.year)}` : ''}</div>
+            ${w.medium ? `<div style="color:#888;font-size:10px">${escH(w.medium)}${w.dimensions ? ` · ${escH(w.dimensions)}` : ''}</div>` : ''}
           </td>
-          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.location || '\u2014')}</td>
-          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.hg_code || '\u2014')}</td>
-          <td style="padding:8px 10px;font-size:12px;font-weight:500;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'}">${escH(w.availability || '\u2014')}</td>
-          <td style="padding:8px 10px;font-size:12px">${escH(w.price || (w.retail_price ? '\u20A6' + Number(w.retail_price).toLocaleString() : '\u2014'))}</td>
+          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.location || '—')}</td>
+          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.hg_code || '—')}</td>
+          <td style="padding:8px 10px;font-size:12px;font-weight:500;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'}">${escH(w.availability || '—')}</td>
+          <td style="padding:8px 10px;font-size:12px">${escH(w.price || (w.retail_price ? '₦' + Number(w.retail_price).toLocaleString() : '—'))}</td>
         </tr>`
     }).join('')
 
@@ -911,13 +912,13 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
       </table>`
 
   } else {
-    // Full page \u2014 one artwork per page, large image
+    // Full page — one artwork per page, large image
     body = artworks.map((w, i) => {
       const artist = artistMap[w.artist_id]
       const img = w.image_url
         ? `<img src="${w.image_url}" style="display:block;margin:20px auto;max-width:500px;max-height:500px;object-fit:contain;">`
         : `<div style="width:400px;height:400px;background:#f0ece7;margin:20px auto;border-radius:4px;"></div>`
-      const price = w.retail_price ? '\u20A6' + Number(w.retail_price).toLocaleString() : (w.price || '')
+      const price = w.retail_price ? '₦' + Number(w.retail_price).toLocaleString() : (w.price || '')
       return `<div style="page-break-after:always;padding:32px 40px;">
         <div style="border-bottom:2px solid #1a1714;padding-bottom:10px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:baseline;">
           <span style="font-family:Georgia,serif;font-size:16px;">Hourglass Gallery</span>
@@ -926,7 +927,7 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
         ${img}
         <div style="margin-top:24px;border-top:1px solid #e8e3db;padding-top:16px;">
           <div style="font-family:Georgia,serif;font-size:24px;font-weight:400;margin-bottom:6px;">${escH(w.title)}</div>
-          <div style="font-size:14px;color:#444;margin-bottom:12px;">${escH(artist?.name || '\u2014')}</div>
+          <div style="font-size:14px;color:#444;margin-bottom:12px;">${escH(artist?.name || '—')}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;">
             <div style="font-size:12px;color:#888;line-height:1.8;">
               ${w.year ? `<div>Year: ${escH(w.year)}</div>` : ''}
@@ -958,7 +959,7 @@ body{font-family:-apple-system,sans-serif;color:#1a1714;padding:${mode === 'full
   <div style="font-family:Georgia,serif;font-size:16px;margin-bottom:2px">Hourglass Gallery</div>
   <div style="font-size:13px;font-weight:600;margin:6px 0 2px">${escH(title)}</div>
   ${subtitle ? `<div style="font-size:11px;color:#888">${escH(subtitle)}</div>` : ''}
-  <div style="font-size:10px;color:#aaa;margin-top:3px">Generated ${today} \u00B7 ${artworks.length} work${artworks.length !== 1 ? 's' : ''} \u00B7 ${mode === 'thumbnail' ? 'Thumbnail list' : 'Full page'}</div>
+  <div style="font-size:10px;color:#aaa;margin-top:3px">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''} · ${mode === 'thumbnail' ? 'Thumbnail list' : 'Full page'}</div>
 </div>
 ${body}
 </body></html>`
