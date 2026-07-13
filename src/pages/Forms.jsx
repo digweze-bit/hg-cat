@@ -10,6 +10,7 @@ const FORM_TYPES = {
   condition_report:      { label: 'Condition Report',      icon: '◇', color: '#5a7ac7' },
   loan_agreement:        { label: 'Loan Agreement',        icon: '◉', color: '#9b59b6' },
   collection_receipt:    { label: 'Collection Receipt',    icon: '◑', color: '#1a9a8a' },
+  catalogue:             { label: 'Artwork Catalogue',       icon: '◧', color: '#2c3e50' },
 }
 
 const STATUS = {
@@ -18,6 +19,248 @@ const STATUS = {
   signed: { label: 'Signed', bg: '#edf7f0', color: '#27ae60' },
   void:   { label: 'Void',   bg: '#fef2f0', color: '#c0392b' },
 }
+
+// ── CATALOGUE PDF GENERATOR ──────────────────────────────────────────
+async function generateCatalogue(options, artworks, logoB64) {
+  const { showLogo, showPricing, showBio, title, intro } = options
+
+  // Collect unique artists with bios
+  const artistsSeen = new Set()
+  const artistBios = {}
+  artworks.forEach(w => {
+    if (w.artist_name && !artistsSeen.has(w.artist_name)) {
+      artistsSeen.add(w.artist_name)
+      if (w.artist_bio) artistBios[w.artist_name] = w.artist_bio
+    }
+  })
+
+  // Convert all images to base64 for reliable rendering in popup
+  async function toBase64(url) {
+    if (!url) return null
+    try {
+      const r = await fetch(url)
+      const blob = await r.blob()
+      return await new Promise((res, rej) => {
+        const reader = new FileReader()
+        reader.onload = () => res(reader.result)
+        reader.onerror = rej
+        reader.readAsDataURL(blob)
+      })
+    } catch { return null }
+  }
+
+  const imgMap = {}
+  await Promise.all(artworks.map(async w => {
+    if (w.image_url) imgMap[w.artwork_id || w.id] = await toBase64(w.image_url)
+  }))
+
+  let pages = ''
+
+  // Cover / title page (if title provided)
+  if (title || intro) {
+    pages += `
+    <div class="page cover-page">
+      ${showLogo && logoB64 ? `<div class="logo-wrap"><img src="${logoB64}" class="logo"></div>` : ''}
+      <div class="cover-content">
+        ${title ? `<h1 class="cover-title">${escH(title)}</h1>` : ''}
+        ${intro ? `<p class="cover-intro">${escH(intro)}</p>` : ''}
+      </div>
+    </div>`
+  }
+
+  // Artwork pages
+  let lastArtist = null
+  artworks.forEach((w, i) => {
+    const isFirst = i === 0
+    const imgSrc = imgMap[w.artwork_id || w.id] || w.image_url
+    const details = [w.medium, w.dimensions, w.year].filter(Boolean).join('  ·  ')
+    const price = showPricing && (w.price || w.retail_price)
+      ? (w.price || ('₦' + Number(w.retail_price).toLocaleString()))
+      : ''
+
+    pages += `
+    <div class="page artwork-page">
+      ${isFirst && showLogo && logoB64 && !title ? `<div class="logo-wrap"><img src="${logoB64}" class="logo"></div>` : ''}
+      <div class="artwork-image-wrap">
+        ${imgSrc ? `<img src="${imgSrc}" class="artwork-image">` : '<div class="artwork-placeholder"></div>'}
+      </div>
+      <div class="artwork-caption">
+        <div class="artwork-title">${escH(w.title || 'Untitled')}</div>
+        <div class="artwork-artist">${escH(w.artist_name || '')}</div>
+        ${details ? `<div class="artwork-details">${escH(details)}</div>` : ''}
+        ${price ? `<div class="artwork-price">${escH(price)}</div>` : ''}
+      </div>
+    </div>`
+  })
+
+  // Bio pages — one per artist, after all artworks
+  if (showBio) {
+    Object.entries(artistBios).forEach(([artist, bio]) => {
+      if (!bio) return
+      pages += `
+      <div class="page bio-page">
+        <div class="bio-content">
+          <div class="bio-name">${escH(artist)}</div>
+          <div class="bio-text">${escH(bio)}</div>
+        </div>
+      </div>`
+    })
+  }
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>${escH(title || 'Hourglass Gallery Catalogue')}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+
+body {
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  background: #fff;
+  color: #1a1714;
+}
+
+.page {
+  width: 100%;
+  min-height: 100vh;
+  page-break-after: always;
+  position: relative;
+  padding: 32px 40px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-wrap {
+  position: absolute;
+  top: 28px;
+  right: 36px;
+}
+.logo {
+  height: 22px;
+  object-fit: contain;
+  opacity: .7;
+}
+
+/* Cover page */
+.cover-page {
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 120px;
+}
+.cover-title {
+  font-size: 32px;
+  font-weight: 300;
+  letter-spacing: .02em;
+  color: #1a1714;
+  margin-bottom: 24px;
+  line-height: 1.2;
+  max-width: 500px;
+}
+.cover-intro {
+  font-size: 16px;
+  font-weight: 300;
+  color: #666;
+  line-height: 1.8;
+  max-width: 420px;
+}
+
+/* Artwork page */
+.artwork-page {
+  justify-content: space-between;
+}
+.artwork-image-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 20px;
+}
+.artwork-image {
+  max-width: 100%;
+  max-height: 75vh;
+  object-fit: contain;
+  display: block;
+}
+.artwork-placeholder {
+  width: 100%;
+  height: 60vh;
+  background: #f5f2ee;
+}
+.artwork-caption {
+  border-top: 1px solid #e8e3db;
+  padding-top: 14px;
+}
+.artwork-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  margin-bottom: 3px;
+}
+.artwork-artist {
+  font-size: 14px;
+  font-weight: 300;
+  color: #444;
+  margin-bottom: 4px;
+}
+.artwork-details {
+  font-size: 12px;
+  font-weight: 300;
+  color: #888;
+  letter-spacing: .03em;
+  margin-bottom: 4px;
+}
+.artwork-price {
+  font-size: 13px;
+  font-weight: 400;
+  color: #1a1714;
+  margin-top: 2px;
+}
+
+/* Bio page */
+.bio-page {
+  justify-content: center;
+}
+.bio-content {
+  max-width: 480px;
+}
+.bio-name {
+  font-size: 20px;
+  font-weight: 400;
+  margin-bottom: 20px;
+  letter-spacing: .02em;
+}
+.bio-text {
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.9;
+  color: #444;
+}
+
+@media print {
+  .page { min-height: 100vh; }
+  @page { margin: 0; size: A4 portrait; }
+}
+</style>
+</head>
+<body>
+${pages}
+</body>
+</html>`
+
+  const w = window.open('', '_blank', 'width=900,height=700')
+  if (!w) { alert('Please allow popups'); return }
+  w.document.write(html)
+  w.document.close()
+  setTimeout(() => w.print(), 2500)
+}
+
+function escH(s) {
+  if (!s) return ''
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
 
 export default function Forms() {
   const { user } = useAuth()
@@ -28,7 +271,7 @@ export default function Forms() {
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState(null)   // null | 'new' | 'view'
   const [activeForm, setActiveForm] = useState(null)
-  const [step, setStep]         = useState(1)      // 1=type 2=artworks 3=details 4=sign
+  const [step, setStep]         = useState(1)      // 1=type 2=artworks 3=details 4=sign 5=preview 6=share
   const [saving, setSaving]     = useState(false)
 
   // Builder state
@@ -37,6 +280,7 @@ export default function Forms() {
   const [bRecipient, setBRecipient] = useState({ name:'', email:'', phone:'' })
   const [bMeta, setBMeta]       = useState({})
   const [bGallerySig, setBGallerySig] = useState('stored')  // 'stored' | 'drawn'
+  const [catOptions, setCatOptions] = useState({ showLogo:true, showPricing:true, showBio:true, title:'', intro:'' })
   const [drawnSig, setDrawnSig] = useState(null)   // base64
   const [artworkSearch, setArtworkSearch] = useState('')
   const [shareUrl, setShareUrl] = useState('')
@@ -137,7 +381,7 @@ export default function Forms() {
       const url = `${window.location.origin}/sign/${form.sign_token}`
       setShareUrl(url)
       await load()
-      setStep(5)  // share step
+      setStep(6)  // share step
     } catch(err) { alert('Failed: ' + err.message) }
     finally { setSaving(false) }
   }
@@ -237,7 +481,7 @@ export default function Forms() {
             <div className="modal-header">
               <div>
                 <div className="modal-title">New form</div>
-                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Step {step} of 5 — {['','Form type','Artworks','Recipient & details','Gallery signature','Share'][step]}</div>
+                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Step {step} of 6 — {['','Form type','Artworks','Recipient & details','Gallery signature','Preview','Share'][step]}</div>
               </div>
               <button className="btn btn-ghost btn-icon" onClick={() => { setModal(null); resetBuilder() }}>✕</button>
             </div>
@@ -258,6 +502,7 @@ export default function Forms() {
                         {key === 'condition_report' && 'Document condition of artwork at a point in time'}
                         {key === 'loan_agreement' && 'Artwork leaving gallery temporarily'}
                         {key === 'collection_receipt' && 'Client collecting a purchased work'}
+        {key === 'catalogue' && 'Elegant artwork catalogue for collectors'}
                       </div>
                     </div>
                   ))}
@@ -544,7 +789,80 @@ export default function Forms() {
               )}
 
               {/* STEP 5 — Share */}
+              
               {step === 5 && (
+                <div>
+                  <div style={{ fontSize:13, color:'var(--muted)', marginBottom:16 }}>
+                    This is how the form will appear to the recipient. Review before generating.
+                  </div>
+                  <div style={{ border:'1px solid var(--line-soft)', borderRadius:4, overflow:'hidden', maxHeight:500, overflowY:'auto' }}>
+                    {/* Form preview */}
+                    <div style={{ background:'#fff', padding:'24px 28px', fontFamily:'-apple-system,sans-serif' }}>
+                      {/* Header */}
+                      <div style={{ borderBottom:'1px solid #e8e3db', paddingBottom:14, marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        {LOGO_B64
+                          ? <img src={LOGO_B64} alt="Hourglass Gallery" style={{ height:28, objectFit:'contain' }} />
+                          : <span style={{ fontWeight:700, fontSize:14 }}>HOURGLASS GALLERY</span>
+                        }
+                        <span style={{ fontSize:11, color:'#999' }}>{new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' })}</span>
+                      </div>
+                      {/* Title */}
+                      <div style={{ marginBottom:20 }}>
+                        <div style={{ fontSize:8, letterSpacing:'.14em', textTransform:'uppercase', color:'#999', marginBottom:4 }}>DRAFT PREVIEW</div>
+                        <div style={{ fontFamily:'Georgia,serif', fontSize:22, fontWeight:400, color:'#1a1714', margin:'0 0 6px' }}>
+                          {FORM_TYPES[bType]?.label}
+                        </div>
+                        <div style={{ width:32, height:2, background:'#E05C2A' }}/>
+                      </div>
+                      {/* Parties */}
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:20, background:'#f8f7f5', borderRadius:4, padding:'14px 16px' }}>
+                        <div>
+                          <div style={{ fontSize:9, letterSpacing:'.1em', textTransform:'uppercase', color:'#999', marginBottom:3 }}>Gallery</div>
+                          <div style={{ fontWeight:600, fontSize:13 }}>Hourglass Gallery</div>
+                          <div style={{ fontSize:11, color:'#666' }}>298A Akin Olugbade St, Victoria Island, Lagos</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize:9, letterSpacing:'.1em', textTransform:'uppercase', color:'#999', marginBottom:3 }}>Recipient</div>
+                          <div style={{ fontWeight:600, fontSize:13 }}>{bRecipient.name}</div>
+                          {bRecipient.email && <div style={{ fontSize:11, color:'#666' }}>{bRecipient.email}</div>}
+                          {bRecipient.phone && <div style={{ fontSize:11, color:'#666' }}>{bRecipient.phone}</div>}
+                        </div>
+                      </div>
+                      {/* Artworks */}
+                      <div style={{ fontSize:9, letterSpacing:'.1em', textTransform:'uppercase', color:'#999', marginBottom:8 }}>Artworks</div>
+                      {bArtworks.map((aw, i) => (
+                        <div key={i} style={{ display:'flex', gap:12, padding:'10px 0', borderBottom:'1px solid #f0ece7' }}>
+                          {aw.image_url && <img src={aw.image_url} alt="" style={{ width:52, height:64, objectFit:'cover', borderRadius:2, flexShrink:0 }} />}
+                          <div>
+                            <div style={{ fontWeight:500, fontSize:13 }}>{aw.title}</div>
+                            <div style={{ fontSize:11, color:'#666', marginTop:2 }}>{aw.artist_name}{aw.year ? `, ${aw.year}` : ''}</div>
+                            {aw.medium && <div style={{ fontSize:11, color:'#666' }}>{aw.medium}{aw.dimensions ? ` · ${aw.dimensions}` : ''}</div>}
+                            {aw.price && <div style={{ fontSize:12, fontWeight:500, marginTop:4 }}>₦{Number(aw.price).toLocaleString()}</div>}
+                          </div>
+                        </div>
+                      ))}
+                      {/* Gallery signature */}
+                      <div style={{ marginTop:24, paddingTop:16, borderTop:'1px solid #e8e3db' }}>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
+                          <div>
+                            <div style={{ fontSize:9, letterSpacing:'.1em', textTransform:'uppercase', color:'#999', marginBottom:8 }}>For Hourglass Gallery</div>
+                            {(bGallerySig === 'stored' ? SIG_B64 : drawnSig) &&
+                              <img src={bGallerySig === 'stored' ? SIG_B64 : drawnSig} alt="" style={{ height:36, objectFit:'contain', display:'block', marginBottom:4 }} />
+                            }
+                            <div style={{ borderTop:'1px solid #ccc', paddingTop:4, fontSize:11, color:'#666' }}>Authorised signatory</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize:9, letterSpacing:'.1em', textTransform:'uppercase', color:'#999', marginBottom:8 }}>Recipient signature</div>
+                            <div style={{ borderTop:'1px solid #ccc', paddingTop:4, fontSize:11, color:'#666', marginTop:44 }}>Signature</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {step === 6 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:20, alignItems:'center', padding:'24px 0' }}>
                   <div style={{ fontSize:32 }}>✓</div>
                   <div style={{ fontWeight:600, fontSize:16 }}>Form generated</div>
@@ -579,15 +897,19 @@ export default function Forms() {
             </div>
 
             <div className="modal-footer">
-              {step > 1 && step < 5 && (
+              {step > 1 && step < 6 && (
                 <button className="btn btn-outline" onClick={() => setStep(s => s - 1)}>← Back</button>
               )}
               <div style={{ flex:1 }}/>
-              {step === 5 ? (
+              {step === 6 ? (
                 <button className="btn btn-primary" onClick={() => { setModal(null); resetBuilder() }}>Done</button>
-              ) : step === 4 ? (
+              ) : step === 5 ? (
                 <button className="btn btn-primary" onClick={handleGenerate} disabled={saving}>
-                  {saving ? 'Generating…' : 'Generate & sign →'}
+                  {saving ? 'Generating…' : 'Confirm & Generate →'}
+                </button>
+              ) : step === 4 ? (
+                <button className="btn btn-primary" onClick={() => setStep(5)}>
+                  Preview →
                 </button>
               ) : (
                 <button className="btn btn-primary"
