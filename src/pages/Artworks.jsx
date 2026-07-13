@@ -497,8 +497,8 @@ export default function Artworks() {
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artwork</button>
       </div>
 
-      {/* Filters */}
-        <input className="form-input" style={{ width:220 }} placeholder={'Search\u2026'} value={filters.search} onChange={e=>sf('search',e.target.value)} />
+        <input className="form-input" style={{ width:220 }} placeholder="Search..." value={filters.search} onChange={e=>sf('search',e.target.value)} />
+
         <input className="form-input" style={{ width:220 }} placeholder="Search\u2026" value={filters.search} onChange={e=>sf('search',e.target.value)} />
         <select className="form-select" style={{ width:180 }} value={filters.artist} onChange={e=>sf('artist',e.target.value)}>
           <option value="">All artists</option>
