@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
@@ -956,7 +956,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                         <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]?.name} \u00B7 {w.year}</div>
                       </div>
                       <div style={{ marginLeft:'auto', textAlign:'right' }}>
-                      {w.price && <div style={{ fontSize:12, color:'var(--green)' }}>{w.price}</div>}
+                      {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment {'\u00B7'} {w.commission_rate||40}% comm.</div>}
                       {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment \u00B7 {w.commission_rate||40}% comm.</div>}
                     </div>
                   ))}
