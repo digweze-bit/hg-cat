@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
@@ -956,8 +956,9 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                         <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]?.name} \u00B7 {w.year}</div>
                       </div>
                       <div style={{ marginLeft:'auto', textAlign:'right' }}>
-                      {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment {'\u00B7'} {w.commission_rate||40}% comm.</div>}
+                      {w.price && <div style={{ fontSize:12, color:'var(--green)' }}>{w.price}</div>}
                       {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment \u00B7 {w.commission_rate||40}% comm.</div>}
+                    </div>
                     </div>
                   ))}
                 </div>
@@ -1009,7 +1010,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                   <div style={{flex:1, padding:'8px 10px', border:'1px solid var(--line)', borderRadius:4, fontSize:13, background:'var(--white)'}}>
                     {clients.find(c=>c.id===form.client_id)?.name}
                   </div>
-                  <button className="btn btn-ghost btn-sm" onClick={()=>{setForm(f=>({...f,client_id:''}));setClientSearch('')}}>\u2715</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>{setForm(f=>({...f,client_id:''}));setClientSearch('')}}>{'\u2715'}</button>
                 </div>
               ) : (
                 <>

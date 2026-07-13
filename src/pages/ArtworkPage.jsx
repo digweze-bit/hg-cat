@@ -65,7 +65,7 @@ export default function ArtworkPage() {
   if (!artwork) return (
     <div style={{ minHeight:'100vh', background:'#faf8f5', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
       <div style={{ fontFamily:'Georgia,serif', fontSize:22, color:'#1a1714' }}>Artwork not found</div>
-      <button onClick={() => navigate('/')} style={{ fontFamily:'sans-serif', fontSize:13, color:'#9a9490', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>\u2190 Back to catalogue</button>
+      <button onClick={() => navigate('/')} style={{ fontFamily:'sans-serif', fontSize:13, color:'#9a9490', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>{'\u2190'} Back to catalogue</button>
     </div>
   )
 
