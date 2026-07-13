@@ -9,7 +9,7 @@ const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Stora
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
 const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
 
-// â”€â”€ PRICE FIELDS COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── PRICE FIELDS COMPONENT ────────────────────────────────────
 function PriceFields({ form, setForm }) {
   const [rates, setRates]             = useState(null)
   const [rateLoading, setRateLoading] = useState(false)
@@ -74,7 +74,7 @@ function PriceFields({ form, setForm }) {
     setForm(f => ({ ...f, ...updates }))
   }
 
-  const sym = { NGN:'₦', USD:'$', GBP:'£', EUR:'â‚¬' }[inputCurrency] || '₦'
+  const sym = { NGN:'₦', USD:'$', GBP:'£', EUR:'€' }[inputCurrency] || '₦'
   const activeRate = getRate(inputCurrency)
   const rateLabel = rateMode === 'live'
     ? `Live: 1 ${inputCurrency} = ₦${Math.round(activeRate||0).toLocaleString()}`
@@ -108,7 +108,7 @@ function PriceFields({ form, setForm }) {
               style={{ fontSize:11, padding:'4px 10px', borderRadius:3, border:'1px solid var(--line-soft)',
                 background: rateMode==='live' ? 'var(--ink)' : 'transparent',
                 color: rateMode==='live' ? '#fff' : 'var(--muted)', cursor:'pointer', fontWeight:600 }}>
-              {rateLoading ? '…' : 'â†» Live rate'}
+              {rateLoading ? '…' : '↻ Live rate'}
             </button>
 
             <span style={{ color:'var(--muted)', fontSize:11 }}>or fixed:</span>
@@ -125,7 +125,7 @@ function PriceFields({ form, setForm }) {
                 style={{ fontSize:11, padding:'4px 10px', borderRadius:3,
                   background: rateMode==='fixed' ? '#27ae60' : 'var(--ink)',
                   color:'#fff', border:'none', cursor:'pointer', fontWeight:600 }}>
-                {rateMode==='fixed' ? 'âœ“ Set' : 'Set'}
+                {rateMode==='fixed' ? '✓ Set' : 'Set'}
               </button>
             </div>
           </div>
@@ -138,7 +138,7 @@ function PriceFields({ form, setForm }) {
           )}
           {inputCurrency !== 'NGN' && !activeRate && (
             <div style={{ marginTop:6, fontSize:11, color:'var(--amber,#b8862a)' }}>
-              âš  Set a rate to convert prices
+              ⚠ Set a rate to convert prices
             </div>
           )}
         </div>
@@ -186,7 +186,7 @@ function PriceFields({ form, setForm }) {
 }
 
 
-// â”€â”€ CURRENCY TOGGLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── CURRENCY TOGGLE ───────────────────────────────────────────
 function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRate }) {
   const [showRate, setShowRate]       = useState(false)
   const [fixedInput, setFixedInput]   = useState('')
@@ -233,7 +233,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
           background: displayCurrency==='USD' ? 'var(--ink)' : 'transparent',
           color: displayCurrency==='USD' ? '#fff' : 'var(--muted)',
           borderColor: displayCurrency==='USD' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
-        $ USD {usdRate && displayCurrency==='USD' ? `· ${rateMode==='fixed'?'fixed':'live'}` : 'â–¾'}
+        $ USD {usdRate && displayCurrency==='USD' ? `· ${rateMode==='fixed'?'fixed':'live'}` : '▾'}
       </button>
 
       {/* Rate picker dropdown */}
@@ -252,8 +252,8 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               color: rateMode==='live' ? '#fff' : 'var(--ink)',
               cursor:'pointer', fontSize:12, fontWeight:600, marginBottom:8, textAlign:'left' }}>
             {loading ? '⏳ Fetching…' : rateMode==='live' && usdRate
-              ? `âœ“ Live rate · 1 USD = ₦${Math.round(usdRate).toLocaleString()}`
-              : 'â†» Fetch live rate'}
+              ? `✓ Live rate · 1 USD = ₦${Math.round(usdRate).toLocaleString()}`
+              : '↻ Fetch live rate'}
           </button>
 
           {/* Fixed rate */}
@@ -272,7 +272,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               style={{ padding:'5px 12px', borderRadius:3, border:'none', fontSize:11, fontWeight:700,
                 background: rateMode==='fixed' ? '#27ae60' : 'var(--ink)', color:'#fff', cursor:'pointer',
                 whiteSpace:'nowrap' }}>
-              {rateMode==='fixed' ? 'âœ“ Set' : 'Set'}
+              {rateMode==='fixed' ? '✓ Set' : 'Set'}
             </button>
           </div>
 
@@ -308,14 +308,13 @@ export default function Artworks() {
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
   const [uploading, setUploading] = useState(false)
-  const [printMenu, setPrintMenu] = useState(false)
   const [page, setPage] = useState(0)
   const PER_PAGE = 30
 
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,hg_code,location,tags,series,sort_order,visible,created_at', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -348,13 +347,7 @@ export default function Artworks() {
   const sorted = useMemo(() => {
     let list = [...filtered]
     if (sortBy === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
-    else if (sortBy === 'recent') list.sort((a, b) => {
-      // Use numeric part of hg_code if available, else fall back to id comparison
-      const numA = a.hg_code ? parseInt(a.hg_code.replace(/[^0-9]/g,'')) || 0 : 0
-      const numB = b.hg_code ? parseInt(b.hg_code.replace(/[^0-9]/g,'')) || 0 : 0
-      if (numB !== numA) return numB - numA
-      return (b.id || '').localeCompare(a.id || '')
-    })
+    else if (sortBy === 'recent') list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     else if (sortBy === 'price_desc') list.sort((a, b) => parsePrice(b.price) - parsePrice(a.price))
     else if (sortBy === 'price_asc') list.sort((a, b) => parsePrice(a.price) - parsePrice(b.price))
     else if (sortBy === 'location') list.sort((a, b) => (a.location || 'zzz').localeCompare(b.location || 'zzz'))
@@ -455,14 +448,11 @@ export default function Artworks() {
     setArtworks(prev => prev.filter(w => w.id !== id))
   }
 
-  async function openEdit(artwork) {
-    // Fetch full record with all fields for editing
-    const { data: full } = await supabase.from('artworks').select('*').eq('id', artwork.id).single()
-    const aw = full || artwork
-    console.log('Opening edit, writeup:', aw.writeup)
+  function openEdit(artwork) {
+    console.log('Opening edit, writeup:', artwork.writeup)
     setForm({
-      ...EMPTY, ...aw,
-      writeup: aw.writeup || '',
+      ...EMPTY, ...artwork,
+      writeup: artwork.writeup || '',
       tags: Array.isArray(artwork.tags) ? artwork.tags.join(', ') : '',
       ownership: artwork.ownership || 'gallery',
       consignment_price: artwork.consignment_price || '',
@@ -492,7 +482,7 @@ export default function Artworks() {
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Artworks</div>
-          <div className="page-subtitle">{artworks.length} total · {artworks.filter(w=>w.visible).length} visible · {artworks.filter(w=>w.availability==='Available').length} available</div>
+          <div className="page-subtitle">{artworks.length} total {'\u00B7'} {artworks.filter(w=>w.visible).length} visible {'\u00B7'} {artworks.filter(w=>w.availability==='Available').length} available</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artwork</button>
       </div>
@@ -527,7 +517,7 @@ export default function Artworks() {
         <div style={{ marginLeft:'auto', display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
           {[
             ['recent','Most recent'],
-            ['az','A — Z'],
+            ['az','A – Z'],
             ['price_desc','Price ↓'],
             ['price_asc','Price ↑'],
             ['location','Location'],
@@ -539,29 +529,13 @@ export default function Artworks() {
           ))}
         </div>
         <span style={{ fontSize:13, color:'var(--muted)' }}>{filtered.length} results</span>
-        <div style={{ position:'relative' }}>
-          <button className="btn btn-outline btn-sm" onClick={() => setPrintMenu(m => !m)}>Print list</button>
-          {printMenu && (
-            <div style={{ position:'absolute', right:0, top:'calc(100% + 4px)', zIndex:100,
-              background:'var(--bg,#fff)', border:'1px solid var(--line-soft)', borderRadius:4,
-              boxShadow:'0 4px 16px rgba(0,0,0,.12)', minWidth:200, overflow:'hidden' }}
-              onMouseLeave={() => setPrintMenu(false)}>
-              <button style={{ display:'block', width:'100%', padding:'11px 16px', textAlign:'left',
-                fontSize:13, cursor:'pointer', border:'none', background:'none', color:'var(--ink)',
-                borderBottom:'1px solid var(--line-soft)' }}
-                onClick={() => { setPrintMenu(false); setTimeout(() => printArtworkList(sorted, artistMap, filters, 'thumbnail'), 10) }}>
-                <div style={{ fontWeight:600 }}>Thumbnail list</div>
-                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Compact with small images</div>
-              </button>
-              <button style={{ display:'block', width:'100%', padding:'11px 16px', textAlign:'left',
-                fontSize:13, cursor:'pointer', border:'none', background:'none', color:'var(--ink)' }}
-                onClick={() => { setPrintMenu(false); setTimeout(() => printArtworkList(sorted, artistMap, filters, 'fullpage'), 10) }}>
-                <div style={{ fontWeight:600 }}>Full page</div>
-                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>One large artwork per page</div>
-              </button>
-            </div>
-          )}
-        </div>
+        <button
+          className="btn btn-outline btn-sm"
+          onClick={() => printArtworkList(sorted, artistMap, filters)}
+          title="Print current filtered list"
+        >
+          🖨 Print list
+        </button>
       </div>
 
       {/* Table */}
@@ -600,7 +574,7 @@ export default function Artworks() {
                       {w.hg_code && <span style={{ fontSize:10, color:'var(--gold,#b8862a)', fontWeight:600, letterSpacing:'.04em' }}>{w.hg_code}</span>}
                       {w.medium && <span style={{ fontSize:11, color:'var(--muted)' }}>{w.medium}</span>}
                       {w.category && <span style={{ fontSize:10, color:'var(--muted)', background:'var(--surface-0,#f8f7f5)', padding:'0 5px', borderRadius:2 }}>{w.category}</span>}
-                      {w.is_framed && <span style={{ fontSize:10, color:'var(--muted)' }}>ðŸ–¼ Framed</span>}
+                      {w.is_framed && <span style={{ fontSize:10, color:'var(--muted)' }}>🖼 Framed</span>}
                     </div>
                   </td>
                   <td><span style={{ fontSize:12, background:'var(--parchment-2)', padding:'2px 8px', borderRadius:3, color:'var(--ink)' }}>{artistMap[w.artist_id]?.name || '—'}</span></td>
@@ -650,9 +624,9 @@ export default function Artworks() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div style={{ padding:'14px 20px', borderTop:'1px solid var(--line)', display:'flex', alignItems:'center', gap:8, justifyContent:'center' }}>
-            <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => setPage(p => p-1)}>â† Prev</button>
+            <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => setPage(p => p-1)}>&larr; Prev</button>
             <span style={{ fontSize:13, color:'var(--muted)' }}>Page {page+1} of {totalPages}</span>
-            <button className="btn btn-ghost btn-sm" disabled={page >= totalPages-1} onClick={() => setPage(p => p+1)}>Next â†’</button>
+            <button className="btn btn-ghost btn-sm" disabled={page >= totalPages-1} onClick={() => setPage(p => p+1)}>Next &rarr;</button>
           </div>
         )}
       </div>
@@ -663,7 +637,7 @@ export default function Artworks() {
           <div className="modal modal-xl">
             <div className="modal-header">
               <div className="modal-title">{modal === 'edit' ? `Edit — ${form.title}` : 'Add artwork'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={closeModal}>âœ•</button>
+              <button className="btn btn-ghost btn-icon" onClick={closeModal}>✕</button>
             </div>
             <div className="modal-body" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
               {/* Left */}
@@ -855,9 +829,7 @@ export default function Artworks() {
   )
 }
 
-async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail') {
-  // Yield to browser so UI can update before heavy work
-  await new Promise(r => setTimeout(r, 50))
+function printArtworkList(artworks, artistMap, filters) {
   const title = filters.location
     ? `Artwork List — ${filters.location}`
     : filters.artist
@@ -871,106 +843,53 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
   ].filter(Boolean).join(' · ')
 
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
-
-  let body = ''
-
-  if (mode === 'thumbnail') {
-    // Thumbnail list — compact rows with small images
-    const rows = artworks.map((w, i) => {
-      const artist = artistMap[w.artist_id]?.name || '—'
-      const img = w.image_url
-        ? `<img src="${w.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:2px;border:1px solid #e8e3db;">`
-        : `<div style="width:60px;height:60px;background:#f0ece7;border-radius:2px;border:1px solid #e8e3db;"></div>`
-      return `
-        <tr>
-          <td style="width:64px;padding:8px 6px 8px 0">${img}</td>
-          <td style="padding:8px 10px">
-            <div style="font-weight:600;font-size:12px">${escH(w.title)}</div>
-            <div style="color:#666;font-size:11px;margin-top:2px">${escH(artist)}${w.year ? ` · ${escH(w.year)}` : ''}</div>
-            ${w.medium ? `<div style="color:#888;font-size:10px">${escH(w.medium)}${w.dimensions ? ` · ${escH(w.dimensions)}` : ''}</div>` : ''}
-          </td>
-          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.location || '—')}</td>
-          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.hg_code || '—')}</td>
-          <td style="padding:8px 10px;font-size:12px;font-weight:500;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'}">${escH(w.availability || '—')}</td>
-          <td style="padding:8px 10px;font-size:12px">${escH(w.price || (w.retail_price ? '₦' + Number(w.retail_price).toLocaleString() : '—'))}</td>
-        </tr>`
-    }).join('')
-
-    body = `
-      <table style="width:100%;border-collapse:collapse">
-        <thead>
-          <tr style="border-bottom:2px solid #1a1714">
-            <th style="padding:8px 6px 8px 0;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;width:64px"></th>
-            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">Artwork</th>
-            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">Location</th>
-            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">HG Code</th>
-            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">Status</th>
-            <th style="padding:8px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888">Price</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>`
-
-  } else {
-    // Full page — one artwork per page, large image
-    body = artworks.map((w, i) => {
-      const artist = artistMap[w.artist_id]
-      const img = w.image_url
-        ? `<img src="${w.image_url}" style="display:block;margin:20px auto;max-width:500px;max-height:500px;object-fit:contain;">`
-        : `<div style="width:400px;height:400px;background:#f0ece7;margin:20px auto;border-radius:4px;"></div>`
-      const price = w.retail_price ? '₦' + Number(w.retail_price).toLocaleString() : (w.price || '')
-      return `<div style="page-break-after:always;padding:32px 40px;">
-        <div style="border-bottom:2px solid #1a1714;padding-bottom:10px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:baseline;">
-          <span style="font-family:Georgia,serif;font-size:16px;">Hourglass Gallery</span>
-          <span style="font-size:10px;color:#aaa;">${escH(w.hg_code || '')}</span>
-        </div>
-        ${img}
-        <div style="margin-top:24px;border-top:1px solid #e8e3db;padding-top:16px;">
-          <div style="font-family:Georgia,serif;font-size:24px;font-weight:400;margin-bottom:6px;">${escH(w.title)}</div>
-          <div style="font-size:14px;color:#444;margin-bottom:12px;">${escH(artist?.name || '—')}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;">
-            <div style="font-size:12px;color:#888;line-height:1.8;">
-              ${w.year ? `<div>Year: ${escH(w.year)}</div>` : ''}
-              ${w.medium ? `<div>Medium: ${escH(w.medium)}</div>` : ''}
-              ${w.dimensions ? `<div>Dimensions: ${escH(w.dimensions)}</div>` : ''}
-              ${w.location ? `<div>Location: ${escH(w.location)}</div>` : ''}
-            </div>
-            <div style="text-align:right;">
-              ${price ? `<div style="font-size:22px;font-weight:600;color:#1a1714;">${escH(price)}</div>` : ''}
-              <div style="font-size:12px;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'};margin-top:4px;font-weight:500;">${escH(w.availability || '')}</div>
-            </div>
-          </div>
-        </div>
-      </div>`
-    }).join('')
-  }
+  const rows = artworks.map((w, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${escH(w.title)}</strong>${w.series ? `<br><span style="color:#888;font-size:10px">${escH(w.series)}</span>` : ''}</td>
+      <td>${escH(artistMap[w.artist_id]?.name || '—')}</td>
+      <td>${escH(w.year || '—')}</td>
+      <td>${escH(w.medium || '—')}</td>
+      <td>${escH(w.dimensions || '—')}</td>
+      <td>${escH(w.location || '—')}</td>
+      <td style="color:${w.availability === 'Available' ? '#2d6a4f' : w.availability === 'Sold' ? '#8b1a1a' : '#92600a'};font-weight:500">${escH(w.availability || '—')}</td>
+      <td>${escH(w.price || '—')}</td>
+    </tr>`).join('')
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,sans-serif;color:#1a1714;padding:${mode === 'fullpage' ? '20px 32px' : '24px 32px'};font-size:12px;}
-.header{margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1a1714;}
-@media print{
-  body{padding:12px 20px;}
-  ${mode === 'fullpage' ? '@page{margin:0;size:A4 portrait;}' : ''}
-}
+body{font-family:-apple-system,sans-serif;color:#1a1714;padding:32px 40px;font-size:12px;}
+.header{margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid #1a1714;}
+.logo{font-family:Georgia,serif;font-size:18px;margin-bottom:2px;}
+.report-title{font-size:14px;font-weight:600;margin:8px 0 2px;}
+.subtitle{font-size:11px;color:#888;}
+.meta{font-size:10px;color:#aaa;margin-top:4px;}
+table{width:100%;border-collapse:collapse;margin-top:8px;}
+th{padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;border-bottom:2px solid #1a1714;background:#f9f8f6;}
+td{padding:7px 10px;border-bottom:1px solid #ece8e1;font-size:11px;vertical-align:top;}
+tr:nth-child(even) td{background:#faf9f7;}
+.footer{margin-top:24px;padding-top:12px;border-top:1px solid #ddd9d1;font-size:10px;color:#aaa;text-align:center;}
+@media print{body{padding:16px 20px;}th{background:#f0ece4 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
 </style></head><body>
 <div class="header">
-  <div style="font-family:Georgia,serif;font-size:16px;margin-bottom:2px">Hourglass Gallery</div>
-  <div style="font-size:13px;font-weight:600;margin:6px 0 2px">${escH(title)}</div>
-  ${subtitle ? `<div style="font-size:11px;color:#888">${escH(subtitle)}</div>` : ''}
-  <div style="font-size:10px;color:#aaa;margin-top:3px">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''} · ${mode === 'thumbnail' ? 'Thumbnail list' : 'Full page'}</div>
+  <div class="logo">Hourglass Gallery</div>
+  <div class="report-title">${escH(title)}</div>
+  ${subtitle ? `<div class="subtitle">${escH(subtitle)}</div>` : ''}
+  <div class="meta">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''}</div>
 </div>
-${body}
+<table>
+  <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Year</th><th>Medium</th><th>Dimensions</th><th>Location</th><th>Status</th><th>Price</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
 </body></html>`
 
   const w = window.open('', '_blank', 'width=1100,height=750')
-  if (!w) { alert('Please allow popups to print'); return }
   w.document.write(html)
   w.document.close()
-  setTimeout(() => w.print(), mode === 'fullpage' ? 2500 : 800)
+  setTimeout(() => w.print(), 500)
 }
-
 
 function escH(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
