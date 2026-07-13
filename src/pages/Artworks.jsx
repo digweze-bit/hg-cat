@@ -28,7 +28,7 @@ function PriceFields({ form, setForm }) {
       setRateMode('live')
       setConfirmedRate(null)
       setRateInput('')
-    } catch(_) { alert('Could not fetch live rate â€” check connection') }
+    } catch(_) { alert('Could not fetch live rate — check connection') }
     setRateLoading(false)
   }
 
@@ -74,7 +74,7 @@ function PriceFields({ form, setForm }) {
     setForm(f => ({ ...f, ...updates }))
   }
 
-  const sym = { NGN:'â‚¦', USD:'$', GBP:'Â£', EUR:'â‚¬' }[inputCurrency] || 'â‚¦'
+  const sym = { NGN:'â‚¦', USD:'$', GBP:'£', EUR:'â‚¬' }[inputCurrency] || 'â‚¦'
   const activeRate = getRate(inputCurrency)
   const rateLabel = rateMode === 'live'
     ? `Live: 1 ${inputCurrency} = â‚¦${Math.round(activeRate||0).toLocaleString()}`
@@ -99,7 +99,7 @@ function PriceFields({ form, setForm }) {
         ))}
       </div>
 
-      {/* Rate section â€” only shown for non-NGN */}
+      {/* Rate section — only shown for non-NGN */}
       {inputCurrency !== 'NGN' && (
         <div style={{ background:'var(--surface-1,#f8f7f5)', borderRadius:4, padding:'10px 14px', marginBottom:12 }}>
           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
@@ -178,7 +178,7 @@ function PriceFields({ form, setForm }) {
           <label className="form-label">Price display (public)</label>
           <input className="form-input" value={form.price||''}
             onChange={e => setForm(f => ({...f, price:e.target.value}))}
-            placeholder="â‚¦2,500,000 Â· $1,500 Â· or POA" />
+            placeholder="â‚¦2,500,000 · $1,500 · or POA" />
         </div>
       </div>
     </div>
@@ -233,7 +233,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
           background: displayCurrency==='USD' ? 'var(--ink)' : 'transparent',
           color: displayCurrency==='USD' ? '#fff' : 'var(--muted)',
           borderColor: displayCurrency==='USD' ? 'var(--ink)' : 'var(--line-soft)', cursor:'pointer' }}>
-        $ USD {usdRate && displayCurrency==='USD' ? `Â· ${rateMode==='fixed'?'fixed':'live'}` : 'â–¾'}
+        $ USD {usdRate && displayCurrency==='USD' ? `· ${rateMode==='fixed'?'fixed':'live'}` : 'â–¾'}
       </button>
 
       {/* Rate picker dropdown */}
@@ -252,7 +252,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
               color: rateMode==='live' ? '#fff' : 'var(--ink)',
               cursor:'pointer', fontSize:12, fontWeight:600, marginBottom:8, textAlign:'left' }}>
             {loading ? '⏳ Fetching…' : rateMode==='live' && usdRate
-              ? `âœ“ Live rate Â· 1 USD = â‚¦${Math.round(usdRate).toLocaleString()}`
+              ? `âœ“ Live rate · 1 USD = â‚¦${Math.round(usdRate).toLocaleString()}`
               : 'â†» Fetch live rate'}
           </button>
 
@@ -426,10 +426,10 @@ export default function Artworks() {
       if (modal === 'edit') {
         const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
         if (updateErr) throw updateErr
-        // Update in-state immediately â€” don't wait for reload
+        // Update in-state immediately — don't wait for reload
         setArtworks(prev => prev.map(w => w.id === editId ? { ...w, ...payload } : w))
       } else {
-        // Auto-generate HG code â€” fail gracefully if sequence not set up
+        // Auto-generate HG code — fail gracefully if sequence not set up
         let hgCode = payload.hg_code || null
         if (!hgCode) {
           const { data: codeData, error: rpcErr } = await supabase.rpc('next_hg_code')
@@ -492,7 +492,7 @@ export default function Artworks() {
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Artworks</div>
-          <div className="page-subtitle">{artworks.length} total Â· {artworks.filter(w=>w.visible).length} visible Â· {artworks.filter(w=>w.availability==='Available').length} available</div>
+          <div className="page-subtitle">{artworks.length} total · {artworks.filter(w=>w.visible).length} visible · {artworks.filter(w=>w.availability==='Available').length} available</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artwork</button>
       </div>
@@ -603,13 +603,13 @@ export default function Artworks() {
                       {w.is_framed && <span style={{ fontSize:10, color:'var(--muted)' }}>ðŸ–¼ Framed</span>}
                     </div>
                   </td>
-                  <td><span style={{ fontSize:12, background:'var(--parchment-2)', padding:'2px 8px', borderRadius:3, color:'var(--ink)' }}>{artistMap[w.artist_id]?.name || 'â€”'}</span></td>
-                  <td style={{ fontSize:13, color:'var(--muted)' }}>{w.year || 'â€”'}</td>
-                  <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || 'â€”'}</td>
+                  <td><span style={{ fontSize:12, background:'var(--parchment-2)', padding:'2px 8px', borderRadius:3, color:'var(--ink)' }}>{artistMap[w.artist_id]?.name || '—'}</span></td>
+                  <td style={{ fontSize:13, color:'var(--muted)' }}>{w.year || '—'}</td>
+                  <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || '—'}</td>
                   <td style={{ fontSize:13, color:'var(--muted)' }}>
                     {w.ownership === 'consignment'
                       ? <span title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
-                          Consignment{w.consignment_price ? ` Â· â‚¦${Number(w.consignment_price).toLocaleString()}` : ''}
+                          Consignment{w.consignment_price ? ` · â‚¦${Number(w.consignment_price).toLocaleString()}` : ''}
                         </span>
                       : <span>Gallery</span>
                     }
@@ -617,7 +617,7 @@ export default function Artworks() {
                   <td style={{ fontSize:12, color:'var(--muted)' }}>
                     {(() => {
                       const ngn = Number(w.retail_price) || 0
-                      if (!ngn) return w.price || 'â€”'
+                      if (!ngn) return w.price || '—'
                       if (displayCurrency === 'USD' && usdRate) {
                         return `$${Math.round(ngn / usdRate).toLocaleString()}`
                       }
@@ -662,7 +662,7 @@ export default function Artworks() {
         <div className="modal-overlay">
           <div className="modal modal-xl">
             <div className="modal-header">
-              <div className="modal-title">{modal === 'edit' ? `Edit â€” ${form.title}` : 'Add artwork'}</div>
+              <div className="modal-title">{modal === 'edit' ? `Edit — ${form.title}` : 'Add artwork'}</div>
               <button className="btn btn-ghost btn-icon" onClick={closeModal}>âœ•</button>
             </div>
             <div className="modal-body" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
@@ -675,7 +675,7 @@ export default function Artworks() {
                 <div className="form-group">
                   <label className="form-label">Artist</label>
                   <select className="form-select" value={form.artist_id||''} onChange={e=>setForm(f=>({...f,artist_id:e.target.value}))}>
-                    <option value="">â€” select â€”</option>
+                    <option value="">— select —</option>
                     {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                 </div>
@@ -697,7 +697,7 @@ export default function Artworks() {
                   <div className="form-group">
                     <label className="form-label">Category</label>
                     <select className="form-select" value={form.category||''} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
-                      <option value="">â€” select â€”</option>
+                      <option value="">— select —</option>
                       {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
@@ -711,7 +711,7 @@ export default function Artworks() {
                   <div className="form-group">
                     <label className="form-label">Location</label>
                     <select className="form-select" value={form.location||''} onChange={e=>setForm(f=>({...f,location:e.target.value}))}>
-                      <option value="">â€” select â€”</option>
+                      <option value="">— select —</option>
                       {[...new Set([...DEFAULT_LOCATIONS, ...locations])].map(l => <option key={l} value={l}>{l}</option>)}
                     </select>
                   </div>
@@ -761,7 +761,7 @@ export default function Artworks() {
                       </div>
                       <div className="form-row">
                         <div className="form-group">
-                          <label className="form-label">Consignment price (â‚¦) <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:'var(--amber)', fontSize:10 }}>â€” minimum agreed with owner, not shown publicly</span></label>
+                          <label className="form-label">Consignment price (â‚¦) <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, color:'var(--amber)', fontSize:10 }}>— minimum agreed with owner, not shown publicly</span></label>
                           <input className="form-input" type="number" value={form.consignment_price||''} onChange={e=>setForm(f=>({...f,consignment_price:e.target.value}))} placeholder="0" />
                         </div>
                         <div className="form-group">
@@ -769,7 +769,7 @@ export default function Artworks() {
                           <input className="form-input" type="number" min={0} max={100} value={form.commission_rate||40} onChange={e=>setForm(f=>({...f,commission_rate:e.target.value}))} />
                           {form.consignment_price && form.commission_rate && (
                             <div style={{ fontSize:10, color:'var(--muted)', marginTop:4 }}>
-                              Gallery earns â‚¦{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} Â· Owner receives â‚¦{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}
+                              Gallery earns â‚¦{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} · Owner receives â‚¦{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}
                             </div>
                           )}
                         </div>
@@ -798,7 +798,7 @@ export default function Artworks() {
                 </div>
               </div>
 
-              {/* Right â€” image + metadata */}
+              {/* Right — image + metadata */}
               <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
                 {/* HG Code display */}
                 {modal === 'edit' && form.hg_code && (
@@ -813,7 +813,7 @@ export default function Artworks() {
                   </div>
                 )}
                 <div className="form-group">
-                  <label className="form-label">Tessera / legacy ID <span style={{ fontWeight:400, color:'var(--muted)', textTransform:'none', letterSpacing:0, fontSize:10 }}>â€” for cross-reference only</span></label>
+                  <label className="form-label">Tessera / legacy ID <span style={{ fontWeight:400, color:'var(--muted)', textTransform:'none', letterSpacing:0, fontSize:10 }}>— for cross-reference only</span></label>
                   <input className="form-input" value={form.tessera_id||''} onChange={e=>setForm(f=>({...f,tessera_id:e.target.value}))} placeholder="e.g. DA(S)/HG/377"/>
                 </div>
                 <div className="form-group">
@@ -859,25 +859,25 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
   // Yield to browser so UI can update before heavy work
   await new Promise(r => setTimeout(r, 50))
   const title = filters.location
-    ? `Artwork List â€” ${filters.location}`
+    ? `Artwork List — ${filters.location}`
     : filters.artist
-      ? `Artwork List â€” ${artistMap[filters.artist]?.name || 'Artist'}`
-      : 'Artwork List â€” All Works'
+      ? `Artwork List — ${artistMap[filters.artist]?.name || 'Artist'}`
+      : 'Artwork List — All Works'
 
   const subtitle = [
     filters.availability && `Status: ${filters.availability}`,
     filters.ownership && `Ownership: ${filters.ownership}`,
     filters.search && `Search: "${filters.search}"`,
-  ].filter(Boolean).join(' Â· ')
+  ].filter(Boolean).join(' · ')
 
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
 
   let body = ''
 
   if (mode === 'thumbnail') {
-    // Thumbnail list â€” compact rows with small images
+    // Thumbnail list — compact rows with small images
     const rows = artworks.map((w, i) => {
-      const artist = artistMap[w.artist_id]?.name || 'â€”'
+      const artist = artistMap[w.artist_id]?.name || '—'
       const img = w.image_url
         ? `<img src="${w.image_url}" style="width:60px;height:60px;object-fit:cover;border-radius:2px;border:1px solid #e8e3db;">`
         : `<div style="width:60px;height:60px;background:#f0ece7;border-radius:2px;border:1px solid #e8e3db;"></div>`
@@ -886,13 +886,13 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
           <td style="width:64px;padding:8px 6px 8px 0">${img}</td>
           <td style="padding:8px 10px">
             <div style="font-weight:600;font-size:12px">${escH(w.title)}</div>
-            <div style="color:#666;font-size:11px;margin-top:2px">${escH(artist)}${w.year ? ` Â· ${escH(w.year)}` : ''}</div>
-            ${w.medium ? `<div style="color:#888;font-size:10px">${escH(w.medium)}${w.dimensions ? ` Â· ${escH(w.dimensions)}` : ''}</div>` : ''}
+            <div style="color:#666;font-size:11px;margin-top:2px">${escH(artist)}${w.year ? ` · ${escH(w.year)}` : ''}</div>
+            ${w.medium ? `<div style="color:#888;font-size:10px">${escH(w.medium)}${w.dimensions ? ` · ${escH(w.dimensions)}` : ''}</div>` : ''}
           </td>
-          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.location || 'â€”')}</td>
-          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.hg_code || 'â€”')}</td>
-          <td style="padding:8px 10px;font-size:12px;font-weight:500;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'}">${escH(w.availability || 'â€”')}</td>
-          <td style="padding:8px 10px;font-size:12px">${escH(w.price || (w.retail_price ? 'â‚¦' + Number(w.retail_price).toLocaleString() : 'â€”'))}</td>
+          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.location || '—')}</td>
+          <td style="padding:8px 10px;font-size:11px;color:#666">${escH(w.hg_code || '—')}</td>
+          <td style="padding:8px 10px;font-size:12px;font-weight:500;color:${w.availability === 'Available' ? '#2d6a4f' : '#888'}">${escH(w.availability || '—')}</td>
+          <td style="padding:8px 10px;font-size:12px">${escH(w.price || (w.retail_price ? 'â‚¦' + Number(w.retail_price).toLocaleString() : '—'))}</td>
         </tr>`
     }).join('')
 
@@ -912,7 +912,7 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
       </table>`
 
   } else {
-    // Full page â€” one artwork per page, large image
+    // Full page — one artwork per page, large image
     body = artworks.map((w, i) => {
       const artist = artistMap[w.artist_id]
       const img = w.image_url
@@ -927,7 +927,7 @@ async function printArtworkList(artworks, artistMap, filters, mode = 'thumbnail'
         ${img}
         <div style="margin-top:24px;border-top:1px solid #e8e3db;padding-top:16px;">
           <div style="font-family:Georgia,serif;font-size:24px;font-weight:400;margin-bottom:6px;">${escH(w.title)}</div>
-          <div style="font-size:14px;color:#444;margin-bottom:12px;">${escH(artist?.name || 'â€”')}</div>
+          <div style="font-size:14px;color:#444;margin-bottom:12px;">${escH(artist?.name || '—')}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;">
             <div style="font-size:12px;color:#888;line-height:1.8;">
               ${w.year ? `<div>Year: ${escH(w.year)}</div>` : ''}
@@ -959,7 +959,7 @@ body{font-family:-apple-system,sans-serif;color:#1a1714;padding:${mode === 'full
   <div style="font-family:Georgia,serif;font-size:16px;margin-bottom:2px">Hourglass Gallery</div>
   <div style="font-size:13px;font-weight:600;margin:6px 0 2px">${escH(title)}</div>
   ${subtitle ? `<div style="font-size:11px;color:#888">${escH(subtitle)}</div>` : ''}
-  <div style="font-size:10px;color:#aaa;margin-top:3px">Generated ${today} Â· ${artworks.length} work${artworks.length !== 1 ? 's' : ''} Â· ${mode === 'thumbnail' ? 'Thumbnail list' : 'Full page'}</div>
+  <div style="font-size:10px;color:#aaa;margin-top:3px">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''} · ${mode === 'thumbnail' ? 'Thumbnail list' : 'Full page'}</div>
 </div>
 ${body}
 </body></html>`
