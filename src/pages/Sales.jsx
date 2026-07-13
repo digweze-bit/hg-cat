@@ -307,7 +307,7 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
   return (
     <div>
       <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
-        <input className="form-input" style={{ width:220 }} placeholder="Search invoices\u2026" value={search} onChange={e=>setSearch(e.target.value)} />
+        <input className="form-input" style={{ width:220 }} placeholder="Search invoices..." value={search} onChange={e=>setSearch(e.target.value)} />
         <select className="form-select" style={{ width:140 }} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
           <option value="">All status</option>
           {['draft','sent','partial','paid','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
@@ -441,7 +441,7 @@ function ClientList({ clients, invoices, onRefresh }) {
       {/* Client list */}
       <div>
         <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-          <input className="form-input" placeholder="Search clients\u2026" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1 }}/>
+          <input className="form-input" placeholder="Search clients..." value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1 }}/>
           <button className="btn btn-primary" onClick={openAdd}>+ Add</button>
         </div>
         <div className="card" style={{ padding:0 }}>
@@ -921,7 +921,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               {/* Book search */}
               <input
                 className="form-input"
-                placeholder="Search books by title or author\u2026"
+                placeholder="Search books by title or author..."
                 value={bookSearch}
                 onChange={e=>setBookSearch(e.target.value)}
                 style={{ marginBottom:6 }}
@@ -939,7 +939,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginTop:10, marginBottom:8 }}>Artworks</div>
               <input
                 className="form-input"
-                placeholder="Search artworks by title or artist\u2026"
+                placeholder="Search artworks by title or artist..."
                 value={artworkSearch}
                 onChange={e=>setArtworkSearch(e.target.value)}
               />
@@ -1014,7 +1014,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                 </div>
               ) : (
                 <>
-                  <input className="form-input" placeholder="Search clients\u2026" value={clientSearch}
+                  <input className="form-input" placeholder="Search clients..." value={clientSearch}
                     onChange={e=>setClientSearch(e.target.value)}
                     onFocus={()=>{ if(form.client_id) setClientSearch('') }}
                   />
