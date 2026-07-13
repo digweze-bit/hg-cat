@@ -169,8 +169,8 @@ export default function Books() {
           <div className="page-title">Books</div>
           <div className="page-subtitle">
             {books.length} titles
-            {lowStockCount > 0 && <span style={{color:'#b8862a', marginLeft:12}}>\u00B7 {lowStockCount} low stock</span>}
-            {outOfStockCount > 0 && <span style={{color:'#c0392b', marginLeft:8}}>\u00B7 {outOfStockCount} out of stock</span>}
+            {lowStockCount > 0 && <span style={{color:'#b8862a', marginLeft:12}}>{'\u00B7'} {lowStockCount} low stock</span>}
+            {outOfStockCount > 0 && <span style={{color:'#c0392b', marginLeft:8}}>{'\u00B7'} {outOfStockCount} out of stock</span>}
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add book</button>
@@ -230,7 +230,7 @@ export default function Books() {
                     <td style={{fontSize:13, color:'var(--muted)'}}>{b.author||'\u2014'}</td>
                     <td style={{fontSize:12, color:'var(--muted)'}}>{b.format||'\u2014'}</td>
                     <td style={{fontSize:11, color:'var(--muted)', fontFamily:'monospace'}}>{b.isbn||'\u2014'}</td>
-                    <td style={{fontSize:13}}>\u20A6{Number(b.price||0).toLocaleString()}</td>
+                    <td style={{fontSize:13}}>{'\u20A6'}{Number(b.price||0).toLocaleString()}</td>
                     <td>
                       <span style={{fontSize:11, padding:'2px 8px', borderRadius:3, background:badge.bg, color:badge.color, fontWeight:500}}>
                         {badge.label}
@@ -379,7 +379,7 @@ export default function Books() {
           <div className="modal" style={{maxWidth:560}}>
             <div className="modal-header">
               <div>
-                <div className="modal-title">Stock \u2014 {activeBook.title}</div>
+                <div className="modal-title">Stock {'\u2014'} {activeBook.title}</div>
                 <div style={{fontSize:12, color:'var(--muted)', marginTop:2}}>
                   Current stock: <strong style={{color: activeBook.stock_count === 0 ? '#c0392b' : activeBook.stock_count <= activeBook.stock_low ? '#b8862a' : 'var(--ink)'}}>{activeBook.stock_count}</strong>
                 </div>

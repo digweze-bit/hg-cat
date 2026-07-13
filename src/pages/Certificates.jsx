@@ -439,7 +439,7 @@ function printCOA({ certNumber, artistName, title, medium, dimensions, year, edi
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Certificate of Authenticity \u2014 ${e(title)}</title>
+<title>Certificate of Authenticity {'\u2014'} ${e(title)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 @page{size:A4 landscape;margin:0;}

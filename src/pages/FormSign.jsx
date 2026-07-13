@@ -421,7 +421,7 @@ export default function FormSign() {
           <div style={{ background:'#f3f0f9', borderRadius:4, padding:'14px 18px', marginBottom:24, fontSize:13 }}>
             <strong>Loan period:</strong> {form.meta.loan_from} \u2192 {form.meta.loan_to} &nbsp;\u00B7&nbsp;
             <strong>Purpose:</strong> {form.meta.purpose} &nbsp;\u00B7&nbsp;
-            <strong>Insurance value:</strong> \u20A6{Number(form.meta.insurance_value||0).toLocaleString()}
+            <strong>Insurance value:</strong> {'\u20A6'}{Number(form.meta.insurance_value||0).toLocaleString()}
           </div>
         )}
         {form.type === 'collection_receipt' && form.meta?.invoice_ref && (

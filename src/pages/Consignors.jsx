@@ -302,7 +302,7 @@ export default function Consignors() {
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <input className="form-input" type="number" min={0} max={100} value={form.commission_rate}
                         onChange={e=>setForm(f=>({...f,commission_rate:e.target.value}))} style={{maxWidth:80}}/>
-                      <span style={{fontSize:13, color:'var(--muted)'}}>% to gallery \u00B7 {100-Number(form.commission_rate)}% to consignor</span>
+                      <span style={{fontSize:13, color:'var(--muted)'}}>% to gallery {'\u00B7'} {100-Number(form.commission_rate)}% to consignor</span>
                     </div>
                   </div>
                 )}

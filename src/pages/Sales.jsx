@@ -62,8 +62,8 @@ export default function Sales() {
             {invoices.filter(i=>i.status==='paid').length} paid \u00B7
             {' '}{invoices.filter(i=>['sent','partial'].includes(i.status)).length} outstanding \u00B7
             {' '}{clients.length} clients
-            {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length > 0 && <span style={{color:'#b8862a',marginLeft:8}}>\u00B7 {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length} pending collection</span>}
-            {rates['USD'] && <span style={{ marginLeft:8, fontSize:11, color:'var(--muted)' }}>1 USD = \u20A6{rates['USD']?.toLocaleString()}</span>}
+            {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length > 0 && <span style={{color:'#b8862a',marginLeft:8}}>{'\u00B7'} {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length} pending collection</span>}
+            {rates['USD'] && <span style={{ marginLeft:8, fontSize:11, color:'var(--muted)' }}>1 USD = {'\u20A6'}{rates['USD']?.toLocaleString()}</span>}
           </div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
@@ -532,7 +532,7 @@ function ClientList({ clients, invoices, onRefresh }) {
                     <div style={{ fontSize:11, color:'var(--muted)' }}>{inv.issue_date}</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
-                    <div style={{ fontSize:13 }}>\u20A6{Number(inv.total_ngn||inv.total||0).toLocaleString()}</div>
+                    <div style={{ fontSize:13 }}>{'\u20A6'}{Number(inv.total_ngn||inv.total||0).toLocaleString()}</div>
                     <span style={{ fontSize:10, padding:'1px 6px', borderRadius:2, fontWeight:600,
                       background: inv.status==='paid' ? '#edf7f0' : inv.status==='sent' ? '#fef9ec' : '#f0f0f0',
                       color: inv.status==='paid' ? '#27ae60' : inv.status==='sent' ? '#b8862a' : '#666'
@@ -650,7 +650,7 @@ function PaymentList({ invoices, rates }) {
     <div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginBottom:24 }}>
         <div className="card" style={{ padding:'18px 20px' }}>
-          <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>\u20A6{totalNGN.toLocaleString('en-NG',{maximumFractionDigits:0})}</div>
+          <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{'\u20A6'}{totalNGN.toLocaleString('en-NG',{maximumFractionDigits:0})}</div>
           <div style={{ fontSize:11, color:'var(--muted)', marginTop:5, textTransform:'uppercase', letterSpacing:'.06em' }}>Total received (NGN equiv.)</div>
         </div>
         <div className="card" style={{ padding:'18px 20px' }}>
@@ -957,7 +957,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                       </div>
                       <div style={{ marginLeft:'auto', textAlign:'right' }}>
                       {w.price && <div style={{ fontSize:12, color:'var(--green)' }}>{w.price}</div>}
-                      {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment \u00B7 {w.commission_rate||40}% comm.</div>}
+                      {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment {'\u00B7'} {w.commission_rate||40}% comm.</div>}
                     </div>
                     </div>
                   ))}
@@ -1117,7 +1117,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               </div>
               {discountAmt > 0 && (
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5, color:'var(--green)' }}>
-                  <span>Discount</span><span>\u2212{formatAmount(discountAmt, form.currency)}</span>
+                  <span>Discount</span><span>{'\u2212'}{formatAmount(discountAmt, form.currency)}</span>
                 </div>
               )}
               {vatAmt > 0 && (
@@ -1286,7 +1286,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
             <div style={{ marginTop:14, padding:'12px 0', fontSize:13 }}>
               {inv.discount_value > 0 && (
                 <div style={{ display:'flex', justifyContent:'space-between', color:'var(--green)', marginBottom:5 }}>
-                  <span>Discount</span><span>\u2212{formatAmount(inv.discount_value, inv.currency)}</span>
+                  <span>Discount</span><span>{'\u2212'}{formatAmount(inv.discount_value, inv.currency)}</span>
                 </div>
               )}
               {inv.vat_amount > 0 && (

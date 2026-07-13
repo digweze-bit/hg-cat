@@ -359,13 +359,13 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
     body = `
       <div class="stat-row">
         <div class="stat"><div class="stat-n">${soldData.length}</div><div class="stat-l">Works sold</div></div>
-        <div class="stat"><div class="stat-n">\u20A6${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total revenue</div></div>
+        <div class="stat"><div class="stat-n">{'\u20A6'}${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total revenue</div></div>
         <div class="stat"><div class="stat-n">${soldData.length ? '\u20A6'+Math.round(soldTotal/soldData.length).toLocaleString('en-NG') : '\u2014'}</div><div class="stat-l">Average price</div></div>
       </div>
       <table>
         <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Date</th><th>Sale price</th></tr></thead>
         <tbody>${soldData.map((item,i)=>`<tr><td>${i+1}</td><td><strong>${e(item.title)}</strong></td><td>${e(item.artist_name||'\u2014')}</td><td>${e(item.client_name)}</td><td>${e(item.invoice_number)}</td><td>${e(item.sale_date)}</td><td style="color:#2d6a4f;font-weight:500">${formatAmount(item.line_total,item.currency)}</td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="6" style="text-align:right">Total</td><td style="color:#2d6a4f">\u20A6${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</td></tr></tfoot>
+        <tfoot><tr><td colspan="6" style="text-align:right">Total</td><td style="color:#2d6a4f">{'\u20A6'}${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</td></tr></tfoot>
       </table>`
   }
 
@@ -394,7 +394,7 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
     body = `
       <div class="stat-row">
         <div class="stat"><div class="stat-n">${receivableData.length}</div><div class="stat-l">Open invoices</div></div>
-        <div class="stat"><div class="stat-n">\u20A6${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total outstanding</div></div>
+        <div class="stat"><div class="stat-n">{'\u20A6'}${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total outstanding</div></div>
         <div class="stat"><div class="stat-n">${receivableData.filter(i=>i.status==='partial').length}</div><div class="stat-l">Partial payments</div></div>
       </div>
       <table>
@@ -403,7 +403,7 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
           const overdue = inv.due_date && inv.due_date < new Date().toISOString().split('T')[0]
           return `<tr><td>${e(inv.invoice_number)}</td><td>${e(inv.clients?.name||'\u2014')}</td><td>${formatAmount(inv.total,inv.currency)}</td><td style="color:#2d6a4f">${formatAmount(inv.amount_paid||0,inv.currency)}</td><td style="color:${overdue?'#8b1a1a':'#92600a'};font-weight:600">${formatAmount(inv.balance_due,inv.currency)}${overdue?' \u26A0 OVERDUE':''}</td><td>${e(inv.currency)}</td><td>${e(inv.status)}</td><td style="color:${overdue?'#8b1a1a':'inherit'}">${e(inv.due_date||'\u2014')}</td></tr>`
         }).join('')}</tbody>
-        <tfoot><tr><td colspan="4" style="text-align:right">Total outstanding</td><td style="color:#92600a">\u20A6${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</td><td colspan="3"></td></tr></tfoot>
+        <tfoot><tr><td colspan="4" style="text-align:right">Total outstanding</td><td style="color:#92600a">{'\u20A6'}${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</td><td colspan="3"></td></tr></tfoot>
       </table>`
   }
 

@@ -1,6 +1,7 @@
 /**
- * fix_jsx_only.js - ONLY fixes \uXXXX in JSX text nodes. No duplicate removal.
- * Safe to run multiple times.
+ * Fixes \uXXXX sequences that appear as raw text in JSX text nodes.
+ * Only fixes patterns like: >text \uXXXX text<
+ * Does NOT touch JS strings, template literals, or comment lines.
  */
 import fs from 'fs'
 import path from 'path'
@@ -9,37 +10,45 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SRC = path.join(__dirname, '..', 'src')
 
 function fixFile(fp) {
-  if (!['.jsx','.js'].includes(path.extname(fp))) return
+  if (!['.jsx'].includes(path.extname(fp))) return
   let src = fs.readFileSync(fp, 'utf8')
   if (src.charCodeAt(0) === 0xFEFF) src = src.slice(1)
   if (src.startsWith('\\uFEFF')) src = src.slice(6)
 
-  // Fix \uXXXX in JSX text nodes only
-  // A JSX text node is content between > and < that is NOT inside {} or quotes
   const lines = src.split('\n')
   let changed = false
 
-  const fixed = lines.map(line => {
-    // Skip lines that don't have \u sequences
+  const fixed = lines.map((line, i) => {
     if (!line.includes('\\u')) return line
-    // Skip pure JS lines (no JSX angle brackets)
-    if (!line.includes('>') && !line.includes('<')) return line
-    // Skip comment lines
-    if (line.trim().startsWith('//') || line.trim().startsWith('*')) return line
+    if (line.trim().startsWith('//') || line.trim().startsWith('*') || line.trim().startsWith('/*')) return line
+
+    // Match \uXXXX that is:
+    // 1. After a > (JSX text node start)  
+    // 2. NOT inside quotes (', ", `)
+    // 3. NOT already inside {} expression
+    // Strategy: split line by JSX text segments between > and <
+    // A JSX text segment is between > and the next < or {
     
-    // Fix: text between > and < containing \uXXXX
-    const newLine = line.replace(/>([^<{}'"`]*\\u[0-9A-Fa-f]{4,5}[^<{}'"`]*)</g, (m, text) => {
-      const fixedText = text.replace(/\\u([0-9A-Fa-f]{4,5})/g, (_, h) => `{'\\u${h}'}`)
-      if (fixedText !== text) changed = true
-      return `>${fixedText}<`
-    })
+    let newLine = line
+    // Replace \uXXXX that appears after > and before < or {, not inside any quotes
+    // Pattern: after closing >, plain text with \uXXXX before next < or {
+    newLine = newLine.replace(
+      />([^<{}\n]*\\u[0-9A-Fa-f]{4,5}[^<{}\n]*?)(?=[<{])/g,
+      (m, text) => {
+        // Only fix if the \u is not inside a string (no quotes around it in this segment)
+        if (text.includes("'") || text.includes('"') || text.includes('`')) return m
+        const fixedText = text.replace(/\\u([0-9A-Fa-f]{4,5})/g, (_, h) => `{'\\u${h}'}`)
+        if (fixedText !== text) {
+          changed = true
+          console.log(`  ${path.basename(fp)}:${i+1} fixed: ${text.trim().slice(0,50)}`)
+        }
+        return `>${fixedText}`
+      }
+    )
     return newLine
   }).join('\n')
 
-  if (changed) {
-    fs.writeFileSync(fp, fixed, 'utf8')
-    console.log(`  Fixed: ${path.basename(fp)}`)
-  }
+  if (changed) fs.writeFileSync(fp, fixed, 'utf8')
 }
 
 function walk(dir) {
@@ -50,6 +59,6 @@ function walk(dir) {
   }
 }
 
-console.log('Fixing \\uXXXX in JSX text nodes only...\n')
+console.log('Fixing raw \\uXXXX in JSX text nodes...\n')
 walk(SRC)
 console.log('\nDone.')

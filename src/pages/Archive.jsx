@@ -745,7 +745,7 @@ function ProvEntry({ entry: p, onEdit, onDelete }) {
         </div>
         {p.docs?.length > 0 && (
           <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:5 }}>
-            {p.docs.map(d => <span key={d} style={{ fontSize:9, padding:'1px 7px', background:'var(--parchment-2)', borderRadius:20, color:'var(--muted)' }}>\uD83D\uDCC4 {d}</span>)}
+            {p.docs.map(d => <span key={d} style={{ fontSize:9, padding:'1px 7px', background:'var(--parchment-2)', borderRadius:20, color:'var(--muted)' }}>{'\uD83D'}{'\uDCC4'} {d}</span>)}
           </div>
         )}
       </div>
@@ -1154,7 +1154,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
                   {p.is_gap?'\u26A0 Gap':'\u2192'} {p.date_from||''}{p.date_to?' \u2013 '+p.date_to:''}
                 </span>
                 <strong>{p.is_gap ? 'Undocumented period' : p.owner}</strong>
-                {p.location && <span style={{ color:'var(--muted)' }}> \u00B7 {p.location}</span>}
+                {p.location && <span style={{ color:'var(--muted)' }}> {'\u00B7'} {p.location}</span>}
               </div>
             ))}
           </div>
@@ -1386,7 +1386,7 @@ ${details.provNotes ? `<div class="prov-notes">${e(details.provNotes)}</div>` : 
 ${provChain.length ? `
 
   ${provChain.map(p => p.is_gap
-    ? `<div class="prov-gap"><div class="gap-label">\u26A0 Gap in record \u00B7 ${e(p.date_from||'')}${p.date_to?' \u2013 '+e(p.date_to):''}</div><div style="font-size:12px;color:#8B3A2A">${e(p.description||'No documentation available for this period')}</div></div>`
+    ? `<div class="prov-gap"><div class="gap-label">{'\u26A0'} Gap in record {'\u00B7'} ${e(p.date_from||'')}${p.date_to?' \u2013 '+e(p.date_to):''}</div><div style="font-size:12px;color:#8B3A2A">${e(p.description||'No documentation available for this period')}</div></div>`
     : `<div class="prov-entry"><div class="prov-date">${e(p.date_from||'')}${p.date_to?' \u2013 '+e(p.date_to):' \u2013 present'} \u00B7 ${e(p.entry_type||'')} \u00B7 <span style="color:${p.verified?'#2d6a4f':'#92600a'}">${p.verified?'VERIFIED':'UNVERIFIED'}</span></div><div class="prov-owner">${e(p.owner||'Unknown')}</div><div class="prov-meta">${e(p.location||'')}${p.description?' \u2014 '+e(p.description.slice(0,120))+(p.description.length>120?'\u2026':''):''}</div>${p.docs?.length?`<div class="prov-docs">Documents: ${p.docs.map(d=>e(d)).join(' \u00B7 ')}</div>`:''}</div>`
   ).join('')}
   ${gapCount > 0 ? `<div class="due-diligence"><strong>Due diligence note:</strong> ${gapCount} undocumented period${gapCount>1?'s':''} identified in the provenance record. Further investigation is recommended prior to sale, institutional loan, or insurance valuation.</div>` : ''}

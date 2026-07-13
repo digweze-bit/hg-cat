@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthProvider'
 import { LOGO_B64, SIG_B64 } from '../lib/assets'
@@ -843,7 +843,7 @@ export default function Forms() {
                             <div style={{ fontWeight:500, fontSize:13 }}>{aw.title}</div>
                             <div style={{ fontSize:11, color:'#666', marginTop:2 }}>{aw.artist_name}{aw.year ? `, ${aw.year}` : ''}</div>
                             {aw.medium && <div style={{ fontSize:11, color:'#666' }}>{aw.medium}{aw.dimensions ? ` \u00B7 ${aw.dimensions}` : ''}</div>}
-                            {aw.price && <div style={{ fontSize:12, fontWeight:500, marginTop:4 }}>\u20A6{Number(aw.price).toLocaleString()}</div>}
+                            {aw.price && <div style={{ fontSize:12, fontWeight:500, marginTop:4 }}>{'\u20A6'}{Number(aw.price).toLocaleString()}</div>}
                           </div>
                         </div>
                       ))}
@@ -938,7 +938,7 @@ export default function Forms() {
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth:500 }}>
             <div className="modal-header">
-              <div className="modal-title">Share \u2014 {activeForm.reference}</div>
+              <div className="modal-title">Share {'\u2014'} {activeForm.reference}</div>
               <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>{'\u2715'}</button>
             </div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:14 }}>
