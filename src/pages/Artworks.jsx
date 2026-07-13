@@ -484,7 +484,7 @@ export default function Artworks() {
   function closeModal() { setModal(null); setForm(EMPTY); setEditId(null) }
 
   const sf = (key, val) => { setFilters(f => ({...f, [key]: val})); setPage(0) }
-
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading{'\u2026'}</div>
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading artworks\u2026</div>
 
   return (
@@ -498,7 +498,7 @@ export default function Artworks() {
       </div>
 
       {/* Filters */}
-      <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:18 }}>
+        <input className="form-input" style={{ width:220 }} placeholder={'Search\u2026'} value={filters.search} onChange={e=>sf('search',e.target.value)} />
         <input className="form-input" style={{ width:220 }} placeholder="Search\u2026" value={filters.search} onChange={e=>sf('search',e.target.value)} />
         <select className="form-select" style={{ width:180 }} value={filters.artist} onChange={e=>sf('artist',e.target.value)}>
           <option value="">All artists</option>
