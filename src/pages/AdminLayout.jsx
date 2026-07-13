@@ -41,10 +41,10 @@ export default function AdminLayout() {
   // Inject loading animation CSS once
   useEffect(() => {
     if (document.getElementById('hg-loader-css')) return
-    const s = document.createElement('style')
-    s.id = 'hg-loader-css'
-    s.textContent = '@keyframes hg-progress{0%{opacity:1;transform:scaleX(.1);transform-origin:left}50%{opacity:1;transform:scaleX(.7);transform-origin:left}100%{opacity:0;transform:scaleX(1);transform-origin:left}}@keyframes hg-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}'
-    document.head.appendChild(s)
+    const styleEl = document.createElement('style')
+    styleEl.id = 'hg-loader-css'
+    styleEl.textContent = '@keyframes hg-progress{0%{opacity:1;transform:scaleX(.1);transform-origin:left}50%{opacity:1;transform:scaleX(.7);transform-origin:left}100%{opacity:0;transform:scaleX(1);transform-origin:left}}@keyframes hg-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}'
+    document.head.appendChild(styleEl)
   }, [])
 
   return (
