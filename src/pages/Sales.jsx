@@ -1103,7 +1103,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
             </div>
             <div className="form-group">
               <label className="form-label">VAT / Tax rate (%)</label>
-              <input className="form-input" type="number" value={form.vat_rate} onChange={e=>setForm(f=>({...f,vat_rate:e.target.value}))} placeholder="0 = no VAT \u00B7 7.5 = Nigerian VAT" />
+              <input className="form-input" type="number" value={form.vat_rate} onChange={e=>setForm(f=>({...f,vat_rate:e.target.value}))} placeholder="0 = no VAT · 7.5 = Nigerian VAT" />
             </div>
             <div className="form-group">
               <label className="form-label">Notes</label>

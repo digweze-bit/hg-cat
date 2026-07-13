@@ -609,7 +609,7 @@ export default function Archive() {
               </div>
               <div className="form-group">
                 <label className="form-label">Dimensions</label>
-                <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="91.5 \u00D7 61 cm" />
+                <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="91.5 x 61 cm" />
               </div>
               <div className="form-group">
                 <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>{'\u2014'} known history, ownership context</span></label>
@@ -1072,7 +1072,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       </div>
       <div className="form-group">
         <label className="form-label">Report title</label>
-        <input className="form-input" value={details.reportTitle||''} onChange={e=>setDetails(d=>({...d,reportTitle:e.target.value}))} placeholder="e.g. Provenance Report \u2014 Tutu" />
+        <input className="form-input" value={details.reportTitle||''} onChange={e=>setDetails(d=>({...d,reportTitle:e.target.value}))} placeholder="e.g. Provenance Report - Tutu" />
       </div>
       <div className="form-row">
         <div className="form-group">
