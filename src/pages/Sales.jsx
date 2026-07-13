@@ -57,10 +57,10 @@ export default function Sales() {
     <div>
       <div className="page-header flex items-center justify-between">
         <div>
-          <div className="page-title">Sales & Invoices</div>
+          <div className="page-subtitle">
             {invoices.filter(i=>i.status==='paid').length} paid {'\u00B7'}
             {' '}{invoices.filter(i=>['sent','partial'].includes(i.status)).length} outstanding {'\u00B7'}
-            {' '}{invoices.filter(i=>['sent','partial'].includes(i.status)).length} outstanding \u00B7
+
             {' '}{clients.length} clients
             {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length > 0 && <span style={{color:'#b8862a',marginLeft:8}}>{'\u00B7'} {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length} pending collection</span>}
             {rates['USD'] && <span style={{ marginLeft:8, fontSize:11, color:'var(--muted)' }}>1 USD = {'\u20A6'}{rates['USD']?.toLocaleString()}</span>}
