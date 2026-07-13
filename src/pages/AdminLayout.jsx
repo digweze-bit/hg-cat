@@ -1,4 +1,5 @@
-import { Outlet, useNavigate, useLocation, useNavigation } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../components/AuthProvider'
 
 const NAV = [
@@ -21,8 +22,14 @@ const NAV = [
 
 export default function AdminLayout() {
   const { profile, signOut } = useAuth()
-  const navigation = useNavigation()
-  const isLoading = navigation.state === 'loading'
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Show loader on route change
+  useEffect(() => {
+    setIsLoading(true)
+    const t = setTimeout(() => setIsLoading(false), 800)
+    return () => clearTimeout(t)
+  }, [location.pathname])
   const navigate = useNavigate()
   const location = useLocation()
 
