@@ -487,7 +487,7 @@ export default function Forms() {
             <div className="modal-header">
               <div>
                 <div className="modal-title">New form</div>
-                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Step {bType === 'catalogue' ? ${step} of 3 : ${step} of 6} {'\u2014'} {bType === 'catalogue' ? ['','Form type','Artworks','Options'][step] || '' : ['','Form type','Artworks','Recipient & details','Gallery signature','Preview','Share'][step]}</div>
+<div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Step {bType === 'catalogue' ? `${step} of 3` : `${step} of 6`} {'\u2014'} {bType === 'catalogue' ? ['','Form type','Artworks','Options'][step] || '' : ['','Form type','Artworks','Recipient & details','Gallery signature','Preview','Share'][step]}</div>
               </div>
               <button className="btn btn-ghost btn-icon" onClick={() => { setModal(null); resetBuilder() }}>{'\u2715'}</button>
             </div>
