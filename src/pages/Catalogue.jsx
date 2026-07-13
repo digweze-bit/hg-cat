@@ -31,7 +31,7 @@ export default function Catalogue() {
       filters: [['visible','eq',true],['artist_id','eq',activeArtist.id]],
       order: 'sort_order'
     }).then(w => setArtworks(prev => {
-      // Merge — keep other artists' works, replace this artist's
+      // Merge \u2014 keep other artists' works, replace this artist's
       const others = prev.filter(x => x.artist_id !== activeArtist.id)
       return [...others, ...w]
     }))
@@ -60,7 +60,7 @@ export default function Catalogue() {
     return list
   }, [artists, search, sortTab, workCounts])
 
-  // Group by first letter for A–Z view
+  // Group by first letter for A\u2013Z view
   const grouped = useMemo(() => {
     if (sortTab !== 'az') return [['', sorted]]
     const groups = {}
@@ -90,11 +90,11 @@ export default function Catalogue() {
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#f9f8f6' }}>
-      <div style={{ fontFamily:'Georgia,serif', fontSize:'1.2rem', color:'#999' }}>Loading…</div>
+      <div style={{ fontFamily:'Georgia,serif', fontSize:'1.2rem', color:'#999' }}>Loading\u2026</div>
     </div>
   )
 
-  // ── ARTIST DETAIL VIEW ──
+  // \u2500\u2500 ARTIST DETAIL VIEW \u2500\u2500
   if (activeArtist) {
     const wc = workCounts[activeArtist.id] || 0
     return (
@@ -105,7 +105,7 @@ export default function Catalogue() {
             onClick={() => { setActiveArtist(null); setSelected(null); setMediumFilter(''); setAvailFilter('') }}
             style={{ background:'none', border:'none', cursor:'pointer', color:'#c8651b', fontSize:13, fontFamily:'inherit', padding:0, display:'flex', alignItems:'center', gap:5 }}
           >
-            ← Artist List
+            \u2190 Artist List
           </button>
           <div style={{ width:1, height:16, background:'#e8e5e0' }} />
           <div style={{ fontFamily:'Georgia,serif', fontSize:'1.1rem', color:'#1a1714' }}>{activeArtist.name}</div>
@@ -122,11 +122,11 @@ export default function Catalogue() {
             <div>
               <div style={{ fontFamily:'Georgia,serif', fontSize:'1.7rem', fontWeight:400, color:'#1a1714', marginBottom:4 }}>{activeArtist.name}</div>
               <div style={{ fontSize:13, color:'#999', marginBottom: activeArtist.bio ? 10 : 0 }}>
-                {[activeArtist.nationality, activeArtist.born && activeArtist.died ? `${activeArtist.born}–${activeArtist.died}` : activeArtist.born, activeArtist.medium].filter(Boolean).join(' · ')}
+                {[activeArtist.nationality, activeArtist.born && activeArtist.died ? `${activeArtist.born}\u2013${activeArtist.died}` : activeArtist.born, activeArtist.medium].filter(Boolean).join(' \u00B7 ')}
               </div>
               {activeArtist.bio && (
                 <p style={{ fontSize:13, color:'#555', lineHeight:1.75, maxWidth:640, margin:0 }}>
-                  {activeArtist.bio.slice(0, 300)}{activeArtist.bio.length > 300 ? '…' : ''}
+                  {activeArtist.bio.slice(0, 300)}{activeArtist.bio.length > 300 ? '\u2026' : ''}
                 </p>
               )}
             </div>
@@ -175,7 +175,7 @@ export default function Catalogue() {
     )
   }
 
-  // ── ARTIST INDEX VIEW ──
+  // \u2500\u2500 ARTIST INDEX VIEW \u2500\u2500
   return (
     <div style={{ minHeight:'100vh', background:'#f9f8f6', fontFamily:'-apple-system,sans-serif' }}>
 
@@ -207,14 +207,14 @@ export default function Catalogue() {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search by artist, title, tag or e.g. 'Boadi large works'…"
+          placeholder="Search by artist, title, tag or e.g. 'Boadi large works'\u2026"
           style={{ width:'100%', padding:'8px 0', border:'none', borderBottom:'1px solid #e8e5e0', fontSize:13, color:'#333', background:'transparent', fontFamily:'inherit', outline:'none' }}
         />
       </div>
 
       {/* Sort tabs */}
       <div style={{ background:'#fff', borderBottom:'1px solid #e8e5e0', padding:'0 40px', display:'flex', gap:0 }}>
-        {[['az','A – Z'],['most','Most Works'],['recent','Recently Updated']].map(([key, label]) => (
+        {[['az','A \u2013 Z'],['most','Most Works'],['recent','Recently Updated']].map(([key, label]) => (
           <button key={key} onClick={() => setSortTab(key)}
             style={{ padding:'12px 20px', fontSize:12, letterSpacing:'.06em', textTransform:'uppercase', fontFamily:'inherit', cursor:'pointer', background:'none', border:'none', borderBottom: sortTab===key ? '2px solid #c8651b' : '2px solid transparent', color: sortTab===key ? '#c8651b' : '#999', transition:'all 150ms' }}>
             {label}
@@ -240,7 +240,7 @@ export default function Catalogue() {
                     onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                   >
                     <div style={{ fontFamily:'Georgia,serif', fontSize:'1rem', color:'#1a1714', lineHeight:1.3 }}>{a.name}</div>
-                    <div style={{ fontSize:11, color:'#c8651b', marginTop:12, textAlign:'right' }}>{wc} →</div>
+                    <div style={{ fontSize:11, color:'#c8651b', marginTop:12, textAlign:'right' }}>{wc} \u2192</div>
                   </div>
                 )
               })}
@@ -281,7 +281,7 @@ function ArtworkCard({ artwork: w, onClick }) {
       </div>
       <div style={{ padding:'10px 12px 12px' }}>
         <div style={{ fontFamily:'Georgia,serif', fontSize:'0.9rem', lineHeight:1.3, color:'#1a1714', marginBottom:3 }}>{w.title}</div>
-        <div style={{ fontSize:11, color:'#999' }}>{[w.year, w.medium].filter(Boolean).join(' · ')}</div>
+        <div style={{ fontSize:11, color:'#999' }}>{[w.year, w.medium].filter(Boolean).join(' \u00B7 ')}</div>
         {w.dimensions && <div style={{ fontSize:11, color:'#bbb', marginTop:1 }}>{w.dimensions}</div>}
       </div>
     </div>
@@ -305,7 +305,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
               <div style={{ fontFamily:'Georgia,serif', fontSize:'1.4rem', fontWeight:400, color:'#1a1714', marginBottom:4, lineHeight:1.2 }}>{w.title}</div>
               {artist && <div style={{ fontSize:13, color:'#999' }}>{artist.name}</div>}
             </div>
-            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1, padding:4 }}>✕</button>
+            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1, padding:4 }}>\u2715</button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             {[['Year',w.year],['Medium',w.medium],['Dimensions',w.dimensions],['Series',w.series],['Location',w.location],['Status',w.availability]].filter(([,v])=>v).map(([label,val])=>(
@@ -324,7 +324,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
           {artist?.bio && (
             <div>
               <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'#999', marginBottom:8 }}>About the artist</div>
-              <p style={{ fontSize:13, lineHeight:1.75, color:'#555', margin:0 }}>{artist.bio.slice(0,350)}{artist.bio.length>350?'…':''}</p>
+              <p style={{ fontSize:13, lineHeight:1.75, color:'#555', margin:0 }}>{artist.bio.slice(0,350)}{artist.bio.length>350?'\u2026':''}</p>
             </div>
           )}
           {w.tags?.length > 0 && (

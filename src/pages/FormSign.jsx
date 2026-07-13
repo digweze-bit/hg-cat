@@ -125,7 +125,7 @@ export default function FormSign() {
 
     // Reference
     setFont(8, 'normal', MUTED)
-    doc.text(`Reference: ${form.reference || '—'}`, lx, y)
+    doc.text(`Reference: ${form.reference || '\u2014'}`, lx, y)
     y += 10
 
     // Parties
@@ -136,7 +136,7 @@ export default function FormSign() {
     doc.text('RECIPIENT', pw/2 + 2, y + 5)
     setFont(10, 'bold', INK)
     doc.text('Hourglass Gallery', lx + 4, y + 11)
-    doc.text(form.recipient_name || '—', pw/2 + 2, y + 11)
+    doc.text(form.recipient_name || '\u2014', pw/2 + 2, y + 11)
     setFont(8, 'normal', MUTED)
     doc.text('298A Akin Olugbade St, Victoria Island, Lagos', lx + 4, y + 16)
     if (form.recipient_email) doc.text(form.recipient_email, pw/2 + 2, y + 16)
@@ -164,9 +164,9 @@ export default function FormSign() {
       doc.text('CONSIGNMENT TERMS', lx + 4, y + 5)
       setFont(9, 'normal', INK)
       const terms = form.meta.term_type === 'fixed'
-        ? `Fixed net to consignor: ₦${Number(form.meta.fixed_amount||0).toLocaleString()}`
-        : `Gallery commission: ${form.meta.commission_rate || 40}%  ·  Consignor receives: ${100 - (form.meta.commission_rate || 40)}%`
-      doc.text(`${terms}  ·  Sale type: ${form.meta.sale_type || 'Secondary'}  ·  Duration: ${form.meta.duration || 'Open'}`, lx + 4, y + 10)
+        ? `Fixed net to consignor: \u20A6${Number(form.meta.fixed_amount||0).toLocaleString()}`
+        : `Gallery commission: ${form.meta.commission_rate || 40}%  \u00B7  Consignor receives: ${100 - (form.meta.commission_rate || 40)}%`
+      doc.text(`${terms}  \u00B7  Sale type: ${form.meta.sale_type || 'Secondary'}  \u00B7  Duration: ${form.meta.duration || 'Open'}`, lx + 4, y + 10)
       y += 20
     }
 
@@ -176,7 +176,7 @@ export default function FormSign() {
       setFont(7, 'bold', MUTED)
       doc.text('LOAN DETAILS', lx + 4, y + 5)
       setFont(9, 'normal', INK)
-      doc.text(`From: ${form.meta.loan_from||'—'}  ·  To: ${form.meta.loan_to||'—'}  ·  Purpose: ${form.meta.purpose||'—'}  ·  Insurance value: ₦${Number(form.meta.insurance_value||0).toLocaleString()}`, lx + 4, y + 10)
+      doc.text(`From: ${form.meta.loan_from||'\u2014'}  \u00B7  To: ${form.meta.loan_to||'\u2014'}  \u00B7  Purpose: ${form.meta.purpose||'\u2014'}  \u00B7  Insurance value: \u20A6${Number(form.meta.insurance_value||0).toLocaleString()}`, lx + 4, y + 10)
       y += 20
     }
 
@@ -209,11 +209,11 @@ export default function FormSign() {
 
       // Details
       setFont(11, 'bold', INK)
-      doc.text(aw.title || '—', tx, y + 5)
+      doc.text(aw.title || '\u2014', tx, y + 5)
       setFont(9, 'normal', MUTED)
       doc.text(aw.artist_name || '', tx, y + 11)
       setFont(8, 'normal', INK)
-      const detail = [aw.medium, aw.dimensions, aw.year].filter(Boolean).join('  ·  ')
+      const detail = [aw.medium, aw.dimensions, aw.year].filter(Boolean).join('  \u00B7  ')
       doc.text(detail, tx, y + 17)
       if (aw.hg_code) { setFont(8, 'normal', MUTED); doc.text(`HG code: ${aw.hg_code}`, tx, y + 22) }
       if (aw.condition) { setFont(8, 'normal', INK); doc.text(`Condition: ${aw.condition}`, tx, y + 27) }
@@ -274,7 +274,7 @@ export default function FormSign() {
           doc.addImage(recipientSig, 'PNG', sigX2, y, sigColW * 0.6, 16)
         } catch(_) {}
       } else {
-        // Typed — render as text in italic
+        // Typed \u2014 render as text in italic
         doc.setFont('helvetica', 'bolditalic')
         doc.setFontSize(16)
         doc.setTextColor(INK)
@@ -297,7 +297,7 @@ export default function FormSign() {
     doc.setLineWidth(0.2)
     doc.line(lx, ph - 14, pw - margin, ph - 14)
     setFont(7, 'normal', MUTED)
-    doc.text('Hourglass Gallery  ·  298A Akin Olugbade Street, Victoria Island, Lagos', pw/2, ph - 9, { align:'center' })
+    doc.text('Hourglass Gallery  \u00B7  298A Akin Olugbade Street, Victoria Island, Lagos', pw/2, ph - 9, { align:'center' })
 
     // Save to Supabase storage
     const pdfBlob = doc.output('blob')
@@ -325,7 +325,7 @@ export default function FormSign() {
 
   if (loading) return (
     <div style={{ minHeight:'100vh', background:'#faf8f5', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ fontFamily:'sans-serif', color:'#999' }}>Loading document…</div>
+      <div style={{ fontFamily:'sans-serif', color:'#999' }}>Loading document\u2026</div>
     </div>
   )
 
@@ -338,7 +338,7 @@ export default function FormSign() {
 
   if (form.status === 'signed' || done) return (
     <div style={{ minHeight:'100vh', background:'#faf8f5', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16 }}>
-      <div style={{ fontSize:48 }}>✓</div>
+      <div style={{ fontSize:48 }}>\u2713</div>
       <div style={{ fontFamily:'Georgia,serif', fontSize:22 }}>Document signed</div>
       <div style={{ fontSize:14, color:'#666', textAlign:'center', maxWidth:400 }}>
         Thank you, {form.recipient_name}. This document has been signed and filed with Hourglass Gallery.
@@ -346,7 +346,7 @@ export default function FormSign() {
       {form.pdf_url && (
         <a href={form.pdf_url} target="_blank" rel="noopener noreferrer"
           style={{ marginTop:8, padding:'9px 20px', borderRadius:3, border:'1px solid #e0dbd4', fontSize:13, color:'#1a1714', textDecoration:'none' }}>
-          ↓ Download signed PDF
+          \u2193 Download signed PDF
         </a>
       )}
     </div>
@@ -411,17 +411,17 @@ export default function FormSign() {
         {form.type === 'consignment_agreement' && form.meta && (
           <div style={{ background:'#fef9ec', borderRadius:4, padding:'14px 18px', marginBottom:24, fontSize:13 }}>
             <strong>Terms:</strong> {form.meta.term_type === 'fixed'
-              ? `Fixed net to consignor: ₦${Number(form.meta.fixed_amount||0).toLocaleString()}`
-              : `Gallery commission ${form.meta.commission_rate||40}% · Consignor receives ${100-(form.meta.commission_rate||40)}%`
-            } &nbsp;·&nbsp; <strong>Sale type:</strong> {form.meta.sale_type || 'Secondary'}
-            {form.meta.duration && <span> &nbsp;·&nbsp; <strong>Duration:</strong> {form.meta.duration}</span>}
+              ? `Fixed net to consignor: \u20A6${Number(form.meta.fixed_amount||0).toLocaleString()}`
+              : `Gallery commission ${form.meta.commission_rate||40}% \u00B7 Consignor receives ${100-(form.meta.commission_rate||40)}%`
+            } &nbsp;\u00B7&nbsp; <strong>Sale type:</strong> {form.meta.sale_type || 'Secondary'}
+            {form.meta.duration && <span> &nbsp;\u00B7&nbsp; <strong>Duration:</strong> {form.meta.duration}</span>}
           </div>
         )}
         {form.type === 'loan_agreement' && form.meta && (
           <div style={{ background:'#f3f0f9', borderRadius:4, padding:'14px 18px', marginBottom:24, fontSize:13 }}>
-            <strong>Loan period:</strong> {form.meta.loan_from} → {form.meta.loan_to} &nbsp;·&nbsp;
-            <strong>Purpose:</strong> {form.meta.purpose} &nbsp;·&nbsp;
-            <strong>Insurance value:</strong> ₦{Number(form.meta.insurance_value||0).toLocaleString()}
+            <strong>Loan period:</strong> {form.meta.loan_from} \u2192 {form.meta.loan_to} &nbsp;\u00B7&nbsp;
+            <strong>Purpose:</strong> {form.meta.purpose} &nbsp;\u00B7&nbsp;
+            <strong>Insurance value:</strong> \u20A6{Number(form.meta.insurance_value||0).toLocaleString()}
           </div>
         )}
         {form.type === 'collection_receipt' && form.meta?.invoice_ref && (
@@ -443,7 +443,7 @@ export default function FormSign() {
                 <div style={{ fontWeight:600, fontSize:15, color:'#1a1714', marginBottom:3 }}>{aw.title}</div>
                 <div style={{ fontSize:13, color:'#666', marginBottom:6 }}>{aw.artist_name}</div>
                 <div style={{ fontSize:12, color:'#888', lineHeight:1.6 }}>
-                  {[aw.medium, aw.dimensions, aw.year].filter(Boolean).join('  ·  ')}
+                  {[aw.medium, aw.dimensions, aw.year].filter(Boolean).join('  \u00B7  ')}
                   {aw.hg_code && <span style={{ display:'block', marginTop:2 }}>Code: {aw.hg_code}</span>}
                   {aw.condition && <span style={{ display:'block', marginTop:2 }}>Condition: {aw.condition}</span>}
                 </div>
@@ -521,7 +521,7 @@ export default function FormSign() {
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               <input
                 style={{ padding:'12px 14px', fontSize:14, border:'1px solid #e8e3db', borderRadius:4, fontFamily:'inherit', outline:'none' }}
-                placeholder="Type your full name…"
+                placeholder="Type your full name\u2026"
                 value={typedName}
                 onChange={e => setTypedName(e.target.value)}
               />
@@ -536,7 +536,7 @@ export default function FormSign() {
 
           <button onClick={handleSubmit} disabled={submitting}
             style={{ marginTop:20, padding:'12px 28px', background:'#1a1714', color:'#fff', border:'none', borderRadius:3, fontSize:14, fontWeight:600, cursor: submitting ? 'wait' : 'pointer', fontFamily:'inherit' }}>
-            {submitting ? 'Signing & generating PDF…' : 'I confirm and sign'}
+            {submitting ? 'Signing & generating PDF\u2026' : 'I confirm and sign'}
           </button>
         </div>
       </div>

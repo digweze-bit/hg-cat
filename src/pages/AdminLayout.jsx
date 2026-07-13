@@ -3,20 +3,20 @@ import { useAuth } from '../components/AuthProvider'
 
 const NAV = [
   { section: 'Catalogue' },
-  { path: '/admin', label: 'Dashboard', icon: '▤' },
-  { path: '/admin/artists', label: 'Artists', icon: '◎' },
-  { path: '/admin/artworks', label: 'Artworks', icon: '◻' },
+  { path: '/admin', label: 'Dashboard', icon: '\u25A4' },
+  { path: '/admin/artists', label: 'Artists', icon: '\u25CE' },
+  { path: '/admin/artworks', label: 'Artworks', icon: '\u25FB' },
   { section: 'Archive' },
-  { path: '/admin/archive', label: 'Live Archive', icon: '◈' },
+  { path: '/admin/archive', label: 'Live Archive', icon: '\u25C8' },
   { section: 'Commerce' },
-  { path: '/admin/sales', label: 'Sales & Invoices', icon: '◑' },
-  { path: '/admin/consignors', label: 'Consignors', icon: '◐' },
-  { path: '/admin/books', label: 'Books', icon: '▣' },
-  { path: '/admin/forms', label: 'Forms', icon: '◻' },
-  { path: '/admin/reports', label: 'Reports', icon: '◧' },
-  { path: '/admin/certificates', label: 'Certificates', icon: '◇' },
+  { path: '/admin/sales', label: 'Sales & Invoices', icon: '\u25D1' },
+  { path: '/admin/consignors', label: 'Consignors', icon: '\u25D0' },
+  { path: '/admin/books', label: 'Books', icon: '\u25A3' },
+  { path: '/admin/forms', label: 'Forms', icon: '\u25FB' },
+  { path: '/admin/reports', label: 'Reports', icon: '\u25E7' },
+  { path: '/admin/certificates', label: 'Certificates', icon: '\u25C7' },
   { section: 'Admin' },
-  { path: '/admin/users', label: 'Staff users', icon: '◉' },
+  { path: '/admin/users', label: 'Staff users', icon: '\u25C9' },
 ]
 
 export default function AdminLayout() {
@@ -86,7 +86,7 @@ export default function AdminLayout() {
              location.pathname.includes('users') ? 'Staff Users' : ''}
           </div>
           <a href="/" target="_blank" style={{ fontSize:12, color:'var(--muted)' }}>
-            View public site ↗
+            View public site \u2197
           </a>
         </div>
         <div className="admin-content">

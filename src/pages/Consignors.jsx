@@ -97,24 +97,24 @@ export default function Consignors() {
     c.type?.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Artworks for selected consignor — match by consignor_name (existing field on artworks)
+  // Artworks for selected consignor \u2014 match by consignor_name (existing field on artworks)
   const consignorArtworks = selected
     ? artworks.filter(w => w.consignor_name?.toLowerCase() === selected.name?.toLowerCase())
     : []
 
   function termSummary(c) {
-    if (c.term_type === 'fixed') return c.fixed_amount ? `Fixed ₦${Number(c.fixed_amount).toLocaleString()}` : 'Fixed (TBC)'
+    if (c.term_type === 'fixed') return c.fixed_amount ? `Fixed \u20A6${Number(c.fixed_amount).toLocaleString()}` : 'Fixed (TBC)'
     return `${c.commission_rate ?? 40}% commission`
   }
 
   const saleTypeLabel = { primary:'Primary', secondary:'Secondary', both:'Primary & Secondary' }
 
-  if (loading) return <div style={{color:'var(--muted)'}}>Loading…</div>
+  if (loading) return <div style={{color:'var(--muted)'}}>Loading\u2026</div>
 
   return (
     <div style={{display:'grid', gridTemplateColumns: selected ? '340px 1fr' : '1fr', gap:20, height:'calc(100vh - 120px)'}}>
 
-      {/* ── LEFT — consignor list ── */}
+      {/* \u2500\u2500 LEFT \u2014 consignor list \u2500\u2500 */}
       <div style={{display:'flex', flexDirection:'column', gap:0, minWidth:0}}>
         <div className="page-header" style={{marginBottom:12}}>
           <div>
@@ -124,7 +124,7 @@ export default function Consignors() {
           <button className="btn btn-primary" onClick={openNew}>+ Add consignor</button>
         </div>
 
-        <input className="form-input" placeholder="Search consignors…" value={search}
+        <input className="form-input" placeholder="Search consignors\u2026" value={search}
           onChange={e=>setSearch(e.target.value)} style={{marginBottom:12}}/>
 
         <div className="card" style={{flex:1, overflowY:'auto', padding:0}}>
@@ -155,7 +155,7 @@ export default function Consignors() {
                 </div>
                 <div style={{display:'flex', gap:6, flexShrink:0, marginLeft:12}}>
                   <button className="btn btn-ghost btn-sm" onClick={e=>openEdit(c,e)}>Edit</button>
-                  <button className="btn btn-ghost btn-sm" style={{color:'var(--danger,#c0392b)'}} onClick={e=>del(c,e)}>✕</button>
+                  <button className="btn btn-ghost btn-sm" style={{color:'var(--danger,#c0392b)'}} onClick={e=>del(c,e)}>\u2715</button>
                 </div>
               </div>
             )
@@ -163,15 +163,15 @@ export default function Consignors() {
         </div>
       </div>
 
-      {/* ── RIGHT — consignor detail ── */}
+      {/* \u2500\u2500 RIGHT \u2014 consignor detail \u2500\u2500 */}
       {selected && (
         <div style={{display:'flex', flexDirection:'column', gap:0, minWidth:0}}>
           <div className="page-header" style={{marginBottom:12}}>
             <div>
               <div className="page-title">{selected.name}</div>
-              <div className="page-subtitle">{selected.type} · {saleTypeLabel[selected.sale_type]} · {termSummary(selected)}</div>
+              <div className="page-subtitle">{selected.type} \u00B7 {saleTypeLabel[selected.sale_type]} \u00B7 {termSummary(selected)}</div>
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={()=>setSelected(null)}>✕ Close</button>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setSelected(null)}>\u2715 Close</button>
           </div>
 
           {/* Contact strip */}
@@ -212,10 +212,10 @@ export default function Consignors() {
                         : <div style={{width:36, height:36, background:'var(--surface-1,#f0ece7)', borderRadius:2}}/>
                       }
                     </td>
-                    <td style={{padding:'8px 14px', fontSize:13}}>{artistMap[w.artist_id]||'—'}</td>
+                    <td style={{padding:'8px 14px', fontSize:13}}>{artistMap[w.artist_id]||'\u2014'}</td>
                     <td style={{padding:'8px 14px', fontSize:13, fontStyle:'italic'}}>{w.title}</td>
-                    <td style={{padding:'8px 14px', fontSize:13, color:'var(--muted)'}}>{w.year||'—'}</td>
-                    <td style={{padding:'8px 14px', fontSize:13, color:'var(--muted)'}}>{w.medium||'—'}</td>
+                    <td style={{padding:'8px 14px', fontSize:13, color:'var(--muted)'}}>{w.year||'\u2014'}</td>
+                    <td style={{padding:'8px 14px', fontSize:13, color:'var(--muted)'}}>{w.medium||'\u2014'}</td>
                     <td style={{padding:'8px 14px'}}>
                       <span style={{fontSize:11, padding:'2px 8px', borderRadius:3,
                         background: w.availability==='Sold' ? '#fef2f0' : w.availability==='Reserved' ? '#fef9ec' : '#f0faf4',
@@ -223,10 +223,10 @@ export default function Consignors() {
                       }}>{w.availability}</span>
                     </td>
                     <td style={{padding:'8px 14px', fontSize:13}}>
-                      {w.consignment_price ? `₦${Number(w.consignment_price).toLocaleString()}` : '—'}
+                      {w.consignment_price ? `\u20A6${Number(w.consignment_price).toLocaleString()}` : '\u2014'}
                     </td>
                     <td style={{padding:'8px 14px', fontSize:13, color:'var(--gold,#b8862a)'}}>
-                      {w.commission_rate != null ? `${w.commission_rate}%` : '—'}
+                      {w.commission_rate != null ? `${w.commission_rate}%` : '\u2014'}
                     </td>
                   </tr>
                 ))}
@@ -236,13 +236,13 @@ export default function Consignors() {
         </div>
       )}
 
-      {/* ── MODAL — add / edit consignor ── */}
+      {/* \u2500\u2500 MODAL \u2014 add / edit consignor \u2500\u2500 */}
       {modal && (
         <div className="modal-overlay">
           <div className="modal" style={{maxWidth:540}}>
             <div className="modal-header">
               <div className="modal-title">{editTarget ? 'Edit consignor' : 'Add consignor'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(false)}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(false)}>\u2715</button>
             </div>
             <div className="modal-body" style={{display:'flex', flexDirection:'column', gap:14}}>
 
@@ -302,14 +302,14 @@ export default function Consignors() {
                     <div style={{display:'flex', alignItems:'center', gap:8}}>
                       <input className="form-input" type="number" min={0} max={100} value={form.commission_rate}
                         onChange={e=>setForm(f=>({...f,commission_rate:e.target.value}))} style={{maxWidth:80}}/>
-                      <span style={{fontSize:13, color:'var(--muted)'}}>% to gallery · {100-Number(form.commission_rate)}% to consignor</span>
+                      <span style={{fontSize:13, color:'var(--muted)'}}>% to gallery \u00B7 {100-Number(form.commission_rate)}% to consignor</span>
                     </div>
                   </div>
                 )}
 
                 {form.term_type === 'fixed' && (
                   <div className="form-group" style={{maxWidth:260}}>
-                    <label className="form-label">Net amount to consignor (₦)</label>
+                    <label className="form-label">Net amount to consignor (\u20A6)</label>
                     <input className="form-input" type="number" value={form.fixed_amount}
                       onChange={e=>setForm(f=>({...f,fixed_amount:e.target.value}))} placeholder="e.g. 500000"/>
                   </div>
@@ -325,7 +325,7 @@ export default function Consignors() {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={()=>setModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={save} disabled={saving||!form.name.trim()}>
-                {saving ? 'Saving…' : editTarget ? 'Save changes' : 'Add consignor'}
+                {saving ? 'Saving\u2026' : editTarget ? 'Save changes' : 'Add consignor'}
               </button>
             </div>
           </div>

@@ -4,11 +4,11 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AuthProvider } from './components/AuthProvider'
 import RequireAuth from './components/RequireAuth'
 
-// Public pages — load immediately
+// Public pages \u2014 load immediately
 import Catalogue from './pages/Catalogue'
 import AdminLogin from './pages/AdminLogin'
 
-// Admin pages — lazy loaded
+// Admin pages \u2014 lazy loaded
 const AdminLayout  = lazy(() => import('./pages/AdminLayout'))
 const Dashboard    = lazy(() => import('./pages/Dashboard'))
 const Artists      = lazy(() => import('./pages/Artists'))
@@ -27,7 +27,7 @@ const FormSign     = lazy(() => import('./pages/FormSign'))
 function PageLoader() {
   return (
     <div style={{ minHeight:'60vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ fontFamily:'sans-serif', fontSize:13, color:'#9a9490' }}>Loading…</div>
+      <div style={{ fontFamily:'sans-serif', fontSize:13, color:'#9a9490' }}>Loading\u2026</div>
     </div>
   )
 }

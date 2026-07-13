@@ -1,16 +1,16 @@
 import { supabase } from './supabase'
 
 export const CURRENCIES = [
-  { code: 'NGN', symbol: '₦', name: 'Nigerian Naira' },
+  { code: 'NGN', symbol: '\u20A6', name: 'Nigerian Naira' },
   { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GHS', symbol: 'GH₵', name: 'Ghanaian Cedi' },
+  { code: 'GBP', symbol: '\u00A3', name: 'British Pound' },
+  { code: 'EUR', symbol: '\u20AC', name: 'Euro' },
+  { code: 'GHS', symbol: 'GH\u20B5', name: 'Ghanaian Cedi' },
   { code: 'ZAR', symbol: 'R', name: 'South African Rand' },
   { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling' },
   { code: 'AED', symbol: 'AED', name: 'UAE Dirham' },
   { code: 'CHF', symbol: 'Fr', name: 'Swiss Franc' },
-  { code: 'CNY', symbol: '¥', name: 'Chinese Yuan' },
+  { code: 'CNY', symbol: '\u00A5', name: 'Chinese Yuan' },
 ]
 
 export const CURRENCY_MAP = Object.fromEntries(CURRENCIES.map(c => [c.code, c]))
@@ -82,5 +82,5 @@ export function getRateLabel(fromCurrency, rates) {
   if (fromCurrency === 'NGN') return null
   const rate = rates[fromCurrency]
   if (!rate) return null
-  return `1 ${fromCurrency} = ₦${rate.toLocaleString('en-NG', { maximumFractionDigits: 2 })}`
+  return `1 ${fromCurrency} = \u20A6${rate.toLocaleString('en-NG', { maximumFractionDigits: 2 })}`
 }

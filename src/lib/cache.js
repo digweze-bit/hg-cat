@@ -1,7 +1,7 @@
 /**
  * Two-layer cache for Supabase data:
- * 1. In-memory (Map) — instant, per session
- * 2. localStorage — survives page refresh, cleared when stale
+ * 1. In-memory (Map) \u2014 instant, per session
+ * 2. localStorage \u2014 survives page refresh, cleared when stale
  *
  * On slow connections: data loads from localStorage instantly on refresh,
  * then updates in background when the network request completes.
@@ -10,10 +10,10 @@
 const memory = new Map()
 
 const TTL = {
-  artists:    60 * 60 * 1000,  // 1 hour — invalidated on write
-  artworks:   30 * 60 * 1000,  // 30 min — invalidated on write
+  artists:    60 * 60 * 1000,  // 1 hour \u2014 invalidated on write
+  artworks:   30 * 60 * 1000,  // 30 min \u2014 invalidated on write
   clients:    15 * 60 * 1000,  // 15 min
-  invoices:    5 * 60 * 1000,  // 5 min — changes more often
+  invoices:    5 * 60 * 1000,  // 5 min \u2014 changes more often
   books:      30 * 60 * 1000,
   consignors: 60 * 60 * 1000,
   default:    10 * 60 * 1000,
@@ -21,10 +21,10 @@ const TTL = {
 
 const CACHE_VERSION = 'v2'
 const LS_PREFIX = `hgcat_cache_${CACHE_VERSION}_`
-const LS_MAX_SIZE = 2 * 1024 * 1024 // 2MB per key — localStorage limit is ~5MB total
+const LS_MAX_SIZE = 2 * 1024 * 1024 // 2MB per key \u2014 localStorage limit is ~5MB total
 
 export function cacheGet(key) {
-  // 1. Check memory first — fastest
+  // 1. Check memory first \u2014 fastest
   const mem = memory.get(key)
   if (mem) {
     if (Date.now() < mem.expires) return mem.data
@@ -63,7 +63,7 @@ export function cacheSet(key, data, ttlMs) {
       localStorage.setItem(LS_PREFIX + key, str)
     }
   } catch(e) {
-    // localStorage full — clear old entries and try again
+    // localStorage full \u2014 clear old entries and try again
     clearOldLocalStorage()
     try {
       const str = JSON.stringify(entry)

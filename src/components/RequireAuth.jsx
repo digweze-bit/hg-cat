@@ -4,7 +4,7 @@ import { useAuth } from './AuthProvider'
 export default function RequireAuth({ children }) {
   const { user, profile, loading } = useAuth()
 
-  // Still checking session — show minimal spinner
+  // Still checking session \u2014 show minimal spinner
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh' }}>
       <div style={{ width:24, height:24, border:'2px solid #e0dbd4', borderTopColor:'#1a1714', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
@@ -15,7 +15,7 @@ export default function RequireAuth({ children }) {
   // Not logged in
   if (!user) return <Navigate to="/admin/login" replace />
 
-  // Logged in but profile not yet loaded — render children anyway
+  // Logged in but profile not yet loaded \u2014 render children anyway
   // Profile check happens below once loaded
   if (!profile) return children
 

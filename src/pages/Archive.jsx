@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { useParams, useNavigate } from 'react-router-dom'
 
-// ── CONSTANTS ────────────────────────────────────────────────
+// \u2500\u2500 CONSTANTS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 const TYPES = [
   { id:'photograph', label:'Photograph' }, { id:'press', label:'Press' },
   { id:'biography', label:'Biography' }, { id:'exhibition', label:'Exhibition' },
@@ -22,7 +22,7 @@ const PROV_TYPES = [
   'Bequest / inheritance','Private sale','Gap in record',
 ]
 
-// ── MAIN COMPONENT ───────────────────────────────────────────
+// \u2500\u2500 MAIN COMPONENT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 export default function Archive() {
   const { artistId: paramArtistId } = useParams()
   const navigate = useNavigate()
@@ -44,12 +44,12 @@ export default function Archive() {
   const [toastMsg, setToastMsg]         = useState('')
   const [artistSearch, setArtistSearch] = useState('')
 
-  // ── Load artists once
+  // \u2500\u2500 Load artists once
   useEffect(() => {
     fetchAll('artists', { order: 'name', onUpdate: setArtists }).then(setArtists)
   }, [])
 
-  // ── Load artworks, entries, provenance when artist changes
+  // \u2500\u2500 Load artworks, entries, provenance when artist changes
   useEffect(() => {
     if (!activeArtistId) return
     setLoading(true)
@@ -73,7 +73,7 @@ export default function Archive() {
     })
   }, [activeArtistId])
 
-  // ── Derived
+  // \u2500\u2500 Derived
   const activeArtist    = artists.find(a => a.id === activeArtistId)
   const filteredArtists = artists.filter(a => !artistSearch || a.name.toLowerCase().includes(artistSearch.toLowerCase()))
   const filteredEntries = filter === 'all' ? entries : entries.filter(e => e.type === filter)
@@ -90,7 +90,7 @@ export default function Archive() {
     ? Math.round(100 * artworkProvenance.filter(p => !p.is_gap && p.verified).length / artworkProvenance.length)
     : null
 
-  // ── Navigation
+  // \u2500\u2500 Navigation
   function selectArtist(id) {
     setActiveArtistId(id)
     setFilter('all')
@@ -99,10 +99,10 @@ export default function Archive() {
     navigate(`/admin/archive/${id}`, { replace: true })
   }
 
-  // ── Toast
+  // \u2500\u2500 Toast
   function toast(msg) { setToastMsg(msg); setTimeout(() => setToastMsg(''), 2200) }
 
-  // ── File upload
+  // \u2500\u2500 File upload
   async function handleFileUpload(e) {
     const file = e.target.files[0]; if (!file) return
     setUploading(true)
@@ -118,9 +118,9 @@ export default function Archive() {
     finally { setUploading(false) }
   }
 
-  // ══════════════════════════════════════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
   // ARCHIVE ENTRY CRUD
-  // ══════════════════════════════════════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
   function openAddEntry(artworkId = '') {
     setForm({ type:'note', title:'', date:'', source:'', description:'', tags:'', artwork_id: artworkId, starred:false })
     setEditTarget(null)
@@ -166,9 +166,9 @@ export default function Archive() {
     setDrawer(null)
   }
 
-  // ══════════════════════════════════════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
   // ARTWORK CRUD (in archive context)
-  // ══════════════════════════════════════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
   function openAddArtwork() {
     setForm({ title:'', year:'', medium:'', dimensions:'', provNotes:'', notes:'' })
     setModal('addArtwork')
@@ -189,14 +189,14 @@ export default function Archive() {
       // Switch to artworks tab and open the new artwork's provenance
       setTab('artworks')
       setDrawer({ type:'artwork', id: data.id })
-      toast('Artwork added — build its provenance record below')
+      toast('Artwork added \u2014 build its provenance record below')
     } catch(err) { alert('Save failed: ' + err.message) }
     finally { setSaving(false) }
   }
 
-  // ══════════════════════════════════════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
   // PROVENANCE CRUD
-  // ══════════════════════════════════════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
   function openAddProv(artworkId, isGap = false) {
     setForm({
       artwork_id: artworkId, is_gap: isGap,
@@ -248,20 +248,20 @@ export default function Archive() {
     toast('Entry deleted')
   }
 
-  // ══════════════════════════════════════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
   // RENDER
-  // ══════════════════════════════════════════════════════════
+  // \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
   return (
     <div style={{ display:'flex', height:'calc(100vh - 56px)', overflow:'hidden', margin:'-28px' }}>
 
-      {/* ── ARTIST RAIL ── */}
+      {/* \u2500\u2500 ARTIST RAIL \u2500\u2500 */}
       <div style={{ width:220, borderRight:'1px solid var(--line)', background:'var(--white)', flexShrink:0, display:'flex', flexDirection:'column' }}>
         <div style={{ padding:'10px 12px', borderBottom:'1px solid var(--line)' }}>
           <div style={{ fontFamily:'var(--font-serif)', fontSize:'1rem', marginBottom:8 }}>Live Archive</div>
           <input
             className="form-input"
             style={{ fontSize:12 }}
-            placeholder="Search artists…"
+            placeholder="Search artists\u2026"
             value={artistSearch}
             onChange={e => setArtistSearch(e.target.value)}
           />
@@ -285,12 +285,12 @@ export default function Archive() {
             style={{ width:'100%', fontSize:12, padding:'9px 12px', justifyContent:'center' }}
             onClick={() => setModal('provDoc')}
           >
-            📋 Create Provenance Document
+            \uD83D\uDCCB Create Provenance Document
           </button>
         </div>
       </div>
 
-      {/* ── MAIN ── */}
+      {/* \u2500\u2500 MAIN \u2500\u2500 */}
       <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minWidth:0 }}>
 
         {!activeArtistId ? (
@@ -308,7 +308,7 @@ export default function Archive() {
               <div>
                 <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.15rem' }}>{activeArtist?.name}</div>
                 <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>
-                  {entries.length} archive items · {artworks.length} works · {entries.filter(e=>e.starred).length} key refs
+                  {entries.length} archive items \u00B7 {artworks.length} works \u00B7 {entries.filter(e=>e.starred).length} key refs
                 </div>
               </div>
               <div style={{ display:'flex', gap:7 }}>
@@ -333,7 +333,7 @@ export default function Archive() {
           {/* Content */}
           <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
             <div style={{ flex:1, overflowY:'auto', padding:'18px' }}>
-              {loading ? <div style={{ color:'var(--muted)', fontSize:13 }}>Loading…</div>
+              {loading ? <div style={{ color:'var(--muted)', fontSize:13 }}>Loading\u2026</div>
 
               : tab === 'archive' ? (
                 <>
@@ -361,10 +361,10 @@ export default function Archive() {
                             {e.image_url && <img src={e.image_url} alt="" style={{ width:'100%', aspectRatio:'4/3', objectFit:'cover', display:'block' }} />}
                             <div style={{ padding:'8px 10px 10px' }}>
                               <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:TYPE_COLORS[e.type]||'var(--muted)', marginBottom:2 }}>
-                                {TYPES.find(t=>t.id===e.type)?.label||e.type}{e.starred?' ★':''}
+                                {TYPES.find(t=>t.id===e.type)?.label||e.type}{e.starred?' \u2605':''}
                               </div>
                               <div style={{ fontFamily:'var(--font-serif)', fontSize:12, lineHeight:1.3, marginBottom:2 }}>{e.title}</div>
-                              <div style={{ fontSize:10, color:'var(--muted)' }}>{e.date||''}{e.source?' · '+e.source:''}</div>
+                              <div style={{ fontSize:10, color:'var(--muted)' }}>{e.date||''}{e.source?' \u00B7 '+e.source:''}</div>
                               {e.tags?.length > 0 && (
                                 <div style={{ display:'flex', gap:3, flexWrap:'wrap', marginTop:4 }}>
                                   {e.tags.slice(0,3).map(t => <span key={t} style={{ fontSize:9, padding:'1px 6px', background:'var(--parchment-2)', borderRadius:20, color:'var(--muted)' }}>{t}</span>)}
@@ -402,7 +402,7 @@ export default function Archive() {
                               {w.image_url && <img src={w.image_url} alt="" style={{ width:48, height:48, objectFit:'cover', borderRadius:2, border:'1px solid var(--line)', flexShrink:0 }} />}
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ fontFamily:'var(--font-serif)', fontSize:14, fontWeight:500 }}>{w.title}</div>
-                                <div style={{ fontSize:11, color:'var(--muted)', marginTop:1 }}>{[w.year, w.medium, w.dimensions].filter(Boolean).join(' · ')}</div>
+                                <div style={{ fontSize:11, color:'var(--muted)', marginTop:1 }}>{[w.year, w.medium, w.dimensions].filter(Boolean).join(' \u00B7 ')}</div>
                               </div>
                               <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
                                 {sc !== null && (
@@ -412,7 +412,7 @@ export default function Archive() {
                                   </div>
                                 )}
                                 <div style={{ fontSize:11, color:'var(--muted)' }}>{wProv.length} entr{wProv.length===1?'y':'ies'}</div>
-                                <span style={{ color:'var(--muted)', fontSize:16 }}>{isOpen?'▲':'▼'}</span>
+                                <span style={{ color:'var(--muted)', fontSize:16 }}>{isOpen?'\u25B2':'\u25BC'}</span>
                               </div>
                             </div>
 
@@ -423,7 +423,7 @@ export default function Archive() {
                                 {/* Provenance notes banner */}
                                 {(w.provNotes || w.notes) && (
                                   <div style={{ background:'#fdf3e0', border:'1px solid #e0c88a', borderLeft:'3px solid var(--amber)', borderRadius:'0 3px 3px 0', padding:'10px 12px', marginBottom:14, fontSize:12, color:'var(--ink)', lineHeight:1.7 }}>
-                                    <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--amber)', marginBottom:4 }}>📝 Provenance notes</div>
+                                    <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--amber)', marginBottom:4 }}>\uD83D\uDCDD Provenance notes</div>
                                     {w.provNotes || w.notes}
                                   </div>
                                 )}
@@ -441,7 +441,7 @@ export default function Archive() {
 
                                 {/* Provenance chain */}
                                 {wProv.length === 0
-                                  ? <div style={{ textAlign:'center', padding:'20px 0', color:'var(--muted)', fontSize:13 }}>No provenance entries yet — add the first record below</div>
+                                  ? <div style={{ textAlign:'center', padding:'20px 0', color:'var(--muted)', fontSize:13 }}>No provenance entries yet \u2014 add the first record below</div>
                                   : wProv.map((p, i) => (
                                       <ProvEntry key={p.id} entry={p} onEdit={() => openEditProv(p)} onDelete={() => deleteProv(p.id)} />
                                     ))
@@ -450,7 +450,7 @@ export default function Archive() {
                                 {/* Add buttons */}
                                 <div style={{ display:'flex', gap:8, marginTop:12 }}>
                                   <button className="btn btn-primary btn-sm" onClick={() => openAddProv(w.id, false)}>+ Add ownership entry</button>
-                                  <button className="btn btn-sm" style={{ color:'var(--sienna)', borderColor:'var(--sienna)' }} onClick={() => openAddProv(w.id, true)}>⚠ Flag gap</button>
+                                  <button className="btn btn-sm" style={{ color:'var(--sienna)', borderColor:'var(--sienna)' }} onClick={() => openAddProv(w.id, true)}>\u26A0 Flag gap</button>
                                   <button className="btn btn-ghost btn-sm" style={{ marginLeft:'auto' }} onClick={() => openAddEntry(w.id)}>+ Add archive item</button>
                                 </div>
                               </div>
@@ -463,11 +463,11 @@ export default function Archive() {
               )}
             </div>
 
-            {/* ── ENTRY DRAWER ── */}
+            {/* \u2500\u2500 ENTRY DRAWER \u2500\u2500 */}
             {drawer?.type === 'entry' && drawnEntry && (
               <div style={{ width:300, borderLeft:'1px solid var(--line)', background:'var(--white)', display:'flex', flexDirection:'column', flexShrink:0 }}>
                 <div style={{ padding:'11px 13px', borderBottom:'1px solid var(--line)', display:'flex', gap:8, alignItems:'flex-start' }}>
-                  <button style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:16 }} onClick={() => setDrawer(null)}>✕</button>
+                  <button style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:16 }} onClick={() => setDrawer(null)}>\u2715</button>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:TYPE_COLORS[drawnEntry.type]||'var(--muted)' }}>
                       {TYPES.find(t=>t.id===drawnEntry.type)?.label||drawnEntry.type}
@@ -494,8 +494,8 @@ export default function Archive() {
                   )}
                 </div>
                 <div style={{ padding:'9px 13px', borderTop:'1px solid var(--line)', display:'flex', gap:6, flexWrap:'wrap' }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => openEditEntry(drawnEntry)}>✏ Edit</button>
-                  <button className="btn btn-ghost btn-sm" onClick={() => toggleStar(drawnEntry)}>{drawnEntry.starred?'★ Unstar':'☆ Star'}</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => openEditEntry(drawnEntry)}>\u270F Edit</button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => toggleStar(drawnEntry)}>{drawnEntry.starred?'\u2605 Unstar':'\u2606 Star'}</button>
                   <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => deleteEntry(drawnEntry.id)}>Delete</button>
                 </div>
               </div>
@@ -504,17 +504,17 @@ export default function Archive() {
         </>)}
       </div>
 
-      {/* ══════════════════════════════════════════════════════
+      {/* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
           MODALS
-      ══════════════════════════════════════════════════════ */}
+      \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */}
 
-      {/* ── Add / Edit Archive Entry ── */}
+      {/* \u2500\u2500 Add / Edit Archive Entry \u2500\u2500 */}
       {(modal === 'addEntry' || modal === 'editEntry') && (
         <div className="modal-overlay" style={{ zIndex:60 }}>
           <div className="modal modal-lg">
             <div className="modal-header">
               <div className="modal-title">{modal==='editEntry' ? 'Edit archive item' : 'Add to archive'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>\u2715</button>
             </div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:13 }}>
               <div className="form-group">
@@ -556,8 +556,8 @@ export default function Archive() {
                   <div className="form-group">
                     <label className="form-label">Link to artwork</label>
                     <select className="form-select" value={form.artwork_id||''} onChange={e=>setForm(f=>({...f,artwork_id:e.target.value}))}>
-                      <option value="">— none —</option>
-                      {artworks.map(w => <option key={w.id} value={w.id}>{w.title} ({w.year||'—'})</option>)}
+                      <option value="">\u2014 none \u2014</option>
+                      {artworks.map(w => <option key={w.id} value={w.id}>{w.title} ({w.year||'\u2014'})</option>)}
                     </select>
                   </div>
                 )}
@@ -565,7 +565,7 @@ export default function Archive() {
               <div className="form-group">
                 <label className="form-label">Image or document</label>
                 <input type="file" accept="image/*,.pdf,.doc,.docx" onChange={handleFileUpload} />
-                {uploading && <div style={{ fontSize:11, color:'var(--muted)', marginTop:4 }}>Uploading…</div>}
+                {uploading && <div style={{ fontSize:11, color:'var(--muted)', marginTop:4 }}>Uploading\u2026</div>}
                 {form.image_url && <img src={form.image_url} alt="" style={{ marginTop:8, maxHeight:120, borderRadius:3, border:'1px solid var(--line)' }} />}
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -575,19 +575,19 @@ export default function Archive() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={saveEntry} disabled={saving}>{saving?'Saving…':'Save to archive'}</button>
+              <button className="btn btn-primary" onClick={saveEntry} disabled={saving}>{saving?'Saving\u2026':'Save to archive'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Add Artwork ── */}
+      {/* \u2500\u2500 Add Artwork \u2500\u2500 */}
       {modal === 'addArtwork' && (
         <div className="modal-overlay" style={{ zIndex:60 }}>
           <div className="modal modal-md">
             <div className="modal-header">
               <div className="modal-title">Add artwork to archive</div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>\u2715</button>
             </div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:13 }}>
               <div style={{ fontSize:12, color:'var(--muted)', padding:'8px 12px', background:'var(--parchment)', borderRadius:3 }}>
@@ -609,34 +609,34 @@ export default function Archive() {
               </div>
               <div className="form-group">
                 <label className="form-label">Dimensions</label>
-                <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="91.5 × 61 cm" />
+                <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="91.5 \u00D7 61 cm" />
               </div>
               <div className="form-group">
-                <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>— known history, ownership context</span></label>
-                <textarea className="form-textarea" rows={3} value={form.provNotes||''} onChange={e=>setForm(f=>({...f,provNotes:e.target.value}))} placeholder="e.g. Exhibited at FESTAC 77; acquired by Uche Okeke; sold by estate 2026…" />
+                <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>\u2014 known history, ownership context</span></label>
+                <textarea className="form-textarea" rows={3} value={form.provNotes||''} onChange={e=>setForm(f=>({...f,provNotes:e.target.value}))} placeholder="e.g. Exhibited at FESTAC 77; acquired by Uche Okeke; sold by estate 2026\u2026" />
               </div>
               <div className="form-group">
                 <label className="form-label">Notes</label>
-                <textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Subject, inscriptions, condition…" />
+                <textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Subject, inscriptions, condition\u2026" />
               </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={saveArtwork} disabled={saving}>{saving?'Saving…':'Add artwork & build provenance'}</button>
+              <button className="btn btn-primary" onClick={saveArtwork} disabled={saving}>{saving?'Saving\u2026':'Add artwork & build provenance'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Add / Edit Provenance Entry ── */}
+      {/* \u2500\u2500 Add / Edit Provenance Entry \u2500\u2500 */}
       {(modal === 'addProv' || modal === 'addProvGap' || modal === 'editProv') && (
         <div className="modal-overlay" style={{ zIndex:60 }}>
           <div className="modal modal-md">
             <div className="modal-header">
               <div className="modal-title" style={{ color: modal==='addProvGap' ? 'var(--sienna)' : 'var(--ink)' }}>
-                {modal === 'addProvGap' ? '⚠ Flag provenance gap' : editTarget ? 'Edit provenance entry' : 'Add provenance entry'}
+                {modal === 'addProvGap' ? '\u26A0 Flag provenance gap' : editTarget ? 'Edit provenance entry' : 'Add provenance entry'}
               </div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>\u2715</button>
             </div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:13 }}>
               <div className="form-row">
@@ -672,7 +672,7 @@ export default function Archive() {
               <div className="form-group">
                 <label className="form-label">{modal==='addProvGap' ? 'Gap description' : 'Description / context'}</label>
                 <textarea className="form-textarea" rows={3} value={form.description||''} onChange={e=>setForm(f=>({...f,description:e.target.value}))}
-                  placeholder={modal==='addProvGap' ? 'Reason for gap — no documentation available, disputed ownership, etc.' : 'How ownership was transferred, exhibition context, acquisition method…'} />
+                  placeholder={modal==='addProvGap' ? 'Reason for gap \u2014 no documentation available, disputed ownership, etc.' : 'How ownership was transferred, exhibition context, acquisition method\u2026'} />
               </div>
 
               {modal !== 'addProvGap' && <>
@@ -688,13 +688,13 @@ export default function Archive() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={saveProv} disabled={saving}>{saving?'Saving…':'Save entry'}</button>
+              <button className="btn btn-primary" onClick={saveProv} disabled={saving}>{saving?'Saving\u2026':'Save entry'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Provenance Document Builder ── */}
+      {/* \u2500\u2500 Provenance Document Builder \u2500\u2500 */}
       {modal === 'provDoc' && (
         <ProvenanceDocBuilder
           artists={artists}
@@ -716,19 +716,19 @@ export default function Archive() {
   )
 }
 
-// ── PROVENANCE ENTRY CARD ────────────────────────────────────
+// \u2500\u2500 PROVENANCE ENTRY CARD \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function ProvEntry({ entry: p, onEdit, onDelete }) {
   if (p.is_gap) return (
     <div style={{ background:'var(--sienna-bg)', border:'1px solid #E8B79A', borderLeft:'3px solid var(--sienna)', borderRadius:'0 3px 3px 0', padding:'9px 12px', marginBottom:8, display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--sienna)', marginBottom:3 }}>
-          ⚠ Gap in record · {p.date_from||''}{p.date_to?' – '+p.date_to:''}
+          \u26A0 Gap in record \u00B7 {p.date_from||''}{p.date_to?' \u2013 '+p.date_to:''}
         </div>
         <div style={{ fontSize:12, color:'var(--sienna)' }}>{p.description || 'No documentation for this period'}</div>
       </div>
       <div style={{ display:'flex', gap:4, marginLeft:10, flexShrink:0 }}>
-        <button onClick={onEdit} className="btn btn-ghost btn-sm" style={{ padding:'2px 7px', fontSize:11 }}>✏</button>
-        <button onClick={onDelete} className="btn btn-ghost btn-sm" style={{ padding:'2px 7px', fontSize:11, color:'var(--sienna)' }}>✕</button>
+        <button onClick={onEdit} className="btn btn-ghost btn-sm" style={{ padding:'2px 7px', fontSize:11 }}>\u270F</button>
+        <button onClick={onDelete} className="btn btn-ghost btn-sm" style={{ padding:'2px 7px', fontSize:11, color:'var(--sienna)' }}>\u2715</button>
       </div>
     </div>
   )
@@ -736,28 +736,28 @@ function ProvEntry({ entry: p, onEdit, onDelete }) {
     <div style={{ background:'var(--white)', border:'1px solid var(--line)', borderLeft:'3px solid var(--gold)', borderRadius:'0 3px 3px 0', padding:'9px 12px', marginBottom:8, display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--gold)', marginBottom:3 }}>
-          {p.date_from||'?'}{p.date_to?' – '+p.date_to:' – present'} · {p.entry_type||''} ·{' '}
+          {p.date_from||'?'}{p.date_to?' \u2013 '+p.date_to:' \u2013 present'} \u00B7 {p.entry_type||''} \u00B7{' '}
           <span style={{ color: p.verified ? 'var(--green)' : 'var(--amber)' }}>{p.verified?'VERIFIED':'UNVERIFIED'}</span>
         </div>
         <div style={{ fontSize:13, fontWeight:500, color:'var(--ink)', marginBottom:2 }}>{p.owner || 'Unknown'}</div>
         <div style={{ fontSize:11, color:'var(--muted)' }}>
-          {p.location||''}{p.description ? (p.location?' — ':'')+p.description.slice(0,100)+(p.description.length>100?'…':'') : ''}
+          {p.location||''}{p.description ? (p.location?' \u2014 ':'')+p.description.slice(0,100)+(p.description.length>100?'\u2026':'') : ''}
         </div>
         {p.docs?.length > 0 && (
           <div style={{ display:'flex', gap:4, flexWrap:'wrap', marginTop:5 }}>
-            {p.docs.map(d => <span key={d} style={{ fontSize:9, padding:'1px 7px', background:'var(--parchment-2)', borderRadius:20, color:'var(--muted)' }}>📄 {d}</span>)}
+            {p.docs.map(d => <span key={d} style={{ fontSize:9, padding:'1px 7px', background:'var(--parchment-2)', borderRadius:20, color:'var(--muted)' }}>\uD83D\uDCC4 {d}</span>)}
           </div>
         )}
       </div>
       <div style={{ display:'flex', gap:4, marginLeft:10, flexShrink:0 }}>
-        <button onClick={onEdit} className="btn btn-ghost btn-sm" style={{ padding:'2px 7px', fontSize:11 }}>✏</button>
-        <button onClick={onDelete} className="btn btn-ghost btn-sm" style={{ padding:'2px 7px', fontSize:11, color:'var(--red)' }}>✕</button>
+        <button onClick={onEdit} className="btn btn-ghost btn-sm" style={{ padding:'2px 7px', fontSize:11 }}>\u270F</button>
+        <button onClick={onDelete} className="btn btn-ghost btn-sm" style={{ padding:'2px 7px', fontSize:11, color:'var(--red)' }}>\u2715</button>
       </div>
     </div>
   )
 }
 
-// ── HELPERS ──────────────────────────────────────────────────
+// \u2500\u2500 HELPERS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function resizeImage(file, maxPx = 1200) {
   return new Promise(resolve => {
     const img = new Image()
@@ -772,10 +772,10 @@ async function resizeImage(file, maxPx = 1200) {
   })
 }
 
-// ══════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 // PROVENANCE DOCUMENT BUILDER
 // A multi-step wizard that generates a printable provenance report
-// ══════════════════════════════════════════════════════════════
+// \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
 function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance, activeArtistId, onClose, onLoadArtist }) {
   const [step, setStep]           = useState(1) // 1=source, 2=artwork details, 3=select evidence, 4=preview
   const [generating, setGenerating] = useState(false)
@@ -786,7 +786,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
   const [artistSearch, setArtistSearch] = useState('')
   const [artworkSearch, setArtworkSearch] = useState('')
 
-  // Artwork details (used for both fresh and existing — editable either way)
+  // Artwork details (used for both fresh and existing \u2014 editable either way)
   const [details, setDetails] = useState({
     artistName:'', title:'', year:'', medium:'', dimensions:'',
     catRef:'', location:'', condition:'', notes:'', provNotes:'',
@@ -849,7 +849,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       notes: artwork.notes || '',
       provNotes: artwork.provNotes || '',
       imageUrl: artwork.image_url || '',
-      reportTitle: `Provenance Report — ${artwork.title}`,
+      reportTitle: `Provenance Report \u2014 ${artwork.title}`,
     }))
     // Auto-select relevant archive evidence
     const artworkEntries = allEntriesGlobal.filter(e => e.artwork_id === artwork.id)
@@ -987,18 +987,18 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
   const RELEVANCE_LABEL = { direct:'Linked', key_ref:'Key ref', keyword:'Title match', background:'Background' }
   const RELEVANCE_COLOR = { direct:'var(--green)', key_ref:'var(--gold)', keyword:'var(--blue)', background:'var(--muted)' }
 
-  // ── STEP 1: Source selection
+  // \u2500\u2500 STEP 1: Source selection
   const renderStep1 = () => (
     <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
       <div style={{ fontSize:13, color:'var(--muted)', lineHeight:1.65 }}>
-        Choose how to start. You can build from an artwork already in the system — pulling its provenance chain and archive evidence automatically — or start from fresh input if the work isn't in the archive yet.
+        Choose how to start. You can build from an artwork already in the system \u2014 pulling its provenance chain and archive evidence automatically \u2014 or start from fresh input if the work isn't in the archive yet.
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
         <div
           onClick={() => { setSource('existing'); }}
           style={{ padding:'20px', border:`2px solid ${source==='existing'?'var(--ink)':'var(--line)'}`, borderRadius:4, cursor:'pointer', background: source==='existing'?'var(--ink)':'var(--white)', transition:'all 150ms' }}
         >
-          <div style={{ fontSize:'1.4rem', marginBottom:8 }}>🗄</div>
+          <div style={{ fontSize:'1.4rem', marginBottom:8 }}>\uD83D\uDDC4</div>
           <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.05rem', marginBottom:6, color: source==='existing'?'var(--white)':'var(--ink)' }}>From existing artwork</div>
           <div style={{ fontSize:12, color: source==='existing'?'rgba(255,255,255,.65)':'var(--muted)', lineHeight:1.6 }}>
             Select an artwork already in the Live Archive. Pulls its provenance chain, linked archive entries, and key references automatically.
@@ -1008,7 +1008,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
           onClick={() => { setSource('fresh'); setStep(2) }}
           style={{ padding:'20px', border:`2px solid ${source==='fresh'?'var(--ink)':'var(--line)'}`, borderRadius:4, cursor:'pointer', background: source==='fresh'?'var(--ink)':'var(--white)', transition:'all 150ms' }}
         >
-          <div style={{ fontSize:'1.4rem', marginBottom:8 }}>✏</div>
+          <div style={{ fontSize:'1.4rem', marginBottom:8 }}>\u270F</div>
           <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.05rem', marginBottom:6, color: source==='fresh'?'var(--white)':'var(--ink)' }}>Fresh input</div>
           <div style={{ fontSize:12, color: source==='fresh'?'rgba(255,255,255,.65)':'var(--muted)', lineHeight:1.6 }}>
             Enter artwork details and provenance information directly. You can still pull in relevant evidence from the archive.
@@ -1023,7 +1023,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
             {/* Artist picker */}
             <div>
               <div style={{ fontSize:11, color:'var(--muted)', marginBottom:5 }}>Artist</div>
-              <input className="form-input" placeholder="Search artists…" value={artistSearch} onChange={e=>setArtistSearch(e.target.value)} style={{ marginBottom:6 }} />
+              <input className="form-input" placeholder="Search artists\u2026" value={artistSearch} onChange={e=>setArtistSearch(e.target.value)} style={{ marginBottom:6 }} />
               <div style={{ border:'1px solid var(--line)', borderRadius:3, maxHeight:200, overflowY:'auto', background:'var(--white)' }}>
                 {artists.filter(a => !artistSearch || a.name.toLowerCase().includes(artistSearch.toLowerCase())).map(a => (
                   <div key={a.id}
@@ -1037,10 +1037,10 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
             {/* Artwork picker */}
             <div>
               <div style={{ fontSize:11, color:'var(--muted)', marginBottom:5 }}>Artwork</div>
-              <input className="form-input" placeholder="Search artworks…" value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} style={{ marginBottom:6 }} disabled={!selectedArtistId} />
+              <input className="form-input" placeholder="Search artworks\u2026" value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} style={{ marginBottom:6 }} disabled={!selectedArtistId} />
               <div style={{ border:'1px solid var(--line)', borderRadius:3, maxHeight:200, overflowY:'auto', background:'var(--white)' }}>
                 {loadingGlobal
-                  ? <div style={{ padding:'12px', fontSize:12, color:'var(--muted)' }}>Loading artworks…</div>
+                  ? <div style={{ padding:'12px', fontSize:12, color:'var(--muted)' }}>Loading artworks\u2026</div>
                   : !selectedArtistId
                     ? <div style={{ padding:'12px', fontSize:12, color:'var(--muted)' }}>Select an artist first</div>
                     : filteredArtworks.length === 0
@@ -1052,7 +1052,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
                             {w.image_url && <img src={w.image_url} alt="" style={{ width:32, height:32, objectFit:'cover', borderRadius:2, flexShrink:0 }} />}
                             <div>
                               <div style={{ fontSize:12, fontWeight:500 }}>{w.title}</div>
-                              <div style={{ fontSize:10, color:'var(--muted)' }}>{w.year} · {w.medium}</div>
+                              <div style={{ fontSize:10, color:'var(--muted)' }}>{w.year} \u00B7 {w.medium}</div>
                             </div>
                           </div>
                         ))
@@ -1065,7 +1065,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     </div>
   )
 
-  // ── STEP 2: Artwork details
+  // \u2500\u2500 STEP 2: Artwork details
   const renderStep2 = () => (
     <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
       <div style={{ fontSize:12, color:'var(--muted)', padding:'8px 12px', background:'var(--parchment)', borderRadius:3 }}>
@@ -1073,7 +1073,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       </div>
       <div className="form-group">
         <label className="form-label">Report title</label>
-        <input className="form-input" value={details.reportTitle||''} onChange={e=>setDetails(d=>({...d,reportTitle:e.target.value}))} placeholder="e.g. Provenance Report — Tutu" />
+        <input className="form-input" value={details.reportTitle||''} onChange={e=>setDetails(d=>({...d,reportTitle:e.target.value}))} placeholder="e.g. Provenance Report \u2014 Tutu" />
       </div>
       <div className="form-row">
         <div className="form-group">
@@ -1101,7 +1101,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
           <input className="form-input" value={details.dimensions||''} onChange={e=>setDetails(d=>({...d,dimensions:e.target.value}))} />
         </div>
         <div className="form-group">
-          <label className="form-label">Catalogue raisonné ref.</label>
+          <label className="form-label">Catalogue raisonn\u00E9 ref.</label>
           <input className="form-input" value={details.catRef||''} onChange={e=>setDetails(d=>({...d,catRef:e.target.value}))} />
         </div>
       </div>
@@ -1117,30 +1117,30 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       </div>
       <div className="form-group">
         <label className="form-label">Notes about the work</label>
-        <textarea className="form-textarea" rows={2} value={details.notes||''} onChange={e=>setDetails(d=>({...d,notes:e.target.value}))} placeholder="Subject, inscriptions, signatures…" />
+        <textarea className="form-textarea" rows={2} value={details.notes||''} onChange={e=>setDetails(d=>({...d,notes:e.target.value}))} placeholder="Subject, inscriptions, signatures\u2026" />
       </div>
       <div className="form-group">
-        <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>— narrative ownership context, shown in provenance section</span></label>
-        <textarea className="form-textarea" rows={3} value={details.provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026…" />
+        <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>\u2014 narrative ownership context, shown in provenance section</span></label>
+        <textarea className="form-textarea" rows={3} value={details.provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026\u2026" />
       </div>
       <div className="form-group">
         <label className="form-label">Exhibition history</label>
-        <textarea className="form-textarea" rows={3} value={details.exhibitionHistory||''} onChange={e=>setDetails(d=>({...d,exhibitionHistory:e.target.value}))} placeholder="e.g. FESTAC 77, Lagos; Smithsonian Institution 1982; National Gallery of Modern Art, New Delhi 1996…" />
+        <textarea className="form-textarea" rows={3} value={details.exhibitionHistory||''} onChange={e=>setDetails(d=>({...d,exhibitionHistory:e.target.value}))} placeholder="e.g. FESTAC 77, Lagos; Smithsonian Institution 1982; National Gallery of Modern Art, New Delhi 1996\u2026" />
       </div>
       <div className="form-group">
         <label className="form-label">Other information</label>
-        <textarea className="form-textarea" rows={2} value={details.otherInfo||''} onChange={e=>setDetails(d=>({...d,otherInfo:e.target.value}))} placeholder="Literature references, inscriptions, stamps, labels, condition notes…" />
+        <textarea className="form-textarea" rows={2} value={details.otherInfo||''} onChange={e=>setDetails(d=>({...d,otherInfo:e.target.value}))} placeholder="Literature references, inscriptions, stamps, labels, condition notes\u2026" />
       </div>
       <div className="form-group">
         <label className="form-label">Additional notes for this document</label>
-        <textarea className="form-textarea" rows={2} value={details.additionalNotes||''} onChange={e=>setDetails(d=>({...d,additionalNotes:e.target.value}))} placeholder="Any caveats, specific requirements, or context for this report…" />
+        <textarea className="form-textarea" rows={2} value={details.additionalNotes||''} onChange={e=>setDetails(d=>({...d,additionalNotes:e.target.value}))} placeholder="Any caveats, specific requirements, or context for this report\u2026" />
       </div>
 
       {/* Provenance chain preview (existing only) */}
       {source === 'existing' && provChain.length > 0 && (
         <div>
           <div style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:8 }}>
-            Provenance chain ({provChain.length} entries) · {provScore}% documented
+            Provenance chain ({provChain.length} entries) \u00B7 {provScore}% documented
           </div>
           <div style={{ maxHeight:180, overflowY:'auto', padding:1 }}>
             {provChain.map(p => (
@@ -1152,10 +1152,10 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
                 borderRadius:'0 3px 3px 0',
               }}>
                 <span style={{ color: p.is_gap?'var(--sienna)':'var(--gold)', fontSize:9, textTransform:'uppercase', letterSpacing:'.07em', marginRight:8 }}>
-                  {p.is_gap?'⚠ Gap':'→'} {p.date_from||''}{p.date_to?' – '+p.date_to:''}
+                  {p.is_gap?'\u26A0 Gap':'\u2192'} {p.date_from||''}{p.date_to?' \u2013 '+p.date_to:''}
                 </span>
                 <strong>{p.is_gap ? 'Undocumented period' : p.owner}</strong>
-                {p.location && <span style={{ color:'var(--muted)' }}> · {p.location}</span>}
+                {p.location && <span style={{ color:'var(--muted)' }}> \u00B7 {p.location}</span>}
               </div>
             ))}
           </div>
@@ -1165,7 +1165,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     </div>
   )
 
-  // ── STEP 3: Evidence selection
+  // \u2500\u2500 STEP 3: Evidence selection
   const renderStep3 = () => (
     <div>
       <div style={{ fontSize:12, color:'var(--muted)', marginBottom:14, padding:'8px 12px', background:'var(--parchment)', borderRadius:3, lineHeight:1.65 }}>
@@ -1174,7 +1174,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       {evidencePool.length === 0 ? (
         <div style={{ textAlign:'center', padding:'40px 0', color:'var(--muted)' }}>
           <div style={{ fontSize:'1.2rem', fontFamily:'var(--font-serif)', marginBottom:8 }}>No archive evidence found</div>
-          <p style={{ fontSize:13 }}>You can still generate the document — it will include the artwork details and provenance chain.</p>
+          <p style={{ fontSize:13 }}>You can still generate the document \u2014 it will include the artwork details and provenance chain.</p>
         </div>
       ) : (
         <div>
@@ -1194,7 +1194,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
               {e.image_url && <img src={e.image_url} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:2, flexShrink:0 }} />}
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:13 }}>{e.title}</div>
-                <div style={{ fontSize:11, color:'var(--muted)' }}>{TYPES.find(t=>t.id===e.type)?.label||e.type} · {e.date||'—'}{e.source?' · '+e.source:''}</div>
+                <div style={{ fontSize:11, color:'var(--muted)' }}>{TYPES.find(t=>t.id===e.type)?.label||e.type} \u00B7 {e.date||'\u2014'}{e.source?' \u00B7 '+e.source:''}</div>
               </div>
               <span style={{ fontSize:9, padding:'2px 7px', borderRadius:20, background:'var(--parchment-2)', color: RELEVANCE_COLOR[e._relevance]||'var(--muted)', whiteSpace:'nowrap', flexShrink:0 }}>
                 {RELEVANCE_LABEL[e._relevance]||e._relevance}
@@ -1206,12 +1206,12 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
     </div>
   )
 
-  // ── STEP 4: Preview / generate
+  // \u2500\u2500 STEP 4: Preview / generate
   const renderStep4 = () => (
     <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
       <div style={{ background:'var(--parchment)', border:'1px solid var(--line)', borderRadius:3, padding:'14px 16px' }}>
-        <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.1rem', marginBottom:4 }}>{details.reportTitle || `Provenance Report — ${details.title}`}</div>
-        <div style={{ fontSize:12, color:'var(--muted)' }}>{details.artistName} {details.year?'· '+details.year:''} {details.medium?'· '+details.medium:''}</div>
+        <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.1rem', marginBottom:4 }}>{details.reportTitle || `Provenance Report \u2014 ${details.title}`}</div>
+        <div style={{ fontSize:12, color:'var(--muted)' }}>{details.artistName} {details.year?'\u00B7 '+details.year:''} {details.medium?'\u00B7 '+details.medium:''}</div>
         <div style={{ marginTop:12, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, fontSize:12 }}>
           <div><span style={{ color:'var(--muted)' }}>Provenance chain: </span>{provChain.length} entries</div>
           <div><span style={{ color:'var(--muted)' }}>Archive evidence: </span>{included.size} items</div>
@@ -1224,12 +1224,12 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       </div>
       {genError && (
         <div style={{ padding:'10px 14px', background:'#fef2f0', border:'1px solid #f5c2bb', borderRadius:3, fontSize:12, color:'#c0392b' }}>
-          ❌ Error: {genError}
+          \u274C Error: {genError}
         </div>
       )}
       <button className="btn btn-gold" style={{ padding:'12px', justifyContent:'center', fontSize:14 }}
         onClick={generateAndPrint} disabled={generating}>
-        {generating ? '⏳ Generating document…' : '📋 Generate & print provenance document'}
+        {generating ? '\u23F3 Generating document\u2026' : '\uD83D\uDCCB Generate & print provenance document'}
       </button>
     </div>
   )
@@ -1263,7 +1263,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
                         fontSize:10, fontWeight:600,
                         background: done ? 'var(--green)' : active ? 'var(--ink)' : 'var(--parchment-2)',
                         color: (done || active) ? 'var(--white)' : 'var(--muted)',
-                      }}>{done ? '✓' : s}</div>
+                      }}>{done ? '\u2713' : s}</div>
                       <span style={{ fontSize:11, color: active ? 'var(--ink)' : 'var(--muted)', fontWeight: active?500:400 }}>{label}</span>
                     </div>
                     {i < STEP_LABELS.length-1 && <div style={{ width:20, height:1, background:'var(--line)', margin:'0 6px' }} />}
@@ -1272,7 +1272,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
               })}
             </div>
           </div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}>\u2715</button>
         </div>
 
         <div className="modal-body">
@@ -1284,7 +1284,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
 
         <div className="modal-footer">
           <button className="btn btn-outline" onClick={step === 1 ? onClose : () => setStep(s => s-1)}>
-            {step === 1 ? 'Cancel' : '← Back'}
+            {step === 1 ? 'Cancel' : '\u2190 Back'}
           </button>
           {step < 4 && (
             <button
@@ -1296,7 +1296,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
                 setStep(s => s+1)
               }}
             >
-              {step === 3 ? 'Preview document →' : 'Next →'}
+              {step === 3 ? 'Preview document \u2192' : 'Next \u2192'}
             </button>
           )}
         </div>
@@ -1305,10 +1305,10 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
   )
 }
 
-// ── PROVENANCE DOCUMENT HTML ──────────────────────────────────
+// \u2500\u2500 PROVENANCE DOCUMENT HTML \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function buildProvDocHTML({ details, artist, artwork, provChain, incEntries, provScore, scC, logo }) {
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
-  const title = details.reportTitle || `Provenance Report — ${details.title}`
+  const title = details.reportTitle || `Provenance Report \u2014 ${details.title}`
   const gapCount = provChain.filter(p=>p.is_gap).length
 
   function e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
@@ -1359,7 +1359,7 @@ h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-app
 </div>
 
 <h1>${e(title)}</h1>
-<h2>${e(details.artistName)} — Provenance &amp; Authentication Report</h2>
+<h2>${e(details.artistName)} \u2014 Provenance &amp; Authentication Report</h2>
 
 <!-- ARTWORK RECORD -->
 <div class="section-head">Artwork record</div>
@@ -1371,7 +1371,7 @@ h2{font-size:13px;font-weight:400;color:#6b6760;margin:0 0 24px;font-family:-app
     ${details.year?`<span class="fl">Year</span><span class="fv">${e(details.year)}</span>`:''}
     ${details.medium?`<span class="fl">Medium</span><span class="fv">${e(details.medium)}</span>`:''}
     ${details.dimensions?`<span class="fl">Dimensions</span><span class="fv">${e(details.dimensions)}</span>`:''}
-    ${details.catRef?`<span class="fl">Cat. raisonné</span><span class="fv">${e(details.catRef)}</span>`:''}
+    ${details.catRef?`<span class="fl">Cat. raisonn\u00E9</span><span class="fv">${e(details.catRef)}</span>`:''}
     ${details.location?`<span class="fl">Current owner</span><span class="fv">${e(details.location)}</span>`:''}
     ${details.condition?`<span class="fl">Condition</span><span class="fv">${e(details.condition)}</span>`:''}
     ${details.notes?`<span class="fl">Notes</span><span class="fv">${e(details.notes)}</span>`:''}
@@ -1387,8 +1387,8 @@ ${details.provNotes ? `<div class="prov-notes">${e(details.provNotes)}</div>` : 
 ${provChain.length ? `
 
   ${provChain.map(p => p.is_gap
-    ? `<div class="prov-gap"><div class="gap-label">⚠ Gap in record · ${e(p.date_from||'')}${p.date_to?' – '+e(p.date_to):''}</div><div style="font-size:12px;color:#8B3A2A">${e(p.description||'No documentation available for this period')}</div></div>`
-    : `<div class="prov-entry"><div class="prov-date">${e(p.date_from||'')}${p.date_to?' – '+e(p.date_to):' – present'} · ${e(p.entry_type||'')} · <span style="color:${p.verified?'#2d6a4f':'#92600a'}">${p.verified?'VERIFIED':'UNVERIFIED'}</span></div><div class="prov-owner">${e(p.owner||'Unknown')}</div><div class="prov-meta">${e(p.location||'')}${p.description?' — '+e(p.description.slice(0,120))+(p.description.length>120?'…':''):''}</div>${p.docs?.length?`<div class="prov-docs">Documents: ${p.docs.map(d=>e(d)).join(' · ')}</div>`:''}</div>`
+    ? `<div class="prov-gap"><div class="gap-label">\u26A0 Gap in record \u00B7 ${e(p.date_from||'')}${p.date_to?' \u2013 '+e(p.date_to):''}</div><div style="font-size:12px;color:#8B3A2A">${e(p.description||'No documentation available for this period')}</div></div>`
+    : `<div class="prov-entry"><div class="prov-date">${e(p.date_from||'')}${p.date_to?' \u2013 '+e(p.date_to):' \u2013 present'} \u00B7 ${e(p.entry_type||'')} \u00B7 <span style="color:${p.verified?'#2d6a4f':'#92600a'}">${p.verified?'VERIFIED':'UNVERIFIED'}</span></div><div class="prov-owner">${e(p.owner||'Unknown')}</div><div class="prov-meta">${e(p.location||'')}${p.description?' \u2014 '+e(p.description.slice(0,120))+(p.description.length>120?'\u2026':''):''}</div>${p.docs?.length?`<div class="prov-docs">Documents: ${p.docs.map(d=>e(d)).join(' \u00B7 ')}</div>`:''}</div>`
   ).join('')}
   ${gapCount > 0 ? `<div class="due-diligence"><strong>Due diligence note:</strong> ${gapCount} undocumented period${gapCount>1?'s':''} identified in the provenance record. Further investigation is recommended prior to sale, institutional loan, or insurance valuation.</div>` : ''}
 ` : (!details.provNotes ? `<p style="font-family:-apple-system,sans-serif;font-size:12px;color:#6b6760;font-style:italic">No structured provenance information recorded.</p>` : '')}
@@ -1399,13 +1399,13 @@ ${incEntries.length ? `
 ${incEntries.map(ev => `<div class="ev-item">
   <div class="ev-type">${TYPES.find(t=>t.id===ev.type)?.label||ev.type}</div>
   <div class="ev-title">${e(ev.title)}</div>
-  <div class="ev-meta">${e(ev.date||'—')}${ev.source?' · '+e(ev.source):''}</div>
+  <div class="ev-meta">${e(ev.date||'\u2014')}${ev.source?' \u00B7 '+e(ev.source):''}</div>
   ${ev.description?`<div class="ev-desc">${e(ev.description)}</div>`:''}
   ${ev.image_url?`<img class="ev-img" src="${ev.image_url}" alt="">`:''}
 </div>`).join('')}` : ''}
 
 <div class="footer">
-  Prepared by Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos<br>
+  Prepared by Hourglass Gallery \u00B7 298A Akin Olugbade Street, Victoria Island, Lagos<br>
   This document is compiled from gallery research records and is provided for provenance, due diligence, insurance, and reference purposes.<br>
   It does not constitute a warranty of title or authenticity.
 </div>

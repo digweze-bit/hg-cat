@@ -23,7 +23,7 @@ export async function fetchAll(table, query = {}) {
   const cacheKey = `${table}:${select}:${JSON.stringify(filters)}:${order}:${ascending}`
 
   async function fetchFresh() {
-    // Single request — Supabase Pro allows up to 1000 rows by default
+    // Single request \u2014 Supabase Pro allows up to 1000 rows by default
     // For larger tables we paginate, but only if needed
     let all = []
     let offset = 0
@@ -39,7 +39,7 @@ export async function fetchAll(table, query = {}) {
       all = all.concat(data)
       if (data.length < PAGE) break  // last page, stop
       offset += PAGE
-      if (offset > 20000) break      // safety cap — no table should exceed 20k rows here
+      if (offset > 20000) break      // safety cap \u2014 no table should exceed 20k rows here
     }
     return all
   }
@@ -56,7 +56,7 @@ export async function fetchAll(table, query = {}) {
     return cached
   }
 
-  // No cache — must wait
+  // No cache \u2014 must wait
   const fresh = await fetchFresh()
   cacheSet(cacheKey, fresh)
   return fresh

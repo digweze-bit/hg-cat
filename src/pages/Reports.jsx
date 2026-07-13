@@ -43,16 +43,16 @@ export default function Reports() {
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
   const clientMap = useMemo(() => Object.fromEntries(clients.map(c => [c.id, c])), [clients])
 
-  // ── REPORT DATA ──────────────────────────────────────────
+  // \u2500\u2500 REPORT DATA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 
   const soldData = useMemo(() => {
-    // Paid invoices within date range — extract sold artworks
+    // Paid invoices within date range \u2014 extract sold artworks
     return invoices
       .filter(inv => inv.status === 'paid' && inv.issue_date >= dateFrom && inv.issue_date <= dateTo)
       .flatMap(inv => (inv.invoice_items || []).map(item => ({
         ...item,
         invoice_number: inv.invoice_number,
-        client_name: inv.clients?.name || '—',
+        client_name: inv.clients?.name || '\u2014',
         sale_date: inv.issue_date,
         currency: inv.currency,
         invoice_id: inv.id,
@@ -77,7 +77,7 @@ export default function Reports() {
   const totalReceivable = useMemo(() =>
     receivableData.reduce((s, inv) => s + Number(inv.balance_due || 0), 0), [receivableData])
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports…</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports\u2026</div>
 
   const report = REPORTS.find(r => r.id === activeReport)
 
@@ -89,7 +89,7 @@ export default function Reports() {
           <div className="page-subtitle">Gallery financial and inventory reports</div>
         </div>
         <button className="btn btn-outline" onClick={() => printReport(activeReport, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable })}>
-          🖨 Print this report
+          \uD83D\uDDA8 Print this report
         </button>
       </div>
 
@@ -106,7 +106,7 @@ export default function Reports() {
         ))}
       </div>
 
-      {/* Date range — shown for sold and received */}
+      {/* Date range \u2014 shown for sold and received */}
       {['sold','received'].includes(activeReport) && (
         <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:20, background:'var(--parchment)', padding:'12px 16px', borderRadius:3 }}>
           <span style={{ fontSize:13, color:'var(--muted)' }}>Period:</span>
@@ -116,7 +116,7 @@ export default function Reports() {
         </div>
       )}
 
-      {/* ── SOLD REPORT ── */}
+      {/* \u2500\u2500 SOLD REPORT \u2500\u2500 */}
       {activeReport === 'sold' && (
         <div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
@@ -126,13 +126,13 @@ export default function Reports() {
             </div>
             <div className="card" style={{ padding:'16px 18px' }}>
               <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>
-                ₦{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+                \u20A6{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
               </div>
               <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Total revenue</div>
             </div>
             <div className="card" style={{ padding:'16px 18px' }}>
               <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>
-                {soldData.length ? '₦' + Math.round(soldTotal / soldData.length).toLocaleString('en-NG') : '—'}
+                {soldData.length ? '\u20A6' + Math.round(soldTotal / soldData.length).toLocaleString('en-NG') : '\u2014'}
               </div>
               <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Average sale price</div>
             </div>
@@ -150,7 +150,7 @@ export default function Reports() {
                           <tr key={item.id}>
                             <td style={{ color:'var(--muted)', fontSize:12 }}>{i+1}</td>
                             <td style={{ fontWeight:500 }}>{item.title}</td>
-                            <td style={{ color:'var(--muted)', fontSize:13 }}>{artist?.name || item.artist_name || '—'}</td>
+                            <td style={{ color:'var(--muted)', fontSize:13 }}>{artist?.name || item.artist_name || '\u2014'}</td>
                             <td style={{ fontSize:13 }}>{item.client_name}</td>
                             <td style={{ fontSize:12, color:'var(--muted)', fontFamily:'var(--font-serif)' }}>{item.invoice_number}</td>
                             <td style={{ fontSize:12, color:'var(--muted)' }}>{item.sale_date}</td>
@@ -165,7 +165,7 @@ export default function Reports() {
                     <tr>
                       <td colSpan={6} style={{ textAlign:'right', fontWeight:600, padding:'10px 14px', borderTop:'2px solid var(--line)' }}>Total</td>
                       <td style={{ fontWeight:600, color:'var(--green)', padding:'10px 14px', borderTop:'2px solid var(--line)' }}>
-                        ₦{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+                        \u20A6{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
                       </td>
                     </tr>
                   </tfoot>
@@ -176,7 +176,7 @@ export default function Reports() {
         </div>
       )}
 
-      {/* ── LOANED REPORT ── */}
+      {/* \u2500\u2500 LOANED REPORT \u2500\u2500 */}
       {activeReport === 'loaned' && (
         <div>
           <div className="card" style={{ marginBottom:16 }}>
@@ -194,9 +194,9 @@ export default function Reports() {
                         <tr key={w.id}>
                           <td style={{ color:'var(--muted)', fontSize:12 }}>{i+1}</td>
                           <td style={{ fontWeight:500 }}>{w.title}</td>
-                          <td style={{ color:'var(--muted)', fontSize:13 }}>{artistMap[w.artist_id]?.name || '—'}</td>
-                          <td style={{ color:'var(--muted)', fontSize:13 }}>{w.medium || '—'}</td>
-                          <td style={{ fontSize:13 }}>{w.location || '—'}</td>
+                          <td style={{ color:'var(--muted)', fontSize:13 }}>{artistMap[w.artist_id]?.name || '\u2014'}</td>
+                          <td style={{ color:'var(--muted)', fontSize:13 }}>{w.medium || '\u2014'}</td>
+                          <td style={{ fontSize:13 }}>{w.location || '\u2014'}</td>
                           <td><span className="badge badge-amber">{w.availability}</span></td>
                         </tr>
                       ))
@@ -211,7 +211,7 @@ export default function Reports() {
         </div>
       )}
 
-      {/* ── RECEIVED REPORT ── */}
+      {/* \u2500\u2500 RECEIVED REPORT \u2500\u2500 */}
       {activeReport === 'received' && (
         <div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
@@ -239,14 +239,14 @@ export default function Reports() {
                         <tr key={w.id}>
                           <td style={{ color:'var(--muted)', fontSize:12 }}>{i+1}</td>
                           <td style={{ fontWeight:500 }}>{w.title}</td>
-                          <td style={{ color:'var(--muted)', fontSize:13 }}>{artistMap[w.artist_id]?.name || '—'}</td>
-                          <td style={{ color:'var(--muted)', fontSize:13 }}>{w.medium || '—'}</td>
+                          <td style={{ color:'var(--muted)', fontSize:13 }}>{artistMap[w.artist_id]?.name || '\u2014'}</td>
+                          <td style={{ color:'var(--muted)', fontSize:13 }}>{w.medium || '\u2014'}</td>
                           <td>
                             {w.ownership === 'consignment'
                               ? <span className="badge badge-amber">Consignment</span>
                               : <span className="badge badge-blue">Gallery</span>}
                           </td>
-                          <td style={{ fontSize:13 }}>{w.consignor_name || '—'}</td>
+                          <td style={{ fontSize:13 }}>{w.consignor_name || '\u2014'}</td>
                           <td style={{ fontSize:12, color:'var(--muted)' }}>{w.created_at?.slice(0,10)}</td>
                         </tr>
                       ))
@@ -258,7 +258,7 @@ export default function Reports() {
         </div>
       )}
 
-      {/* ── ACCOUNTS RECEIVABLE ── */}
+      {/* \u2500\u2500 ACCOUNTS RECEIVABLE \u2500\u2500 */}
       {activeReport === 'receivable' && (
         <div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
@@ -268,7 +268,7 @@ export default function Reports() {
             </div>
             <div className="card" style={{ padding:'16px 18px' }}>
               <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>
-                ₦{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+                \u20A6{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
               </div>
               <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Total outstanding (NGN equiv.)</div>
             </div>
@@ -291,7 +291,7 @@ export default function Reports() {
                         return (
                           <tr key={inv.id}>
                             <td style={{ fontFamily:'var(--font-serif)', fontWeight:500 }}>{inv.invoice_number}</td>
-                            <td>{inv.clients?.name || '—'}</td>
+                            <td>{inv.clients?.name || '\u2014'}</td>
                             <td>{formatAmount(inv.total, inv.currency)}</td>
                             <td style={{ color:'var(--green)' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>
                             <td style={{ fontWeight:600, color: overdue ? 'var(--red)' : 'var(--amber)' }}>
@@ -300,7 +300,7 @@ export default function Reports() {
                             </td>
                             <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.currency}</td>
                             <td><span className="badge badge-amber">{inv.status}</span></td>
-                            <td style={{ fontSize:12, color: overdue ? 'var(--red)' : 'var(--muted)' }}>{inv.due_date || '—'}</td>
+                            <td style={{ fontSize:12, color: overdue ? 'var(--red)' : 'var(--muted)' }}>{inv.due_date || '\u2014'}</td>
                           </tr>
                         )
                       })
@@ -311,7 +311,7 @@ export default function Reports() {
                     <tr>
                       <td colSpan={4} style={{ textAlign:'right', fontWeight:600, padding:'10px 14px', borderTop:'2px solid var(--line)' }}>Total outstanding</td>
                       <td style={{ fontWeight:600, color:'var(--amber)', padding:'10px 14px', borderTop:'2px solid var(--line)' }}>
-                        ₦{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+                        \u20A6{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
                       </td>
                       <td colSpan={3} style={{ borderTop:'2px solid var(--line)' }} />
                     </tr>
@@ -329,7 +329,7 @@ export default function Reports() {
   )
 }
 
-// ── PRINT ────────────────────────────────────────────────────
+// \u2500\u2500 PRINT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function printReport(reportId, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable }) {
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
   const period = `${dateFrom} to ${dateTo}`
@@ -359,13 +359,13 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
     body = `
       <div class="stat-row">
         <div class="stat"><div class="stat-n">${soldData.length}</div><div class="stat-l">Works sold</div></div>
-        <div class="stat"><div class="stat-n">₦${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total revenue</div></div>
-        <div class="stat"><div class="stat-n">${soldData.length ? '₦'+Math.round(soldTotal/soldData.length).toLocaleString('en-NG') : '—'}</div><div class="stat-l">Average price</div></div>
+        <div class="stat"><div class="stat-n">\u20A6${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total revenue</div></div>
+        <div class="stat"><div class="stat-n">${soldData.length ? '\u20A6'+Math.round(soldTotal/soldData.length).toLocaleString('en-NG') : '\u2014'}</div><div class="stat-l">Average price</div></div>
       </div>
       <table>
         <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Date</th><th>Sale price</th></tr></thead>
-        <tbody>${soldData.map((item,i)=>`<tr><td>${i+1}</td><td><strong>${e(item.title)}</strong></td><td>${e(item.artist_name||'—')}</td><td>${e(item.client_name)}</td><td>${e(item.invoice_number)}</td><td>${e(item.sale_date)}</td><td style="color:#2d6a4f;font-weight:500">${formatAmount(item.line_total,item.currency)}</td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="6" style="text-align:right">Total</td><td style="color:#2d6a4f">₦${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</td></tr></tfoot>
+        <tbody>${soldData.map((item,i)=>`<tr><td>${i+1}</td><td><strong>${e(item.title)}</strong></td><td>${e(item.artist_name||'\u2014')}</td><td>${e(item.client_name)}</td><td>${e(item.invoice_number)}</td><td>${e(item.sale_date)}</td><td style="color:#2d6a4f;font-weight:500">${formatAmount(item.line_total,item.currency)}</td></tr>`).join('')}</tbody>
+        <tfoot><tr><td colspan="6" style="text-align:right">Total</td><td style="color:#2d6a4f">\u20A6${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</td></tr></tfoot>
       </table>`
   }
 
@@ -373,7 +373,7 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
     body = `
       <table>
         <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Medium</th><th>Location / borrower</th><th>Status</th></tr></thead>
-        <tbody>${loanedData.map((w,i)=>`<tr><td>${i+1}</td><td><strong>${e(w.title)}</strong></td><td>${e(artistMap[w.artist_id]?.name||'—')}</td><td>${e(w.medium||'—')}</td><td>${e(w.location||'—')}</td><td>${e(w.availability)}</td></tr>`).join('')}</tbody>
+        <tbody>${loanedData.map((w,i)=>`<tr><td>${i+1}</td><td><strong>${e(w.title)}</strong></td><td>${e(artistMap[w.artist_id]?.name||'\u2014')}</td><td>${e(w.medium||'\u2014')}</td><td>${e(w.location||'\u2014')}</td><td>${e(w.availability)}</td></tr>`).join('')}</tbody>
       </table>`
   }
 
@@ -386,7 +386,7 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
       </div>
       <table>
         <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Medium</th><th>Ownership</th><th>Consignor</th><th>Date added</th></tr></thead>
-        <tbody>${receivedData.map((w,i)=>`<tr><td>${i+1}</td><td><strong>${e(w.title)}</strong></td><td>${e(artistMap[w.artist_id]?.name||'—')}</td><td>${e(w.medium||'—')}</td><td>${e(w.ownership||'gallery')}</td><td>${e(w.consignor_name||'—')}</td><td>${e(w.created_at?.slice(0,10)||'—')}</td></tr>`).join('')}</tbody>
+        <tbody>${receivedData.map((w,i)=>`<tr><td>${i+1}</td><td><strong>${e(w.title)}</strong></td><td>${e(artistMap[w.artist_id]?.name||'\u2014')}</td><td>${e(w.medium||'\u2014')}</td><td>${e(w.ownership||'gallery')}</td><td>${e(w.consignor_name||'\u2014')}</td><td>${e(w.created_at?.slice(0,10)||'\u2014')}</td></tr>`).join('')}</tbody>
       </table>`
   }
 
@@ -394,23 +394,23 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
     body = `
       <div class="stat-row">
         <div class="stat"><div class="stat-n">${receivableData.length}</div><div class="stat-l">Open invoices</div></div>
-        <div class="stat"><div class="stat-n">₦${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total outstanding</div></div>
+        <div class="stat"><div class="stat-n">\u20A6${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total outstanding</div></div>
         <div class="stat"><div class="stat-n">${receivableData.filter(i=>i.status==='partial').length}</div><div class="stat-l">Partial payments</div></div>
       </div>
       <table>
         <thead><tr><th>Invoice</th><th>Client</th><th>Total</th><th>Paid</th><th>Balance due</th><th>Currency</th><th>Status</th><th>Due date</th></tr></thead>
         <tbody>${receivableData.map(inv=>{
           const overdue = inv.due_date && inv.due_date < new Date().toISOString().split('T')[0]
-          return `<tr><td>${e(inv.invoice_number)}</td><td>${e(inv.clients?.name||'—')}</td><td>${formatAmount(inv.total,inv.currency)}</td><td style="color:#2d6a4f">${formatAmount(inv.amount_paid||0,inv.currency)}</td><td style="color:${overdue?'#8b1a1a':'#92600a'};font-weight:600">${formatAmount(inv.balance_due,inv.currency)}${overdue?' ⚠ OVERDUE':''}</td><td>${e(inv.currency)}</td><td>${e(inv.status)}</td><td style="color:${overdue?'#8b1a1a':'inherit'}">${e(inv.due_date||'—')}</td></tr>`
+          return `<tr><td>${e(inv.invoice_number)}</td><td>${e(inv.clients?.name||'\u2014')}</td><td>${formatAmount(inv.total,inv.currency)}</td><td style="color:#2d6a4f">${formatAmount(inv.amount_paid||0,inv.currency)}</td><td style="color:${overdue?'#8b1a1a':'#92600a'};font-weight:600">${formatAmount(inv.balance_due,inv.currency)}${overdue?' \u26A0 OVERDUE':''}</td><td>${e(inv.currency)}</td><td>${e(inv.status)}</td><td style="color:${overdue?'#8b1a1a':'inherit'}">${e(inv.due_date||'\u2014')}</td></tr>`
         }).join('')}</tbody>
-        <tfoot><tr><td colspan="4" style="text-align:right">Total outstanding</td><td style="color:#92600a">₦${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</td><td colspan="3"></td></tr></tfoot>
+        <tfoot><tr><td colspan="4" style="text-align:right">Total outstanding</td><td style="color:#92600a">\u20A6${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</td><td colspan="3"></td></tr></tfoot>
       </table>`
   }
 
   const titles = { sold:'Artworks Sold', loaned:'Artworks on Loan', received:'Artworks Received', receivable:'Accounts Receivable' }
   const subtitles = { sold:`Period: ${period}`, received:`Period: ${period}` }
 
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${titles[reportId]} — Hourglass Gallery</title><style>${baseStyle}</style></head><body>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${titles[reportId]} \u2014 Hourglass Gallery</title><style>${baseStyle}</style></head><body>
 <div class="header">
   <div class="logo">Hourglass Gallery</div>
   <div class="report-title">${titles[reportId]}</div>
@@ -418,7 +418,7 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
   <div class="meta">Generated ${today}</div>
 </div>
 ${body}
-<div class="footer">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
+<div class="footer">Hourglass Gallery \u00B7 298A Akin Olugbade Street, Victoria Island, Lagos</div>
 </body></html>`
 
   const w = window.open('', '_blank', 'width=1100,height=750')

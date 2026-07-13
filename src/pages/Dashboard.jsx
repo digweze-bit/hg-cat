@@ -38,7 +38,7 @@ export default function Dashboard() {
     load()
   }, [])
 
-  if (loading) return <div style={{ color:'var(--muted)', fontSize:14 }}>Loading…</div>
+  if (loading) return <div style={{ color:'var(--muted)', fontSize:14 }}>Loading\u2026</div>
 
   const statCards = [
     { label: 'Artists', value: stats.totalArtists, path: '/admin/artists', color: 'var(--ink)' },
@@ -55,14 +55,14 @@ export default function Dashboard() {
     <div>
       <div className="page-header">
         <div className="page-title">Dashboard</div>
-        <div className="page-subtitle">Hourglass Gallery — at a glance</div>
+        <div className="page-subtitle">Hourglass Gallery \u2014 at a glance</div>
       </div>
 
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px,1fr))', gap:14, marginBottom:36 }}>
         {statCards.map(s => (
           <div key={s.label} className="card" style={{ padding:'18px 20px', cursor:'pointer' }} onClick={() => navigate(s.path)}>
-            <div style={{ fontFamily:'var(--font-serif)', fontSize:'2rem', color:s.color, lineHeight:1 }}>{s.value?.toLocaleString() ?? '—'}</div>
+            <div style={{ fontFamily:'var(--font-serif)', fontSize:'2rem', color:s.color, lineHeight:1 }}>{s.value?.toLocaleString() ?? '\u2014'}</div>
             <div style={{ fontSize:12, color:'var(--muted)', marginTop:6, textTransform:'uppercase', letterSpacing:'.06em' }}>{s.label}</div>
           </div>
         ))}
@@ -88,7 +88,7 @@ export default function Dashboard() {
                 {recentInvoices.map(inv => (
                   <tr key={inv.id} style={{ cursor:'pointer' }} onClick={() => navigate('/admin/sales')}>
                     <td style={{ fontFamily:'var(--font-serif)' }}>{inv.invoice_number}</td>
-                    <td>{inv.clients?.name || '—'}</td>
+                    <td>{inv.clients?.name || '\u2014'}</td>
                     <td>{inv.currency} {Number(inv.total).toLocaleString()}</td>
                     <td><span className="badge" style={{ background: statusColors[inv.status]+'22', color: statusColors[inv.status] }}>{inv.status}</span></td>
                     <td style={{ color:'var(--muted)', fontSize:12 }}>{inv.issue_date}</td>

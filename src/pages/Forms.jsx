@@ -5,12 +5,12 @@ import { LOGO_B64, SIG_B64 } from '../lib/assets'
 import SignaturePad from 'signature_pad'
 
 const FORM_TYPES = {
-  purchase_confirmation: { label: 'Purchase Confirmation', icon: '◈', color: '#27ae60' },
-  consignment_agreement: { label: 'Consignment Agreement', icon: '◐', color: '#b8862a' },
-  condition_report:      { label: 'Condition Report',      icon: '◇', color: '#5a7ac7' },
-  loan_agreement:        { label: 'Loan Agreement',        icon: '◉', color: '#9b59b6' },
-  collection_receipt:    { label: 'Collection Receipt',    icon: '◑', color: '#1a9a8a' },
-  catalogue:             { label: 'Artwork Catalogue',       icon: '◧', color: '#2c3e50' },
+  purchase_confirmation: { label: 'Purchase Confirmation', icon: '\u25C8', color: '#27ae60' },
+  consignment_agreement: { label: 'Consignment Agreement', icon: '\u25D0', color: '#b8862a' },
+  condition_report:      { label: 'Condition Report',      icon: '\u25C7', color: '#5a7ac7' },
+  loan_agreement:        { label: 'Loan Agreement',        icon: '\u25C9', color: '#9b59b6' },
+  collection_receipt:    { label: 'Collection Receipt',    icon: '\u25D1', color: '#1a9a8a' },
+  catalogue:             { label: 'Artwork Catalogue',       icon: '\u25E7', color: '#2c3e50' },
 }
 
 const STATUS = {
@@ -20,11 +20,11 @@ const STATUS = {
   void:   { label: 'Void',   bg: '#fef2f0', color: '#c0392b' },
 }
 
-// ── CATALOGUE PDF GENERATOR ──────────────────────────────────────────
+// \u2500\u2500 CATALOGUE PDF GENERATOR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function generateCatalogue(options, artworks, logoB64, previewOnly = false, artists = []) {
   const { showLogo, showPricing, showBio, title, intro } = options
 
-  // Collect unique artists with bios — from artists array
+  // Collect unique artists with bios \u2014 from artists array
   const artistsSeen = new Set()
   const artistBios = {}
   // Build name->bio from artists list
@@ -76,9 +76,9 @@ async function generateCatalogue(options, artworks, logoB64, previewOnly = false
   artworks.forEach((w, i) => {
     const isFirst = i === 0
     const imgSrc = imgMap[w.artwork_id || w.id] || w.image_url
-    const details = [w.medium, w.dimensions, w.year].filter(Boolean).join('  ·  ')
+    const details = [w.medium, w.dimensions, w.year].filter(Boolean).join('  \u00B7  ')
     const price = showPricing && (w.price || w.retail_price)
-      ? (w.price || ('₦' + Number(w.retail_price).toLocaleString()))
+      ? (w.price || ('\u20A6' + Number(w.retail_price).toLocaleString()))
       : ''
 
     pages += `
@@ -96,7 +96,7 @@ async function generateCatalogue(options, artworks, logoB64, previewOnly = false
     </div>`
   })
 
-  // Bio pages — one per artist, after all artworks
+  // Bio pages \u2014 one per artist, after all artworks
   if (showBio) {
     Object.entries(artistBios).forEach(([artist, bio]) => {
       if (!bio) return
@@ -330,7 +330,7 @@ export default function Forms() {
       artwork_id: w.id, title: w.title, artist_name: artistMap[w.artist_id] || '',
       medium: w.medium || '', dimensions: w.dimensions || '', year: w.year || '',
       image_url: w.image_url || '', hg_code: w.hg_code || '', category: w.category || '',
-      price: w.retail_price ? `₦${Number(w.retail_price).toLocaleString()}` : (w.price || ''),
+      price: w.retail_price ? `\u20A6${Number(w.retail_price).toLocaleString()}` : (w.price || ''),
       condition: '', notes: '',
     }])
     setArtworkSearch('')
@@ -367,7 +367,7 @@ export default function Forms() {
       const { data: form, error } = await supabase.from('forms').insert({
         type: bType, status: 'draft',
         reference: ref,
-        title: `${typeLabel} — ${bRecipient.name}`,
+        title: `${typeLabel} \u2014 ${bRecipient.name}`,
         recipient_name: bRecipient.name,
         recipient_email: bRecipient.email || null,
         recipient_phone: bRecipient.phone || null,
@@ -409,7 +409,7 @@ export default function Forms() {
     return w.title?.toLowerCase().includes(q) || artistMap[w.artist_id]?.toLowerCase().includes(q) || w.hg_code?.toLowerCase().includes(q)
   }).slice(0, bType === 'catalogue' ? 200 : 12)
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading…</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading\u2026</div>
 
   return (
     <div>
@@ -421,7 +421,7 @@ export default function Forms() {
         <button className="btn btn-primary" onClick={() => { resetBuilder(); setModal('new') }}>+ New form</button>
       </div>
 
-      {/* ── FORMS LIST ── */}
+      {/* \u2500\u2500 FORMS LIST \u2500\u2500 */}
       <div className="card">
         <div className="table-wrap">
           <table>
@@ -480,21 +480,21 @@ export default function Forms() {
         </div>
       </div>
 
-      {/* ── NEW FORM MODAL ── */}
+      {/* \u2500\u2500 NEW FORM MODAL \u2500\u2500 */}
       {modal === 'new' && (
         <div className="modal-overlay">
           <div className="modal modal-xl" style={{ maxWidth:820, maxHeight:'94vh', overflow:'hidden', display:'flex', flexDirection:'column' }}>
             <div className="modal-header">
               <div>
                 <div className="modal-title">New form</div>
-                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Step {bType === 'catalogue' ? `${step} of 3` : `${step} of 6`} — {bType === 'catalogue' ? ['','Form type','Artworks','Options'][step] || '' : ['','Form type','Artworks','Recipient & details','Gallery signature','Preview','Share'][step]}</div>
+                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Step {bType === 'catalogue' ? `${step} of 3` : `${step} of 6`} \u2014 {bType === 'catalogue' ? ['','Form type','Artworks','Options'][step] || '' : ['','Form type','Artworks','Recipient & details','Gallery signature','Preview','Share'][step]}</div>
               </div>
-              <button className="btn btn-ghost btn-icon" onClick={() => { setModal(null); resetBuilder() }}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={() => { setModal(null); resetBuilder() }}>\u2715</button>
             </div>
 
             <div className="modal-body" style={{ flex:1, overflowY:'auto' }}>
 
-              {/* STEP 1 — Type */}
+              {/* STEP 1 \u2014 Type */}
               {step === 1 && (
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                   {Object.entries(FORM_TYPES).map(([key, ft]) => (
@@ -515,12 +515,12 @@ export default function Forms() {
                 </div>
               )}
 
-              {/* STEP 2 — Artworks */}
+              {/* STEP 2 \u2014 Artworks */}
               {step === 2 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                   <div style={{ display:'flex', gap:8 }}>
                     <div style={{ flex:1, position:'relative' }}>
-                      <input className="form-input" placeholder="Search artworks by title, artist, HG code…"
+                      <input className="form-input" placeholder="Search artworks by title, artist, HG code\u2026"
                         value={artworkSearch} onChange={e => setArtworkSearch(e.target.value)}/>
                       {artworkSearch && filteredArtworks.length > 0 && (
                         <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'var(--white)', border:'1px solid var(--line)', borderTop:'none', borderRadius:'0 0 4px 4px', zIndex:50, maxHeight:220, overflowY:'auto', boxShadow:'0 4px 12px rgba(0,0,0,.08)' }}>
@@ -530,7 +530,7 @@ export default function Forms() {
                               {w.image_url && <img src={w.image_url} alt="" style={{ width:32, height:32, objectFit:'cover', borderRadius:2 }}/>}
                               <div>
                                 <div style={{ fontSize:13, fontWeight:500 }}>{w.title}</div>
-                                <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]} {w.hg_code ? `· ${w.hg_code}` : ''}</div>
+                                <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]} {w.hg_code ? `\u00B7 ${w.hg_code}` : ''}</div>
                               </div>
                             </div>
                           ))}
@@ -550,7 +550,7 @@ export default function Forms() {
                           if (c) setBRecipient({ name: c.name, email: c.email || '', phone: c.phone || '' })
                           if (c) setBMeta(m => ({ ...m, term_type: c.term_type, commission_rate: c.commission_rate, fixed_amount: c.fixed_amount, sale_type: c.sale_type }))
                         }}>
-                        <option value="">— select consignor —</option>
+                        <option value="">\u2014 select consignor \u2014</option>
                         {consignors.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
                       </select>
                     </div>
@@ -614,7 +614,7 @@ export default function Forms() {
                 </div>
               )}
 
-              {/* STEP 3 — Recipient & details (not for catalogue) */}
+              {/* STEP 3 \u2014 Recipient & details (not for catalogue) */}
               {step === 3 && bType !== 'catalogue' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                   <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:4 }}>Recipient</div>
@@ -672,7 +672,7 @@ export default function Forms() {
                             </div>
                           ) : (
                             <div className="form-group">
-                              <label className="form-label">Fixed net to consignor (₦)</label>
+                              <label className="form-label">Fixed net to consignor (\u20A6)</label>
                               <input className="form-input" type="number" value={bMeta.fixed_amount||''} onChange={e => setBMeta(m => ({ ...m, fixed_amount: e.target.value }))}/>
                             </div>
                           )}
@@ -703,7 +703,7 @@ export default function Forms() {
                         {['Surface', 'Frame', 'Edges', 'Verso', 'Overall'].map(field => (
                           <div key={field} className="form-group">
                             <label className="form-label">{field}</label>
-                            <input className="form-input" value={bMeta[field.toLowerCase()]||''} onChange={e => setBMeta(m => ({ ...m, [field.toLowerCase()]: e.target.value }))} placeholder="Condition notes…"/>
+                            <input className="form-input" value={bMeta[field.toLowerCase()]||''} onChange={e => setBMeta(m => ({ ...m, [field.toLowerCase()]: e.target.value }))} placeholder="Condition notes\u2026"/>
                           </div>
                         ))}
                         <div className="form-group">
@@ -734,7 +734,7 @@ export default function Forms() {
                           <input className="form-input" value={bMeta.purpose||''} onChange={e => setBMeta(m => ({ ...m, purpose: e.target.value }))} placeholder="e.g. Exhibition loan"/>
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Insurance value (₦)</label>
+                          <label className="form-label">Insurance value (\u20A6)</label>
                           <input className="form-input" type="number" value={bMeta.insurance_value||''} onChange={e => setBMeta(m => ({ ...m, insurance_value: e.target.value }))}/>
                         </div>
                       </div>
@@ -756,7 +756,7 @@ export default function Forms() {
                 </div>
               )}
 
-              {/* STEP 4 — Gallery signature */}
+              {/* STEP 4 \u2014 Gallery signature */}
               {step === 4 && bType !== 'catalogue' && (
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                   <div style={{ fontSize:13, color:'var(--muted)' }}>Choose how Hourglass Gallery signs this document.</div>
@@ -794,7 +794,7 @@ export default function Forms() {
                 </div>
               )}
 
-              {/* STEP 5 — Share */}
+              {/* STEP 5 \u2014 Share */}
               
               {step === 5 && (
                 <div>
@@ -842,8 +842,8 @@ export default function Forms() {
                           <div>
                             <div style={{ fontWeight:500, fontSize:13 }}>{aw.title}</div>
                             <div style={{ fontSize:11, color:'#666', marginTop:2 }}>{aw.artist_name}{aw.year ? `, ${aw.year}` : ''}</div>
-                            {aw.medium && <div style={{ fontSize:11, color:'#666' }}>{aw.medium}{aw.dimensions ? ` · ${aw.dimensions}` : ''}</div>}
-                            {aw.price && <div style={{ fontSize:12, fontWeight:500, marginTop:4 }}>₦{Number(aw.price).toLocaleString()}</div>}
+                            {aw.medium && <div style={{ fontSize:11, color:'#666' }}>{aw.medium}{aw.dimensions ? ` \u00B7 ${aw.dimensions}` : ''}</div>}
+                            {aw.price && <div style={{ fontSize:12, fontWeight:500, marginTop:4 }}>\u20A6{Number(aw.price).toLocaleString()}</div>}
                           </div>
                         </div>
                       ))}
@@ -870,7 +870,7 @@ export default function Forms() {
 
               {step === 6 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:20, alignItems:'center', padding:'24px 0' }}>
-                  <div style={{ fontSize:32 }}>✓</div>
+                  <div style={{ fontSize:32 }}>\u2713</div>
                   <div style={{ fontWeight:600, fontSize:16 }}>Form generated</div>
                   <div style={{ fontSize:13, color:'var(--muted)', textAlign:'center' }}>
                     Share the link below with the recipient. They'll be able to view the form and add their signature.
@@ -885,16 +885,16 @@ export default function Forms() {
                         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
                         markSent(forms[0]?.id)
                       }}>
-                      📱 Send via WhatsApp
+                      \uD83D\uDCF1 Send via WhatsApp
                     </button>
                     <button className="btn btn-outline"
                       onClick={() => { navigator.clipboard.writeText(shareUrl); alert('Link copied') }}>
-                      📋 Copy link
+                      \uD83D\uDCCB Copy link
                     </button>
                     {bRecipient.email && (
                       <a className="btn btn-outline"
-                        href={`mailto:${bRecipient.email}?subject=Document for signature — Hourglass Gallery&body=Please review and sign this document: ${shareUrl}`}>
-                        ✉ Open in email
+                        href={`mailto:${bRecipient.email}?subject=Document for signature \u2014 Hourglass Gallery&body=Please review and sign this document: ${shareUrl}`}>
+                        \u2709 Open in email
                       </a>
                     )}
                   </div>
@@ -904,18 +904,18 @@ export default function Forms() {
 
             <div className="modal-footer">
               {step > 1 && step < 6 && (
-                <button className="btn btn-outline" onClick={() => setStep(s => s - 1)}>← Back</button>
+                <button className="btn btn-outline" onClick={() => setStep(s => s - 1)}>\u2190 Back</button>
               )}
               <div style={{ flex:1 }}/>
               {step === 6 ? (
                 <button className="btn btn-primary" onClick={() => { setModal(null); resetBuilder() }}>Done</button>
               ) : step === 5 ? (
                 <button className="btn btn-primary" onClick={handleGenerate} disabled={saving}>
-                  {saving ? 'Generating…' : 'Confirm & Generate →'}
+                  {saving ? 'Generating\u2026' : 'Confirm & Generate \u2192'}
                 </button>
               ) : step === 4 ? (
                 <button className="btn btn-primary" onClick={() => setStep(5)}>
-                  Preview →
+                  Preview \u2192
                 </button>
               ) : (
                 <button className="btn btn-primary"
@@ -925,7 +925,7 @@ export default function Forms() {
                     (step === 2 && bArtworks.length === 0) ||
                     (step === 3 && !bRecipient.name && bType !== 'catalogue')
                   }>
-                  Next →
+                  Next \u2192
                 </button>
               )}
             </div>
@@ -933,13 +933,13 @@ export default function Forms() {
         </div>
       )}
 
-      {/* ── SHARE MODAL (for existing forms) ── */}
+      {/* \u2500\u2500 SHARE MODAL (for existing forms) \u2500\u2500 */}
       {modal === 'share' && activeForm && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth:500 }}>
             <div className="modal-header">
-              <div className="modal-title">Share — {activeForm.reference}</div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>✕</button>
+              <div className="modal-title">Share \u2014 {activeForm.reference}</div>
+              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>\u2715</button>
             </div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ background:'var(--surface-0)', borderRadius:4, padding:'12px 16px', fontFamily:'monospace', fontSize:12, wordBreak:'break-all', border:'1px solid var(--line)' }}>
@@ -952,15 +952,15 @@ export default function Forms() {
                     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
                     markSent(activeForm.id)
                   }}>
-                  📱 Send via WhatsApp
+                  \uD83D\uDCF1 Send via WhatsApp
                 </button>
                 <button className="btn btn-outline" onClick={() => { navigator.clipboard.writeText(shareUrl); alert('Copied') }}>
-                  📋 Copy link
+                  \uD83D\uDCCB Copy link
                 </button>
                 {activeForm.recipient_email && (
                   <a className="btn btn-outline"
-                    href={`mailto:${activeForm.recipient_email}?subject=Document for signature — Hourglass Gallery&body=Please review and sign: ${shareUrl}`}>
-                    ✉ Email
+                    href={`mailto:${activeForm.recipient_email}?subject=Document for signature \u2014 Hourglass Gallery&body=Please review and sign: ${shareUrl}`}>
+                    \u2709 Email
                   </a>
                 )}
               </div>

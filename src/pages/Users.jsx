@@ -38,7 +38,7 @@ export default function Users() {
     </div>
   )
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading users…</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading users\u2026</div>
 
   const pending = users.filter(u => !u.approved)
   const active = users.filter(u => u.approved)
@@ -47,13 +47,13 @@ export default function Users() {
     <div>
       <div className="page-header">
         <div className="page-title">Staff Users</div>
-        <div className="page-subtitle">{active.length} active · {pending.length} pending approval</div>
+        <div className="page-subtitle">{active.length} active \u00B7 {pending.length} pending approval</div>
       </div>
 
       {pending.length > 0 && (
         <div style={{ marginBottom:28 }}>
           <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--amber)', marginBottom:12 }}>
-            ⚠ Pending approval ({pending.length})
+            \u26A0 Pending approval ({pending.length})
           </div>
           <div className="card">
             <div className="table-wrap">
@@ -63,7 +63,7 @@ export default function Users() {
                   {pending.map(u => (
                     <tr key={u.id}>
                       <td>{u.email}</td>
-                      <td style={{ color:'var(--muted)' }}>{u.full_name || '—'}</td>
+                      <td style={{ color:'var(--muted)' }}>{u.full_name || '\u2014'}</td>
                       <td style={{ fontSize:12, color:'var(--muted)' }}>{u.created_at?.slice(0,10)}</td>
                       <td>
                         <div style={{ display:'flex', gap:6 }}>
@@ -95,7 +95,7 @@ export default function Users() {
                         {u.id === myProfile?.id && <span className="badge badge-blue">You</span>}
                       </div>
                     </td>
-                    <td style={{ color:'var(--muted)' }}>{u.full_name || '—'}</td>
+                    <td style={{ color:'var(--muted)' }}>{u.full_name || '\u2014'}</td>
                     <td>
                       {u.id === myProfile?.id ? (
                         <span className="badge badge-blue">{u.role}</span>
@@ -126,7 +126,7 @@ export default function Users() {
       </div>
 
       <div style={{ marginTop:28, padding:'16px 20px', background:'var(--parchment)', borderRadius:3, fontSize:13, color:'var(--muted)', lineHeight:1.7 }}>
-        <strong style={{ color:'var(--ink)' }}>How to add staff:</strong> New staff members sign up at <code style={{ background:'var(--white)', padding:'1px 5px', borderRadius:2 }}>/admin/login</code> using their own email and a password they choose. Their account appears here as "pending" — you approve it to grant access. Admins can approve others, change roles, and revoke access. Staff can manage artists, artworks, archive, sales, and certificates.
+        <strong style={{ color:'var(--ink)' }}>How to add staff:</strong> New staff members sign up at <code style={{ background:'var(--white)', padding:'1px 5px', borderRadius:2 }}>/admin/login</code> using their own email and a password they choose. Their account appears here as "pending" \u2014 you approve it to grant access. Admins can approve others, change roles, and revoke access. Staff can manage artists, artworks, archive, sales, and certificates.
       </div>
     </div>
   )

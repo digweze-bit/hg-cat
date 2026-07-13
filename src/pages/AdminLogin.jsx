@@ -62,18 +62,18 @@ export default function AdminLogin() {
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                 required
               />
             </div>
             <button className="btn btn-primary" type="submit" disabled={loading} style={{ marginTop:4, padding:'11px' }}>
-              {loading ? 'Signing in…' : 'Sign in'}
+              {loading ? 'Signing in\u2026' : 'Sign in'}
             </button>
           </form>
         </div>
 
         <div style={{ textAlign:'center', marginTop:20 }}>
-          <a href="/" style={{ fontSize:12, color:'var(--muted)' }}>← Back to gallery</a>
+          <a href="/" style={{ fontSize:12, color:'var(--muted)' }}>\u2190 Back to gallery</a>
         </div>
       </div>
     </div>

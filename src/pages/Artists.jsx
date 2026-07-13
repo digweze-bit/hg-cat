@@ -22,12 +22,12 @@ export default function Artists() {
   const [awLoading, setAwLoading] = useState(false)
 
   async function load() {
-    // Fetch artists first — show immediately
+    // Fetch artists first \u2014 show immediately
     const a = await fetchAll('artists', { order: 'name' })
     setArtists(a)
     setLoading(false)
 
-    // Then fetch counts in background — only 2 tiny queries
+    // Then fetch counts in background \u2014 only 2 tiny queries
     const [avail, sold] = await Promise.all([
       supabase.from('artworks').select('artist_id').eq('availability', 'Available'),
       supabase.from('artworks').select('artist_id').eq('availability', 'Sold'),
@@ -126,22 +126,22 @@ export default function Artists() {
   function openEdit(artist) { setForm({ ...EMPTY, ...artist }); setEditId(artist.id); setModal('edit') }
   function closeModal() { setModal(null); setForm(EMPTY); setEditId(null) }
 
-  if (loading) return <div style={{ color:'var(--muted)', padding:32 }}>Loading artists…</div>
+  if (loading) return <div style={{ color:'var(--muted)', padding:32 }}>Loading artists\u2026</div>
 
   return (
     <div>
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Artists</div>
-          <div className="page-subtitle">{artists.length} artists · {artists.filter(a=>a.visible).length} visible</div>
+          <div className="page-subtitle">{artists.length} artists \u00B7 {artists.filter(a=>a.visible).length} visible</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add artist</button>
       </div>
 
       <div style={{ display:'flex', gap:10, marginBottom:20, alignItems:'center', flexWrap:'wrap' }}>
-        <input className="form-input" style={{ maxWidth:260 }} placeholder="Search artists…" value={search} onChange={e=>setSearch(e.target.value)} />
+        <input className="form-input" style={{ maxWidth:260 }} placeholder="Search artists\u2026" value={search} onChange={e=>setSearch(e.target.value)} />
         <div style={{ display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
-          {[['az','A – Z'],['most','Most works'],['sold','Most sold']].map(([key,label]) => (
+          {[['az','A \u2013 Z'],['most','Most works'],['sold','Most sold']].map(([key,label]) => (
             <button key={key} onClick={() => setSortBy(key)}
               style={{ padding:'6px 12px', fontSize:12, cursor:'pointer', border:'none',
                 borderRight:'1px solid var(--line)',
@@ -178,12 +178,12 @@ export default function Artists() {
                         {a.portrait_url && <img src={a.portrait_url} alt="" loading="lazy" decoding="async" style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover' }} />}
                         <div>
                           <div style={{ fontWeight:500 }}>{a.name}</div>
-                          {a.born && <div style={{ fontSize:11, color:'var(--muted)' }}>{a.born}{a.died ? '–'+a.died : ''}</div>}
+                          {a.born && <div style={{ fontSize:11, color:'var(--muted)' }}>{a.born}{a.died ? '\u2013'+a.died : ''}</div>}
                         </div>
                       </div>
                     </td>
-                    <td style={{ color:'var(--muted)', fontSize:13 }}>{a.nationality || '—'}</td>
-                    <td style={{ color:'var(--muted)', fontSize:13 }}>{a.medium || '—'}</td>
+                    <td style={{ color:'var(--muted)', fontSize:13 }}>{a.nationality || '\u2014'}</td>
+                    <td style={{ color:'var(--muted)', fontSize:13 }}>{a.medium || '\u2014'}</td>
                     <td style={{ fontSize:13, color:'var(--green,#27ae60)', fontWeight: counts[a.id]?.available ? 600 : 400 }}>
                       {counts[a.id]?.available || 0}
                     </td>
@@ -192,7 +192,7 @@ export default function Artists() {
                       <button onClick={() => toggleVisible(a)}
                         style={{ fontSize:18, cursor:'pointer', background:'none', border:'none',
                           color: a.visible ? 'var(--green)' : 'var(--line)' }}>
-                        {a.visible ? '◉' : '○'}
+                        {a.visible ? '\u25C9' : '\u25CB'}
                       </button>
                     </td>
                     <td onClick={e => e.stopPropagation()}>
@@ -216,10 +216,10 @@ export default function Artists() {
               <div>
                 <div style={{ fontWeight:600, fontSize:16 }}>{selected.name}</div>
                 <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>
-                  {[selected.nationality, selected.medium, selected.born && `b. ${selected.born}`].filter(Boolean).join(' · ')}
+                  {[selected.nationality, selected.medium, selected.born && `b. ${selected.born}`].filter(Boolean).join(' \u00B7 ')}
                 </div>
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>✕</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>\u2715</button>
             </div>
 
             {/* Counts */}
@@ -242,7 +242,7 @@ export default function Artists() {
             </div>
             <div className="card" style={{ padding:0, maxHeight:500, overflowY:'auto' }}>
               {awLoading
-                ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>Loading…</div>
+                ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>Loading\u2026</div>
                 : artworks.filter(w => w.availability === 'Available').length === 0
                 ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>No available works</div>
                 : artworks.filter(w => w.availability === 'Available').map(w => (
@@ -254,11 +254,11 @@ export default function Artists() {
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:13, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.title}</div>
                       <div style={{ fontSize:11, color:'var(--muted)', marginTop:1 }}>
-                        {[w.year, w.medium, w.location].filter(Boolean).join(' · ')}
+                        {[w.year, w.medium, w.location].filter(Boolean).join(' \u00B7 ')}
                       </div>
                       {(w.price || w.retail_price) && (
                         <div style={{ fontSize:12, color:'var(--ink)', fontWeight:500, marginTop:2 }}>
-                          {w.price || `₦${Number(w.retail_price).toLocaleString()}`}
+                          {w.price || `\u20A6${Number(w.retail_price).toLocaleString()}`}
                         </div>
                       )}
                     </div>
@@ -284,7 +284,7 @@ export default function Artists() {
           <div className="modal modal-lg">
             <div className="modal-header">
               <div className="modal-title">{modal === 'edit' ? 'Edit artist' : 'Add artist'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={closeModal}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={closeModal}>\u2715</button>
             </div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div className="form-row">
@@ -324,12 +324,12 @@ export default function Artists() {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Portrait URL</label>
-                  <input className="form-input" value={form.portrait_url||''} onChange={e=>setForm(f=>({...f,portrait_url:e.target.value}))} placeholder="https://… or upload below" />
+                  <input className="form-input" value={form.portrait_url||''} onChange={e=>setForm(f=>({...f,portrait_url:e.target.value}))} placeholder="https://\u2026 or upload below" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Upload portrait</label>
                   <input type="file" accept="image/*" onChange={handlePortraitUpload} style={{ fontSize:12, color:'var(--muted)' }} />
-                  {uploading && <div style={{ fontSize:11, color:'var(--muted)' }}>Uploading…</div>}
+                  {uploading && <div style={{ fontSize:11, color:'var(--muted)' }}>Uploading\u2026</div>}
                 </div>
               </div>
               {form.portrait_url && (
@@ -343,7 +343,7 @@ export default function Artists() {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={closeModal}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving…' : 'Save artist'}
+                {saving ? 'Saving\u2026' : 'Save artist'}
               </button>
             </div>
           </div>

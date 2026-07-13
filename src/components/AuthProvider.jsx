@@ -8,13 +8,13 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
 
   useEffect(() => {
-    // Fire getSession — Supabase reads from localStorage first so this is near-instant
+    // Fire getSession \u2014 Supabase reads from localStorage first so this is near-instant
     // on repeat visits. First visit hits the network.
     supabase.auth.getSession().then(({ data: { session } }) => {
       const u = session?.user ?? null
       setUser(u)
       if (u) {
-        // Load profile in background — don't block rendering
+        // Load profile in background \u2014 don't block rendering
         supabase.from('profiles').select('*').eq('id', u.id).single()
           .then(({ data }) => setProfile(data))
       }

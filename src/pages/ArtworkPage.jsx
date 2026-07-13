@@ -47,7 +47,7 @@ export default function ArtworkPage() {
   function whatsappShare() {
     const url = `${window.location.origin}/artwork/${id}`
     const text = artwork
-      ? `*${artwork.title}*\n${artist?.name || ''}\n${[artwork.year, artwork.medium, artwork.dimensions].filter(Boolean).join(' · ')}\n\n${url}`
+      ? `*${artwork.title}*\n${artist?.name || ''}\n${[artwork.year, artwork.medium, artwork.dimensions].filter(Boolean).join(' \u00B7 ')}\n\n${url}`
       : url
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
@@ -58,14 +58,14 @@ export default function ArtworkPage() {
 
   if (loading) return (
     <div style={{ minHeight:'100vh', background:'#faf8f5', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ fontFamily:'var(--font-sans,-apple-system,sans-serif)', color:'#9a9490', fontSize:14 }}>Loading…</div>
+      <div style={{ fontFamily:'var(--font-sans,-apple-system,sans-serif)', color:'#9a9490', fontSize:14 }}>Loading\u2026</div>
     </div>
   )
 
   if (!artwork) return (
     <div style={{ minHeight:'100vh', background:'#faf8f5', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:16 }}>
       <div style={{ fontFamily:'Georgia,serif', fontSize:22, color:'#1a1714' }}>Artwork not found</div>
-      <button onClick={() => navigate('/')} style={{ fontFamily:'sans-serif', fontSize:13, color:'#9a9490', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>← Back to catalogue</button>
+      <button onClick={() => navigate('/')} style={{ fontFamily:'sans-serif', fontSize:13, color:'#9a9490', background:'none', border:'none', cursor:'pointer', textDecoration:'underline' }}>\u2190 Back to catalogue</button>
     </div>
   )
 
@@ -78,7 +78,7 @@ export default function ArtworkPage() {
 
   return (
     <>
-      {/* ── PRINT STYLES ── */}
+      {/* \u2500\u2500 PRINT STYLES \u2500\u2500 */}
       <style>{`
         @media print {
           .no-print { display: none !important; }
@@ -118,7 +118,7 @@ export default function ArtworkPage() {
             )}
             <button onClick={printPage}
               style={{ display:'flex', alignItems:'center', gap:7, padding:'7px 14px', borderRadius:3, border:'1px solid #e8e3db', background:'#fff', color:'#1a1714', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>
-              🖨 Print
+              \uD83D\uDDA8 Print
             </button>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function ArtworkPage() {
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:56, alignItems:'start' }}>
 
-            {/* Left — image */}
+            {/* Left \u2014 image */}
             <div>
               {artwork.image_url ? (
                 <img
@@ -147,7 +147,7 @@ export default function ArtworkPage() {
 
             </div>
 
-            {/* Right — details */}
+            {/* Right \u2014 details */}
             <div style={{ paddingTop:8 }}>
 
               {/* HG code */}
@@ -168,7 +168,7 @@ export default function ArtworkPage() {
                   {artist.name}
                   {(artist.born || artist.died) && (
                     <span style={{ fontSize:13, color:'#9a9490', marginLeft:8 }}>
-                      ({artist.born}{artist.died ? `–${artist.died}` : ''}){artist.nationality ? `, ${artist.nationality}` : ''}
+                      ({artist.born}{artist.died ? `\u2013${artist.died}` : ''}){artist.nationality ? `, ${artist.nationality}` : ''}
                     </span>
                   )}
                 </div>
@@ -183,7 +183,7 @@ export default function ArtworkPage() {
                   ['Category', artwork.category],
                   ['Edition', artwork.edition_info],
                   ['Series', artwork.series],
-                  ['Framed', artwork.is_framed ? `Yes${artwork.frame_cost ? ` (frame: ₦${Number(artwork.frame_cost).toLocaleString()})` : ''}` : null],
+                  ['Framed', artwork.is_framed ? `Yes${artwork.frame_cost ? ` (frame: \u20A6${Number(artwork.frame_cost).toLocaleString()})` : ''}` : null],
                   ['Location', artwork.location],
                 ].filter(([,v]) => v).map(([label, value]) => (
                   <div key={label} style={{ display:'flex', gap:0 }}>
@@ -197,7 +197,7 @@ export default function ArtworkPage() {
               <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:24, paddingBottom:24, borderBottom:'1px solid #e8e3db' }}>
                 {(artwork.price || artwork.retail_price) && (
                   <div style={{ fontFamily:"'Cormorant Garamond',Georgia,serif", fontSize:26, fontWeight:500, color:'#1a1714' }}>
-                    {artwork.price || `₦${Number(artwork.retail_price).toLocaleString()}`}
+                    {artwork.price || `\u20A6${Number(artwork.retail_price).toLocaleString()}`}
                   </div>
                 )}
                 <span style={{
@@ -209,7 +209,7 @@ export default function ArtworkPage() {
                 </span>
               </div>
 
-              {/* Artist bio + writeup — same box */}
+              {/* Artist bio + writeup \u2014 same box */}
               {(artist?.bio || artwork.writeup) && (
                 <div style={{ background:'#f7f4ef', borderRadius:3, padding:'20px 22px', marginBottom:24 }}>
                   {artist?.bio && (
@@ -238,9 +238,9 @@ export default function ArtworkPage() {
           {/* Footer */}
           <div style={{ marginTop:64, paddingTop:24, borderTop:'1px solid #e8e3db', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div style={{ fontSize:12, color:'#9a9490' }}>
-              Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos
+              Hourglass Gallery \u00B7 298A Akin Olugbade Street, Victoria Island, Lagos
             </div>
-            <a href="/" style={{ fontSize:12, color:'#9a9490', textDecoration:'none' }}>← Back to catalogue</a>
+            <a href="/" style={{ fontSize:12, color:'#9a9490', textDecoration:'none' }}>\u2190 Back to catalogue</a>
           </div>
         </div>
       </div>

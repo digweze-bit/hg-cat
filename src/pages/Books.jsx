@@ -152,7 +152,7 @@ export default function Books() {
 
   function stockBadge(book) {
     if (book.stock_count === 0) return { label: 'Out of stock', bg:'#fef2f0', color:'#c0392b' }
-    if (book.stock_count <= book.stock_low) return { label: `Low — ${book.stock_count} left`, bg:'#fef9ec', color:'#b8862a' }
+    if (book.stock_count <= book.stock_low) return { label: `Low \u2014 ${book.stock_count} left`, bg:'#fef9ec', color:'#b8862a' }
     return { label: `${book.stock_count} in stock`, bg:'#f0faf4', color:'#27ae60' }
   }
 
@@ -160,7 +160,7 @@ export default function Books() {
     return { receive:'Received', sale:'Sale', return:'Return', adjustment:'Adjustment', writeoff:'Write-off' }[type] || type
   }
 
-  if (loading) return <div style={{color:'var(--muted)'}}>Loading…</div>
+  if (loading) return <div style={{color:'var(--muted)'}}>Loading\u2026</div>
 
   return (
     <div>
@@ -169,8 +169,8 @@ export default function Books() {
           <div className="page-title">Books</div>
           <div className="page-subtitle">
             {books.length} titles
-            {lowStockCount > 0 && <span style={{color:'#b8862a', marginLeft:12}}>· {lowStockCount} low stock</span>}
-            {outOfStockCount > 0 && <span style={{color:'#c0392b', marginLeft:8}}>· {outOfStockCount} out of stock</span>}
+            {lowStockCount > 0 && <span style={{color:'#b8862a', marginLeft:12}}>\u00B7 {lowStockCount} low stock</span>}
+            {outOfStockCount > 0 && <span style={{color:'#c0392b', marginLeft:8}}>\u00B7 {outOfStockCount} out of stock</span>}
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(EMPTY); setModal('add') }}>+ Add book</button>
@@ -178,7 +178,7 @@ export default function Books() {
 
       {/* Filters */}
       <div style={{display:'flex', gap:8, flexWrap:'wrap', marginBottom:18}}>
-        <input className="form-input" style={{width:240}} placeholder="Search title, author, ISBN…"
+        <input className="form-input" style={{width:240}} placeholder="Search title, author, ISBN\u2026"
           value={search} onChange={e=>setSearch(e.target.value)}/>
         <select className="form-select" style={{width:160}} value={filterFormat} onChange={e=>setFilterFormat(e.target.value)}>
           <option value="">All formats</option>
@@ -220,17 +220,17 @@ export default function Books() {
                     <td>
                       {b.cover_url
                         ? <img src={b.cover_url} alt="" style={{width:40, height:52, objectFit:'cover', borderRadius:2, border:'1px solid var(--line)'}}/>
-                        : <div style={{width:40, height:52, background:'var(--parchment-2)', borderRadius:2, border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16}}>📖</div>
+                        : <div style={{width:40, height:52, background:'var(--parchment-2)', borderRadius:2, border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16}}>\uD83D\uDCD6</div>
                       }
                     </td>
                     <td>
                       <div style={{fontWeight:500, fontSize:13}}>{b.title}</div>
-                      {b.publisher && <div style={{fontSize:11, color:'var(--muted)'}}>{b.publisher}{b.year ? ` · ${b.year}` : ''}</div>}
+                      {b.publisher && <div style={{fontSize:11, color:'var(--muted)'}}>{b.publisher}{b.year ? ` \u00B7 ${b.year}` : ''}</div>}
                     </td>
-                    <td style={{fontSize:13, color:'var(--muted)'}}>{b.author||'—'}</td>
-                    <td style={{fontSize:12, color:'var(--muted)'}}>{b.format||'—'}</td>
-                    <td style={{fontSize:11, color:'var(--muted)', fontFamily:'monospace'}}>{b.isbn||'—'}</td>
-                    <td style={{fontSize:13}}>₦{Number(b.price||0).toLocaleString()}</td>
+                    <td style={{fontSize:13, color:'var(--muted)'}}>{b.author||'\u2014'}</td>
+                    <td style={{fontSize:12, color:'var(--muted)'}}>{b.format||'\u2014'}</td>
+                    <td style={{fontSize:11, color:'var(--muted)', fontFamily:'monospace'}}>{b.isbn||'\u2014'}</td>
+                    <td style={{fontSize:13}}>\u20A6{Number(b.price||0).toLocaleString()}</td>
                     <td>
                       <span style={{fontSize:11, padding:'2px 8px', borderRadius:3, background:badge.bg, color:badge.color, fontWeight:500}}>
                         {badge.label}
@@ -239,14 +239,14 @@ export default function Books() {
                     <td>
                       <button onClick={()=>toggleVisible(b)}
                         style={{fontSize:18, cursor:'pointer', background:'none', border:'none', color: b.visible?'var(--green)':'var(--line)'}}>
-                        {b.visible ? '◉' : '○'}
+                        {b.visible ? '\u25C9' : '\u25CB'}
                       </button>
                     </td>
                     <td>
                       <div style={{display:'flex', gap:4}}>
                         <button className="btn btn-ghost btn-sm" onClick={()=>openEdit(b)}>Edit</button>
                         <button className="btn btn-ghost btn-sm" onClick={()=>openStock(b)} title="Manage stock">Stock</button>
-                        <button className="btn btn-ghost btn-sm" style={{color:'var(--red)'}} onClick={()=>handleDelete(b.id)}>✕</button>
+                        <button className="btn btn-ghost btn-sm" style={{color:'var(--red)'}} onClick={()=>handleDelete(b.id)}>\u2715</button>
                       </div>
                     </td>
                   </tr>
@@ -257,13 +257,13 @@ export default function Books() {
         </div>
       </div>
 
-      {/* ── ADD / EDIT MODAL ── */}
+      {/* \u2500\u2500 ADD / EDIT MODAL \u2500\u2500 */}
       {(modal === 'add' || modal === 'edit') && (
         <div className="modal-overlay">
           <div className="modal modal-xl">
             <div className="modal-header">
-              <div className="modal-title">{modal === 'edit' ? `Edit — ${form.title}` : 'Add book'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(null)}>✕</button>
+              <div className="modal-title">{modal === 'edit' ? `Edit \u2014 ${form.title}` : 'Add book'}</div>
+              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(null)}>\u2715</button>
             </div>
             <div className="modal-body" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20}}>
 
@@ -290,7 +290,7 @@ export default function Books() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">ISBN</label>
-                    <input className="form-input" value={form.isbn||''} onChange={e=>setForm(f=>({...f,isbn:e.target.value}))} placeholder="978-…"/>
+                    <input className="form-input" value={form.isbn||''} onChange={e=>setForm(f=>({...f,isbn:e.target.value}))} placeholder="978-\u2026"/>
                   </div>
                 </div>
                 <div className="form-row">
@@ -308,7 +308,7 @@ export default function Books() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Price (₦)</label>
+                    <label className="form-label">Price (\u20A6)</label>
                     <input className="form-input" type="number" value={form.price||''} onChange={e=>setForm(f=>({...f,price:e.target.value}))} placeholder="0"/>
                   </div>
                   <div className="form-group">
@@ -338,12 +338,12 @@ export default function Books() {
                 </div>
               </div>
 
-              {/* Right — cover image */}
+              {/* Right \u2014 cover image */}
               <div style={{display:'flex', flexDirection:'column', gap:12}}>
                 <div className="form-group">
                   <label className="form-label">Cover image</label>
                   <input type="file" accept="image/*" onChange={handleImageUpload}/>
-                  {uploading && <div style={{fontSize:11, color:'var(--muted)'}}>Uploading…</div>}
+                  {uploading && <div style={{fontSize:11, color:'var(--muted)'}}>Uploading\u2026</div>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Cover URL</label>
@@ -366,25 +366,25 @@ export default function Books() {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={()=>setModal(null)}>Cancel</button>
               <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving…' : modal === 'edit' ? 'Save changes' : 'Add book'}
+                {saving ? 'Saving\u2026' : modal === 'edit' ? 'Save changes' : 'Add book'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── STOCK MODAL ── */}
+      {/* \u2500\u2500 STOCK MODAL \u2500\u2500 */}
       {modal === 'stock' && activeBook && (
         <div className="modal-overlay">
           <div className="modal" style={{maxWidth:560}}>
             <div className="modal-header">
               <div>
-                <div className="modal-title">Stock — {activeBook.title}</div>
+                <div className="modal-title">Stock \u2014 {activeBook.title}</div>
                 <div style={{fontSize:12, color:'var(--muted)', marginTop:2}}>
                   Current stock: <strong style={{color: activeBook.stock_count === 0 ? '#c0392b' : activeBook.stock_count <= activeBook.stock_low ? '#b8862a' : 'var(--ink)'}}>{activeBook.stock_count}</strong>
                 </div>
               </div>
-              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(null)}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(null)}>\u2715</button>
             </div>
             <div className="modal-body" style={{display:'flex', flexDirection:'column', gap:16}}>
 
@@ -409,7 +409,7 @@ export default function Books() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Reference <span style={{fontWeight:400, color:'var(--muted)'}}>— supplier, PO, etc</span></label>
+                    <label className="form-label">Reference <span style={{fontWeight:400, color:'var(--muted)'}}>\u2014 supplier, PO, etc</span></label>
                     <input className="form-input" value={stockForm.reference} onChange={e=>setStockForm(f=>({...f,reference:e.target.value}))}/>
                   </div>
                   <div className="form-group">
@@ -418,7 +418,7 @@ export default function Books() {
                   </div>
                 </div>
                 <button className="btn btn-primary" style={{alignSelf:'flex-start'}} onClick={saveStock} disabled={saving}>
-                  {saving ? 'Saving…' : 'Record movement'}
+                  {saving ? 'Saving\u2026' : 'Record movement'}
                 </button>
               </div>
 

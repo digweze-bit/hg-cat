@@ -23,7 +23,7 @@ export default function Sales() {
   const [editingInvoice, setEditingInvoice] = useState(null) // invoice being viewed/edited
 
   async function load() {
-    // Load core data and exchange rates in parallel — rates won't block the page
+    // Load core data and exchange rates in parallel \u2014 rates won't block the page
     const [[c, inv, bks], r] = await Promise.all([
       Promise.all([
         fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name' }),
@@ -51,7 +51,7 @@ export default function Sales() {
 
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading sales data…</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading sales data\u2026</div>
 
   return (
     <div>
@@ -59,17 +59,17 @@ export default function Sales() {
         <div>
           <div className="page-title">Sales & Invoices</div>
           <div className="page-subtitle">
-            {invoices.filter(i=>i.status==='paid').length} paid ·
-            {' '}{invoices.filter(i=>['sent','partial'].includes(i.status)).length} outstanding ·
+            {invoices.filter(i=>i.status==='paid').length} paid \u00B7
+            {' '}{invoices.filter(i=>['sent','partial'].includes(i.status)).length} outstanding \u00B7
             {' '}{clients.length} clients
-            {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length > 0 && <span style={{color:'#b8862a',marginLeft:8}}>· {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length} pending collection</span>}
-            {rates['USD'] && <span style={{ marginLeft:8, fontSize:11, color:'var(--muted)' }}>1 USD = ₦{rates['USD']?.toLocaleString()}</span>}
+            {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length > 0 && <span style={{color:'#b8862a',marginLeft:8}}>\u00B7 {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length} pending collection</span>}
+            {rates['USD'] && <span style={{ marginLeft:8, fontSize:11, color:'var(--muted)' }}>1 USD = \u20A6{rates['USD']?.toLocaleString()}</span>}
           </div>
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <button className="btn btn-outline" onClick={() => setModal('client')}>+ Client</button>
           <button className="btn btn-primary" onClick={() => {
-          // Open modal immediately — load artworks in background
+          // Open modal immediately \u2014 load artworks in background
           setModal('invoice')
           Promise.all([
             fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', order:'title', cache:false }),
@@ -152,8 +152,8 @@ export default function Sales() {
   )
 }
 
-// ── INVOICE LIST ─────────────────────────────────────────────
-// ── PENDING COLLECTION TAB ───────────────────────────────────
+// \u2500\u2500 INVOICE LIST \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// \u2500\u2500 PENDING COLLECTION TAB \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function PendingCollection({ invoices, onOpen, onRefresh }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -177,7 +177,7 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
   }, [invoices])
 
   function daysSince(dateStr) {
-    if (!dateStr) return '—'
+    if (!dateStr) return '\u2014'
     const diff = Math.floor((Date.now() - new Date(dateStr)) / 86400000)
     return diff === 0 ? 'Today' : diff === 1 ? '1 day' : `${diff} days`
   }
@@ -190,7 +190,7 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
     return 'var(--muted)'
   }
 
-  if (loading) return <div style={{ color:'var(--muted)', padding:20 }}>Loading…</div>
+  if (loading) return <div style={{ color:'var(--muted)', padding:20 }}>Loading\u2026</div>
 
   return (
     <div>
@@ -198,11 +198,11 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
         <div style={{ fontSize:13, color:'var(--muted)' }}>
           {items.length === 0 ? 'No artworks pending collection' : `${items.length} artwork${items.length !== 1 ? 's' : ''} awaiting collection`}
         </div>
-        {items.length > 0 && <div style={{ fontSize:11, color:'var(--muted)' }}>· Click an item to open the invoice and mark as collected</div>}
+        {items.length > 0 && <div style={{ fontSize:11, color:'var(--muted)' }}>\u00B7 Click an item to open the invoice and mark as collected</div>}
       </div>
       {items.length === 0 ? (
         <div className="card" style={{ padding:48, textAlign:'center' }}>
-          <div style={{ fontSize:32, marginBottom:12 }}>✓</div>
+          <div style={{ fontSize:32, marginBottom:12 }}>\u2713</div>
           <div style={{ fontWeight:500 }}>All artworks collected</div>
           <div style={{ fontSize:13, color:'var(--muted)', marginTop:4 }}>No paid invoices with uncollected works</div>
         </div>
@@ -229,11 +229,11 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
                     <tr key={it.id}>
                       <td>
                         <div style={{ fontWeight:500, fontSize:13 }}>{it.title}</div>
-                        <div style={{ fontSize:11, color:'var(--muted)' }}>{it.artist_name}{it.year ? ` · ${it.year}` : ''}</div>
+                        <div style={{ fontSize:11, color:'var(--muted)' }}>{it.artist_name}{it.year ? ` \u00B7 ${it.year}` : ''}</div>
                       </td>
-                      <td style={{ fontSize:13 }}>{inv?.clients?.name || '—'}</td>
+                      <td style={{ fontSize:13 }}>{inv?.clients?.name || '\u2014'}</td>
                       <td style={{ fontSize:12, fontFamily:'monospace', color:'var(--muted)' }}>{inv?.invoice_number}</td>
-                      <td style={{ fontSize:12, color:'var(--muted)' }}>{inv?.issue_date ? new Date(inv.issue_date).toLocaleDateString('en-GB') : '—'}</td>
+                      <td style={{ fontSize:12, color:'var(--muted)' }}>{inv?.issue_date ? new Date(inv.issue_date).toLocaleDateString('en-GB') : '\u2014'}</td>
                       <td>
                         <span style={{ fontSize:12, fontWeight:600, color: waitColor }}>
                           {daysSince(inv?.issue_date)}
@@ -264,12 +264,12 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
   const [sortKey, setSortKey]         = useState('date_desc')
 
   const SORTS = [
-    { key:'date_desc',    label:'Date ↓' },
-    { key:'date_asc',     label:'Date ↑' },
-    { key:'amount_desc',  label:'Amount ↓' },
-    { key:'amount_asc',   label:'Amount ↑' },
-    { key:'balance_desc', label:'Balance ↓' },
-    { key:'client_az',    label:'Client A–Z' },
+    { key:'date_desc',    label:'Date \u2193' },
+    { key:'date_asc',     label:'Date \u2191' },
+    { key:'amount_desc',  label:'Amount \u2193' },
+    { key:'amount_asc',   label:'Amount \u2191' },
+    { key:'balance_desc', label:'Balance \u2193' },
+    { key:'client_az',    label:'Client A\u2013Z' },
     { key:'status',       label:'Status' },
   ]
 
@@ -307,13 +307,13 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
   return (
     <div>
       <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
-        <input className="form-input" style={{ width:220 }} placeholder="Search invoices…" value={search} onChange={e=>setSearch(e.target.value)} />
+        <input className="form-input" style={{ width:220 }} placeholder="Search invoices\u2026" value={search} onChange={e=>setSearch(e.target.value)} />
         <select className="form-select" style={{ width:140 }} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
           <option value="">All status</option>
           {['draft','sent','partial','paid','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <select className="form-select" style={{ width:140 }} value={sortKey} onChange={e=>setSortKey(e.target.value)}>
-          {SORTS.map(s => <option key={s.key} value={s.key}>{s.key === sortKey ? '✓ ' : ''}{s.label}</option>)}
+          {SORTS.map(s => <option key={s.key} value={s.key}>{s.key === sortKey ? '\u2713 ' : ''}{s.label}</option>)}
         </select>
         <span style={{ fontSize:12, color:'var(--muted)', marginLeft:4 }}>{filtered.length} invoices</span>
       </div>
@@ -323,21 +323,21 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
             <thead>
               <tr>
                 <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='date_desc'?'date_asc':'date_desc')}>
-                  Date {sortKey==='date_desc'?'↓':sortKey==='date_asc'?'↑':''}
+                  Date {sortKey==='date_desc'?'\u2193':sortKey==='date_asc'?'\u2191':''}
                 </th>
                 <th>Invoice</th>
                 <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='client_az'?'date_desc':'client_az')}>
-                  Client {sortKey==='client_az'?'↑':''}
+                  Client {sortKey==='client_az'?'\u2191':''}
                 </th>
                 <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='amount_desc'?'amount_asc':'amount_desc')}>
-                  Total {sortKey==='amount_desc'?'↓':sortKey==='amount_asc'?'↑':''}
+                  Total {sortKey==='amount_desc'?'\u2193':sortKey==='amount_asc'?'\u2191':''}
                 </th>
                 <th>Paid</th>
                 <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='balance_desc'?'date_desc':'balance_desc')}>
-                  Balance {sortKey==='balance_desc'?'↓':''}
+                  Balance {sortKey==='balance_desc'?'\u2193':''}
                 </th>
                 <th style={{ cursor:'pointer' }} onClick={() => setSortKey(s => s==='status'?'date_desc':'status')}>
-                  Status {sortKey==='status'?'↑':''}
+                  Status {sortKey==='status'?'\u2191':''}
                 </th>
                 <th></th>
               </tr>
@@ -349,13 +349,13 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
                   <td style={{ fontFamily:'var(--font-serif)', fontWeight:500, whiteSpace:'nowrap' }}>
                     {inv.invoice_number}
                     {inv.status==='paid' && inv.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered) &&
-                      <span title="Pending collection" style={{ marginLeft:6, color:'var(--amber)' }}>●</span>}
+                      <span title="Pending collection" style={{ marginLeft:6, color:'var(--amber)' }}>\u25CF</span>}
                   </td>
-                  <td>{inv.clients?.name || '—'}</td>
+                  <td>{inv.clients?.name || '\u2014'}</td>
                   <td style={{ fontVariantNumeric:'tabular-nums' }}>{formatAmount(inv.total, inv.currency)}</td>
                   <td style={{ color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>
                   <td style={{ color: inv.balance_due > 0 ? 'var(--amber)' : 'var(--muted)', fontVariantNumeric:'tabular-nums' }}>
-                    {inv.balance_due > 0 ? formatAmount(inv.balance_due, inv.currency) : '—'}
+                    {inv.balance_due > 0 ? formatAmount(inv.balance_due, inv.currency) : '\u2014'}
                   </td>
                   <td><span className="badge" style={{ background: STATUS_COLORS[inv.status]+'22', color: STATUS_COLORS[inv.status] }}>{inv.status}</span></td>
                   <td><button className="btn btn-ghost btn-sm" onClick={e=>{e.stopPropagation();onOpen(inv)}}>Open</button></td>
@@ -369,7 +369,7 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
   )
 }
 
-// ── CLIENT LIST ──────────────────────────────────────────────
+// \u2500\u2500 CLIENT LIST \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function ClientList({ clients, invoices, onRefresh }) {
   const [modal, setModal] = useState(false)       // false | 'add' | 'edit'
   const [selected, setSelected] = useState(null)  // client being viewed/edited
@@ -441,7 +441,7 @@ function ClientList({ clients, invoices, onRefresh }) {
       {/* Client list */}
       <div>
         <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-          <input className="form-input" placeholder="Search clients…" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1 }}/>
+          <input className="form-input" placeholder="Search clients\u2026" value={search} onChange={e=>setSearch(e.target.value)} style={{ flex:1 }}/>
           <button className="btn btn-primary" onClick={openAdd}>+ Add</button>
         </div>
         <div className="card" style={{ padding:0 }}>
@@ -465,7 +465,7 @@ function ClientList({ clients, invoices, onRefresh }) {
                   {c.name}
                 </div>
                 <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>
-                  {[c.company, c.city].filter(Boolean).join(' · ') || c.email || '—'}
+                  {[c.company, c.city].filter(Boolean).join(' \u00B7 ') || c.email || '\u2014'}
                 </div>
               </div>
               <span style={{ fontSize:11, color:'var(--muted)', flexShrink:0, marginLeft:8 }}>
@@ -483,7 +483,7 @@ function ClientList({ clients, invoices, onRefresh }) {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
             <div>
               <div style={{ fontWeight:600, fontSize:16 }}>{selected.prefix ? `${selected.prefix} ` : ''}{selected.name}</div>
-              {selected.company && <div style={{ fontSize:13, color:'var(--muted)' }}>{selected.company}{selected.job_title ? ` · ${selected.job_title}` : ''}</div>}
+              {selected.company && <div style={{ fontSize:13, color:'var(--muted)' }}>{selected.company}{selected.job_title ? ` \u00B7 ${selected.job_title}` : ''}</div>}
             </div>
             <div style={{ display:'flex', gap:8 }}>
               <button className="btn btn-outline btn-sm" onClick={() => openEdit(selected)}>Edit</button>
@@ -495,7 +495,7 @@ function ClientList({ clients, invoices, onRefresh }) {
                   setSelected(null)
                   await onRefresh()
                 }}>Delete</button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>✕</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>\u2715</button>
             </div>
           </div>
 
@@ -532,7 +532,7 @@ function ClientList({ clients, invoices, onRefresh }) {
                     <div style={{ fontSize:11, color:'var(--muted)' }}>{inv.issue_date}</div>
                   </div>
                   <div style={{ textAlign:'right' }}>
-                    <div style={{ fontSize:13 }}>₦{Number(inv.total_ngn||inv.total||0).toLocaleString()}</div>
+                    <div style={{ fontSize:13 }}>\u20A6{Number(inv.total_ngn||inv.total||0).toLocaleString()}</div>
                     <span style={{ fontSize:10, padding:'1px 6px', borderRadius:2, fontWeight:600,
                       background: inv.status==='paid' ? '#edf7f0' : inv.status==='sent' ? '#fef9ec' : '#f0f0f0',
                       color: inv.status==='paid' ? '#27ae60' : inv.status==='sent' ? '#b8862a' : '#666'
@@ -547,13 +547,13 @@ function ClientList({ clients, invoices, onRefresh }) {
       {modal && (
         <div className="modal-overlay">
           <div className="modal modal-md">
-            <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={() => setModal(false)}>✕</button></div>
+            <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={() => setModal(false)}>\u2715</button></div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <div className="form-row">
                 <div className="form-group" style={{maxWidth:90}}>
                   <label className="form-label">Prefix</label>
                   <select className="form-select" value={form.prefix||''} onChange={e=>setForm(f=>({...f,prefix:e.target.value}))}>
-                    <option value="">—</option>
+                    <option value="">\u2014</option>
                     {['Mr','Mrs','Ms','Dr','Prof','Chief','Alhaji','Alhaja','Sir'].map(p=><option key={p}>{p}</option>)}
                   </select>
                 </div>
@@ -568,7 +568,7 @@ function ClientList({ clients, invoices, onRefresh }) {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Full name * <span style={{fontWeight:400,color:'var(--muted)',textTransform:'none',letterSpacing:0}}>— auto-fills from above</span></label>
+                  <label className="form-label">Full name * <span style={{fontWeight:400,color:'var(--muted)',textTransform:'none',letterSpacing:0}}>\u2014 auto-fills from above</span></label>
                   <input className="form-input" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} />
                 </div>
                 <div className="form-group">
@@ -624,7 +624,7 @@ function ClientList({ clients, invoices, onRefresh }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Saving…':'Save client'}</button>
+              <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Saving\u2026':'Save client'}</button>
             </div>
           </div>
         </div>
@@ -633,12 +633,12 @@ function ClientList({ clients, invoices, onRefresh }) {
   )
 }
 
-// ── PAYMENT LIST ─────────────────────────────────────────────
+// \u2500\u2500 PAYMENT LIST \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function PaymentList({ invoices, rates }) {
   const payments = useMemo(() => {
     const all = []
     invoices.forEach(inv => {
-      // payments come from the invoice detail load — for now show invoice-level summary
+      // payments come from the invoice detail load \u2014 for now show invoice-level summary
     })
     return all
   }, [invoices])
@@ -650,7 +650,7 @@ function PaymentList({ invoices, rates }) {
     <div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:14, marginBottom:24 }}>
         <div className="card" style={{ padding:'18px 20px' }}>
-          <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>₦{totalNGN.toLocaleString('en-NG',{maximumFractionDigits:0})}</div>
+          <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>\u20A6{totalNGN.toLocaleString('en-NG',{maximumFractionDigits:0})}</div>
           <div style={{ fontSize:11, color:'var(--muted)', marginTop:5, textTransform:'uppercase', letterSpacing:'.06em' }}>Total received (NGN equiv.)</div>
         </div>
         <div className="card" style={{ padding:'18px 20px' }}>
@@ -667,7 +667,7 @@ function PaymentList({ invoices, rates }) {
   )
 }
 
-// ── CLIENT MODAL ─────────────────────────────────────────────
+// \u2500\u2500 CLIENT MODAL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function ClientModal({ onClose, onSave }) {
   const [form, setForm] = useState({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
   const [saving, setSaving] = useState(false)
@@ -707,7 +707,7 @@ function ClientModal({ onClose, onSave }) {
   return (
     <div className="modal-overlay">
       <div className="modal modal-md">
-        <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button></div>
+        <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={onClose}>\u2715</button></div>
         <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div className="form-row">
             <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} /></div>
@@ -722,14 +722,14 @@ function ClientModal({ onClose, onSave }) {
         </div>
         <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Saving…':'Save'}</button>
+          <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Saving\u2026':'Save'}</button>
         </div>
       </div>
     </div>
   )
 }
 
-// ── INVOICE MODAL (create new) ───────────────────────────────
+// \u2500\u2500 INVOICE MODAL (create new) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onClose, onSave, editInvoice=null }) {
   const isEdit = !!editInvoice
   const [form, setForm] = useState(editInvoice ? {
@@ -882,7 +882,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
         discount: Number(it.discount)||0,
         line_total: (Number(it.unit_price)||0)*(Number(it.quantity)||1) - (Number(it.discount)||0),
         sort_order: i,
-        // Ownership snapshot — recorded permanently at time of invoice
+        // Ownership snapshot \u2014 recorded permanently at time of invoice
         ownership: it.ownership || 'gallery',
         commission_rate: it.ownership === 'consignment' ? (it.commission_rate || 40) : null,
         consignor_name: it.consignor_name || null,
@@ -911,7 +911,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
       <div className="modal modal-xl" style={{ maxHeight:'94vh' }}>
         <div className="modal-header">
           <div className="modal-title">{isEdit ? `Edit ${editInvoice.invoice_number}` : 'New invoice'}</div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}>\u2715</button>
         </div>
         <div className="modal-body" style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:24 }}>
           {/* Left: items */}
@@ -921,7 +921,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               {/* Book search */}
               <input
                 className="form-input"
-                placeholder="Search books by title or author…"
+                placeholder="Search books by title or author\u2026"
                 value={bookSearch}
                 onChange={e=>setBookSearch(e.target.value)}
                 style={{ marginBottom:6 }}
@@ -929,17 +929,17 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               {bookSearch && (books||[]).filter(b => b.title?.toLowerCase().includes(bookSearch.toLowerCase()) || b.author?.toLowerCase().includes(bookSearch.toLowerCase())).slice(0,6).map(b => (
                 <div key={b.id} style={{ display:'flex', gap:10, alignItems:'center', padding:'8px 12px', cursor:'pointer', border:'1px solid var(--line)', borderRadius:3, marginBottom:4, background:'var(--white)' }}
                   onClick={()=>addBook(b)}>
-                  {b.cover_url ? <img src={b.cover_url} alt="" style={{width:28,height:36,objectFit:'cover',borderRadius:2}}/> : <div style={{width:28,height:36,background:'var(--parchment-2)',borderRadius:2,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>📖</div>}
+                  {b.cover_url ? <img src={b.cover_url} alt="" style={{width:28,height:36,objectFit:'cover',borderRadius:2}}/> : <div style={{width:28,height:36,background:'var(--parchment-2)',borderRadius:2,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>\uD83D\uDCD6</div>}
                   <div>
                     <div style={{ fontSize:13, fontWeight:500 }}>{b.title}</div>
-                    <div style={{ fontSize:11, color:'var(--muted)' }}>{b.author} · ₦{Number(b.price||0).toLocaleString()} · {b.stock_count} in stock</div>
+                    <div style={{ fontSize:11, color:'var(--muted)' }}>{b.author} \u00B7 \u20A6{Number(b.price||0).toLocaleString()} \u00B7 {b.stock_count} in stock</div>
                   </div>
                 </div>
               ))}
               <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginTop:10, marginBottom:8 }}>Artworks</div>
               <input
                 className="form-input"
-                placeholder="Search artworks by title or artist…"
+                placeholder="Search artworks by title or artist\u2026"
                 value={artworkSearch}
                 onChange={e=>setArtworkSearch(e.target.value)}
               />
@@ -953,11 +953,11 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                       {w.image_url && <img src={w.image_url} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:2 }} />}
                       <div>
                         <div style={{ fontSize:13, fontWeight:500 }}>{w.title}</div>
-                        <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]?.name} · {w.year}</div>
+                        <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]?.name} \u00B7 {w.year}</div>
                       </div>
                       <div style={{ marginLeft:'auto', textAlign:'right' }}>
                       {w.price && <div style={{ fontSize:12, color:'var(--green)' }}>{w.price}</div>}
-                      {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment · {w.commission_rate||40}% comm.</div>}
+                      {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment \u00B7 {w.commission_rate||40}% comm.</div>}
                     </div>
                     </div>
                   ))}
@@ -974,7 +974,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                       <div>
                         <div style={{ fontWeight:500, fontSize:13 }}>{it.title}</div>
-                        <div style={{ fontSize:11, color:'var(--muted)' }}>{it.artist_name} · {it.year}</div>
+                        <div style={{ fontSize:11, color:'var(--muted)' }}>{it.artist_name} \u00B7 {it.year}</div>
                       </div>
                       <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => removeItem(idx)}>Remove</button>
                     </div>
@@ -1010,11 +1010,11 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                   <div style={{flex:1, padding:'8px 10px', border:'1px solid var(--line)', borderRadius:4, fontSize:13, background:'var(--white)'}}>
                     {clients.find(c=>c.id===form.client_id)?.name}
                   </div>
-                  <button className="btn btn-ghost btn-sm" onClick={()=>{setForm(f=>({...f,client_id:''}));setClientSearch('')}}>✕</button>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>{setForm(f=>({...f,client_id:''}));setClientSearch('')}}>\u2715</button>
                 </div>
               ) : (
                 <>
-                  <input className="form-input" placeholder="Search clients…" value={clientSearch}
+                  <input className="form-input" placeholder="Search clients\u2026" value={clientSearch}
                     onChange={e=>setClientSearch(e.target.value)}
                     onFocus={()=>{ if(form.client_id) setClientSearch('') }}
                   />
@@ -1028,7 +1028,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                           onMouseDown={()=>{ setForm(f=>({...f,client_id:c.id})); setClientSearch('') }}>
                           <div>{c.name}</div>
                           <div style={{fontSize:11, color:'var(--muted)'}}>
-                            {[c.company, c.email, c.city].filter(Boolean).join(' · ')}
+                            {[c.company, c.email, c.city].filter(Boolean).join(' \u00B7 ')}
                           </div>
                         </div>
                       ))}
@@ -1040,7 +1040,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
             <div className="form-group">
               <label className="form-label">Invoice currency</label>
               <select className="form-select" value={form.currency} onChange={e=>setForm(f=>({...f, currency:e.target.value, keep_currency: e.target.value !== 'NGN', fixed_rate:null }))}>
-                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
+                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} \u2014 {c.name}</option>)}
               </select>
             </div>
             {form.currency !== 'NGN' && (
@@ -1054,7 +1054,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                   {!form.keep_currency && (
                     <div style={{ marginLeft:20, display:'flex', gap:8, alignItems:'center' }}>
                       <div style={{ fontSize:12, color:'var(--muted)' }}>
-                        {rates[form.currency] ? `Live: 1 ${form.currency} = ₦${Math.round(rates[form.currency]).toLocaleString()}` : 'No live rate'}
+                        {rates[form.currency] ? `Live: 1 ${form.currency} = \u20A6${Math.round(rates[form.currency]).toLocaleString()}` : 'No live rate'}
                       </div>
                       <span style={{ color:'var(--muted)', fontSize:12 }}>or fixed:</span>
                       <input className="form-input" type="number" style={{ width:100, padding:'4px 8px', fontSize:12 }}
@@ -1065,7 +1065,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                   )}
                   <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer' }}>
                     <input type="radio" checked={!!form.keep_currency} onChange={() => setForm(f=>({...f, keep_currency:true, fixed_rate:null}))} />
-                    Keep in {form.currency} — create foreign currency receivable
+                    Keep in {form.currency} \u2014 create foreign currency receivable
                   </label>
                   {form.keep_currency && (
                     <div style={{ marginLeft:20, fontSize:11, color:'var(--amber,#b8862a)', padding:'6px 10px', background:'#fef9ec', borderRadius:3 }}>
@@ -1103,7 +1103,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
             </div>
             <div className="form-group">
               <label className="form-label">VAT / Tax rate (%)</label>
-              <input className="form-input" type="number" value={form.vat_rate} onChange={e=>setForm(f=>({...f,vat_rate:e.target.value}))} placeholder="0 = no VAT · 7.5 = Nigerian VAT" />
+              <input className="form-input" type="number" value={form.vat_rate} onChange={e=>setForm(f=>({...f,vat_rate:e.target.value}))} placeholder="0 = no VAT \u00B7 7.5 = Nigerian VAT" />
             </div>
             <div className="form-group">
               <label className="form-label">Notes</label>
@@ -1117,7 +1117,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               </div>
               {discountAmt > 0 && (
                 <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5, color:'var(--green)' }}>
-                  <span>Discount</span><span>−{formatAmount(discountAmt, form.currency)}</span>
+                  <span>Discount</span><span>\u2212{formatAmount(discountAmt, form.currency)}</span>
                 </div>
               )}
               {vatAmt > 0 && (
@@ -1130,7 +1130,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               </div>
               {form.currency !== 'NGN' && (
                 <div style={{ fontSize:11, color:'var(--muted)', marginTop:5, textAlign:'right' }}>
-                  ≈ ₦{totalNGN.toLocaleString('en-NG',{maximumFractionDigits:0})} NGN
+                  \u2248 \u20A6{totalNGN.toLocaleString('en-NG',{maximumFractionDigits:0})} NGN
                 </div>
               )}
             </div>
@@ -1138,14 +1138,14 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
         </div>
         <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? (isEdit?'Saving…':'Creating…') : (isEdit?'Save changes':'Create invoice')}</button>
+          <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? (isEdit?'Saving\u2026':'Creating\u2026') : (isEdit?'Save changes':'Create invoice')}</button>
         </div>
       </div>
     </div>
   )
 }
 
-// ── INVOICE DETAIL (view, add payment, print) ────────────────
+// \u2500\u2500 INVOICE DETAIL (view, add payment, print) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit }) {
   const [payments, setPayments] = useState([])
   const [items, setItems] = useState([])
@@ -1223,7 +1223,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
             <div className="modal-title">{inv.invoice_number}</div>
             <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>
               {client?.name}
-              {' · '}<span style={{ color: STATUS_COLORS[inv.status], fontWeight:500 }}>{inv.status}</span>
+              {' \u00B7 '}<span style={{ color: STATUS_COLORS[inv.status], fontWeight:500 }}>{inv.status}</span>
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
@@ -1236,7 +1236,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                   onSave(); onClose()
                 }}>Delete</button>
             )}
-            <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
+            <button className="btn btn-ghost btn-icon" onClick={onClose}>\u2715</button>
           </div>
         </div>
         <div className="modal-body" style={{ display:'grid', gridTemplateColumns:'1fr 300px', gap:24 }}>
@@ -1247,10 +1247,10 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
               <div key={it.id} style={{ display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid var(--line-soft)' }}>
                 <div>
                   <div style={{ fontWeight:500 }}>{it.title}</div>
-                  <div style={{ fontSize:12, color:'var(--muted)' }}>{it.artist_name} · {it.year} · {it.medium}</div>
+                  <div style={{ fontSize:12, color:'var(--muted)' }}>{it.artist_name} \u00B7 {it.year} \u00B7 {it.medium}</div>
                   {it.ownership === 'consignment' && it.commission_rate && (
                     <div style={{ fontSize:11, color:'var(--amber)', marginTop:2 }}>
-                      Consignment — gallery: {it.commission_rate}% (₦{Math.round(it.line_total * it.commission_rate / 100).toLocaleString()}) · owner: {100 - it.commission_rate}% (₦{Math.round(it.line_total * (100 - it.commission_rate) / 100).toLocaleString()})
+                      Consignment \u2014 gallery: {it.commission_rate}% (\u20A6{Math.round(it.line_total * it.commission_rate / 100).toLocaleString()}) \u00B7 owner: {100 - it.commission_rate}% (\u20A6{Math.round(it.line_total * (100 - it.commission_rate) / 100).toLocaleString()})
                     </div>
                   )}
                   {(it.item_type === 'artwork' || !it.item_type) && (
@@ -1269,7 +1269,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                           }}
                         />
                         <span style={{ color: it.delivered ? 'var(--green,#27ae60)' : '#b8862a', fontWeight:500 }}>
-                          {it.delivered ? `✓ Collected${it.delivered_at ? ' · ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : ''}` : '⏳ Pending collection'}
+                          {it.delivered ? `\u2713 Collected${it.delivered_at ? ' \u00B7 ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : ''}` : '\u23F3 Pending collection'}
                         </span>
                       </label>
                     </div>
@@ -1277,7 +1277,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                 </div>
                 <div style={{ textAlign:'right' }}>
                   <div style={{ fontWeight:500 }}>{formatAmount(it.line_total, inv.currency)}</div>
-                  <div style={{ fontSize:11, color:'var(--muted)' }}>{it.quantity} × {formatAmount(it.unit_price, inv.currency)}</div>
+                  <div style={{ fontSize:11, color:'var(--muted)' }}>{it.quantity} \u00D7 {formatAmount(it.unit_price, inv.currency)}</div>
                 </div>
               </div>
             ))}
@@ -1286,7 +1286,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
             <div style={{ marginTop:14, padding:'12px 0', fontSize:13 }}>
               {inv.discount_value > 0 && (
                 <div style={{ display:'flex', justifyContent:'space-between', color:'var(--green)', marginBottom:5 }}>
-                  <span>Discount</span><span>−{formatAmount(inv.discount_value, inv.currency)}</span>
+                  <span>Discount</span><span>\u2212{formatAmount(inv.discount_value, inv.currency)}</span>
                 </div>
               )}
               {inv.vat_amount > 0 && (
@@ -1299,7 +1299,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
               </div>
               {inv.currency !== 'NGN' && (
                 <div style={{ textAlign:'right', fontSize:11, color:'var(--muted)', marginTop:4 }}>
-                  ≈ ₦{Number(inv.total_ngn).toLocaleString('en-NG',{maximumFractionDigits:0})} at invoice rate
+                  \u2248 \u20A6{Number(inv.total_ngn).toLocaleString('en-NG',{maximumFractionDigits:0})} at invoice rate
                 </div>
               )}
             </div>
@@ -1313,11 +1313,11 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                   <div key={p.id} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--line-soft)', fontSize:13 }}>
                     <div>
                       <span style={{ fontWeight:500 }}>{formatAmount(p.amount, p.currency)}</span>
-                      <span style={{ color:'var(--muted)', marginLeft:8 }}>{p.method} · {p.paid_at}</span>
+                      <span style={{ color:'var(--muted)', marginLeft:8 }}>{p.method} \u00B7 {p.paid_at}</span>
                       {p.reference && <span style={{ color:'var(--muted)', marginLeft:8, fontSize:11 }}>ref: {p.reference}</span>}
                     </div>
                     <div style={{ color:'var(--muted)', fontSize:11 }}>
-                      {p.currency !== 'NGN' && `≈ ₦${Number(p.amount_ngn).toLocaleString('en-NG',{maximumFractionDigits:0})}`}
+                      {p.currency !== 'NGN' && `\u2248 \u20A6${Number(p.amount_ngn).toLocaleString('en-NG',{maximumFractionDigits:0})}`}
                     </div>
                   </div>
                 ))
@@ -1357,7 +1357,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                   </select>
                   {payForm.currency !== 'NGN' && rates[payForm.currency] && (
                     <div style={{ fontSize:11, color:'var(--muted)', marginTop:3 }}>
-                      1 {payForm.currency} = ₦{rates[payForm.currency]?.toLocaleString()}
+                      1 {payForm.currency} = \u20A6{rates[payForm.currency]?.toLocaleString()}
                     </div>
                   )}
                 </div>
@@ -1376,7 +1376,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                   <input className="form-input" value={payForm.reference} onChange={e=>setPayForm(f=>({...f,reference:e.target.value}))} />
                 </div>
                 <button className="btn btn-gold" onClick={addPayment} disabled={saving}>
-                  {saving ? 'Recording…' : 'Record payment'}
+                  {saving ? 'Recording\u2026' : 'Record payment'}
                 </button>
               </div>
             </div>
@@ -1413,14 +1413,14 @@ async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
 <div class="header"><div>${logoHtml}<div style="font-size:11px;color:#6b6760;margin-top:6px">298A Akin Olugbade Street, Victoria Island, Lagos</div></div><div style="text-align:right"><div class="inv-no">${e(inv.invoice_number)}</div><div style="color:#6b6760;font-size:12px;margin-top:4px">Issued: ${e(inv.issue_date)}</div>${inv.status==='paid'?'<div style="margin-top:4px;font-size:11px;font-weight:600;color:#27ae60">PAID</div>':''}</div></div>
 ${client?`<div style="margin-bottom:28px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;margin-bottom:5px">Invoice to</div><div style="font-weight:600;font-size:14px;">${e(client.name)}</div>${client.company?`<div style="font-size:12px;color:#6b6760">${e(client.company)}</div>`:''  }${client.street||client.address?`<div style="font-size:12px">${e(client.street||client.address)}</div>`:''  }${client.city?`<div style="font-size:12px">${e(client.city)}${client.state?', '+e(client.state):''}${client.country?', '+e(client.country):''}</div>`:''  }${client.email?`<div style="font-size:12px;color:#6b6760">${e(client.email)}</div>`:''  }${client.phone||client.phone_mobile?`<div style="font-size:12px;color:#6b6760">${e(client.phone||client.phone_mobile)}</div>`:''  }</div>`:''}
 <table><thead><tr><th style="width:64px"></th><th>Artwork</th><th>Artist</th><th>Year</th><th style="text-align:right">Amount (${e(inv.currency)})</th></tr></thead><tbody>
-${itemsWithImages.map(it=>`<tr><td>${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div style="width:52px;height:52px;background:#f0ece7;border-radius:2px;"></div>'}</td><td><strong>${e(it.title)}</strong>${it.medium?`<br><span style="font-size:11px;color:#6b6760">${e(it.medium)}</span>`:''  }${it.dimensions?`<br><span style="font-size:11px;color:#6b6760">${e(it.dimensions)}</span>`:''  }</td><td style="font-size:12px">${e(it.artist_name||'—')}</td><td style="font-size:12px">${e(it.year||'—')}</td><td style="text-align:right">${formatAmount(it.line_total,inv.currency)}</td></tr>`).join('')}
+${itemsWithImages.map(it=>`<tr><td>${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div style="width:52px;height:52px;background:#f0ece7;border-radius:2px;"></div>'}</td><td><strong>${e(it.title)}</strong>${it.medium?`<br><span style="font-size:11px;color:#6b6760">${e(it.medium)}</span>`:''  }${it.dimensions?`<br><span style="font-size:11px;color:#6b6760">${e(it.dimensions)}</span>`:''  }</td><td style="font-size:12px">${e(it.artist_name||'\u2014')}</td><td style="font-size:12px">${e(it.year||'\u2014')}</td><td style="text-align:right">${formatAmount(it.line_total,inv.currency)}</td></tr>`).join('')}
 ${Number(inv.vat_amount)>0?`<tr><td colspan="4" style="text-align:right;color:#6b6760">VAT (${inv.vat_rate}%)</td><td style="text-align:right">${formatAmount(inv.vat_amount,inv.currency)}</td></tr>`:''}
 <tr class="total-row"><td colspan="4" style="text-align:right">Total</td><td style="text-align:right">${formatAmount(inv.total,inv.currency)}</td></tr>
 ${payments.length>0?`<tr><td colspan="4" style="text-align:right;color:#2d6a4f">Amount paid</td><td style="text-align:right;color:#2d6a4f">${formatAmount(inv.amount_paid,inv.currency)}</td></tr>`:''}
 ${bal>0?`<tr><td colspan="4" style="text-align:right;font-weight:600">Balance due</td><td style="text-align:right;font-weight:600;color:#92600a">${formatAmount(bal,inv.currency)}</td></tr>`:''}
 </tbody></table>
 ${inv.notes?`<div style="margin-top:24px;font-size:12px;color:#6b6760;padding:12px 14px;background:#f8f7f5;border-radius:3px;">${e(inv.notes)}</div>`:''}
-${payments.length>0?`<div style="margin-top:28px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ece8e1;font-size:12px"><span>${e(p.paid_at)} · ${e(p.method)}${p.reference?' · ref: '+e(p.reference):''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
-<div class="footer"><div>Hourglass Gallery · info@hourglassgallery.com · +234 (0)1 461 0090</div></div>
+${payments.length>0?`<div style="margin-top:28px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ece8e1;font-size:12px"><span>${e(p.paid_at)} \u00B7 ${e(p.method)}${p.reference?' \u00B7 ref: '+e(p.reference):''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
+<div class="footer"><div>Hourglass Gallery \u00B7 info@hourglassgallery.com \u00B7 +234 (0)1 461 0090</div></div>
 </body></html>`
 }

@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthProvider'
 import { LOGO_B64, SIG_B64 } from '../lib/assets'
 import * as XLSX from 'xlsx'
 
-// ── DIMENSION HELPERS ────────────────────────────────────────
+// \u2500\u2500 DIMENSION HELPERS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function buildDimensions(form) {
   const h = (form.dim_h||'').trim()
   const w = (form.dim_w||'').trim()
@@ -12,13 +12,13 @@ function buildDimensions(form) {
   if (!h && !w && !d) return ''
   const parts = [h, w].filter(Boolean)
   if (d) parts.push(d)
-  return parts.join(' × ') + ' inches'
+  return parts.join(' \u00D7 ') + ' inches'
 }
 
 function parseDimensions(str) {
-  // Try to split existing "H × W × D inches" or "H × W inches" strings
+  // Try to split existing "H \u00D7 W \u00D7 D inches" or "H \u00D7 W inches" strings
   const cleaned = str.replace(/\s*inches?\s*/i, '').trim()
-  const parts = cleaned.split(/[×x]/i).map(s => s.trim()).filter(Boolean)
+  const parts = cleaned.split(/[\u00D7x]/i).map(s => s.trim()).filter(Boolean)
   return { dim_h: parts[0]||'', dim_w: parts[1]||'', dim_d: parts[2]||'' }
 }
 
@@ -77,7 +77,7 @@ export default function Certificates() {
     if (form.edition_type) parts.push(form.edition_type)
     if (form.edition_number && form.edition_size) parts.push(`${form.edition_number}/${form.edition_size}`)
     else if (form.edition_number) parts.push(`No. ${form.edition_number}`)
-    return parts.join(' — ') || null
+    return parts.join(' \u2014 ') || null
   }
 
   async function generateAndSave() {
@@ -136,7 +136,7 @@ export default function Certificates() {
     XLSX.writeFile(wb, `Hourglass_COA_Registry_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
-  if (loading) return <div style={{color:'var(--muted)'}}>Loading…</div>
+  if (loading) return <div style={{color:'var(--muted)'}}>Loading\u2026</div>
 
   return (
     <div>
@@ -146,7 +146,7 @@ export default function Certificates() {
           <div className="page-subtitle">{certs.length} issued</div>
         </div>
         <div style={{display:'flex',gap:8}}>
-          <button className="btn btn-outline" onClick={exportExcel}>↓ Export registry</button>
+          <button className="btn btn-outline" onClick={exportExcel}>\u2193 Export registry</button>
           <button className="btn btn-primary" onClick={()=>setModal(true)}>Generate COA</button>
         </div>
       </div>
@@ -162,8 +162,8 @@ export default function Certificates() {
                   <td style={{fontFamily:'var(--font-serif)',fontWeight:500,color:'var(--gold)'}}>{c.cert_number}</td>
                   <td>{c.artist_name}</td>
                   <td style={{fontStyle:'italic'}}>{c.title}</td>
-                  <td style={{color:'var(--muted)',fontSize:13}}>{c.medium||'—'}</td>
-                  <td style={{color:'var(--muted)',fontSize:13}}>{c.show_client&&c.client_name?c.client_name:'—'}</td>
+                  <td style={{color:'var(--muted)',fontSize:13}}>{c.medium||'\u2014'}</td>
+                  <td style={{color:'var(--muted)',fontSize:13}}>{c.show_client&&c.client_name?c.client_name:'\u2014'}</td>
                   <td style={{color:'var(--muted)',fontSize:12}}>{c.issued_date}</td>
                   <td><button className="btn btn-ghost btn-sm" onClick={()=>reprint(c)}>Reprint</button></td>
                 </tr>
@@ -178,15 +178,15 @@ export default function Certificates() {
           <div className="modal modal-xl" style={{maxHeight:'94vh', maxWidth:1100}}>
             <div className="modal-header">
               <div className="modal-title">Generate Certificate of Authenticity</div>
-              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(false)}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(false)}>\u2715</button>
             </div>
             <div className="modal-body" style={{display:'grid',gridTemplateColumns:'380px 1fr',gap:28}}>
 
-              {/* LEFT — form */}
+              {/* LEFT \u2014 form */}
               <div style={{display:'flex',flexDirection:'column',gap:13}}>
                 <div className="form-group">
-                  <label className="form-label">Search artwork (optional — pre-fills details)</label>
-                  <input className="form-input" placeholder="Type title or artist name…" value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} />
+                  <label className="form-label">Search artwork (optional \u2014 pre-fills details)</label>
+                  <input className="form-input" placeholder="Type title or artist name\u2026" value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} />
                   {artworkSearch&&filteredArtworks.length>0&&(
                     <div style={{border:'1px solid var(--line)',borderTop:'none',borderRadius:'0 0 3px 3px',background:'var(--white)',maxHeight:200,overflowY:'auto'}}>
                       {filteredArtworks.map(w=>(
@@ -194,7 +194,7 @@ export default function Certificates() {
                           {w.image_url&&<img src={w.image_url} alt="" style={{width:32,height:32,objectFit:'cover',borderRadius:2}}/>}
                           <div>
                             <div style={{fontSize:13,fontWeight:500}}>{w.title}</div>
-                            <div style={{fontSize:11,color:'var(--muted)'}}>{artistMap[w.artist_id]?.name} · {w.year}</div>
+                            <div style={{fontSize:11,color:'var(--muted)'}}>{artistMap[w.artist_id]?.name} \u00B7 {w.year}</div>
                           </div>
                         </div>
                       ))}
@@ -203,7 +203,7 @@ export default function Certificates() {
                 </div>
 
                 <div style={{borderTop:'1px solid var(--line)',paddingTop:13,display:'flex',flexDirection:'column',gap:11}}>
-                  <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--muted)'}}>Artwork details — all editable</div>
+                  <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--muted)'}}>Artwork details \u2014 all editable</div>
                   <div className="form-row">
                     <div className="form-group"><label className="form-label">Artist *</label><input className="form-input" value={form.artist_name} onChange={e=>setForm(f=>({...f,artist_name:e.target.value}))}/></div>
                     <div className="form-group"><label className="form-label">Title *</label><input className="form-input" value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}/></div>
@@ -215,9 +215,9 @@ export default function Certificates() {
                     <label className="form-label">Dimensions (inches)</label>
                     <div style={{display:'flex',gap:6,alignItems:'center'}}>
                       <input className="form-input" style={{width:64}} placeholder="H" value={form.dim_h} onChange={e=>setForm(f=>({...f,dim_h:e.target.value}))}/>
-                      <span style={{color:'var(--muted)',fontSize:13}}>×</span>
+                      <span style={{color:'var(--muted)',fontSize:13}}>\u00D7</span>
                       <input className="form-input" style={{width:64}} placeholder="W" value={form.dim_w} onChange={e=>setForm(f=>({...f,dim_w:e.target.value}))}/>
-                      <span style={{color:'var(--muted)',fontSize:13}}>×</span>
+                      <span style={{color:'var(--muted)',fontSize:13}}>\u00D7</span>
                       <input className="form-input" style={{width:64}} placeholder="D" value={form.dim_d} onChange={e=>setForm(f=>({...f,dim_d:e.target.value}))}/>
                       <span style={{color:'var(--muted)',fontSize:12,flexShrink:0}}>in</span>
                     </div>
@@ -234,13 +234,13 @@ export default function Certificates() {
                   <label style={{display:'flex',gap:8,alignItems:'center',cursor:'pointer',fontSize:13}}>
                     <input type="checkbox" checked={form.is_edition} onChange={e=>setForm(f=>({...f,is_edition:e.target.checked}))} style={{width:'auto'}}/>
                     <span>Edition</span>
-                    <span style={{fontSize:11,color:'var(--muted)'}}>— tick if this work is an edition</span>
+                    <span style={{fontSize:11,color:'var(--muted)'}}>\u2014 tick if this work is an edition</span>
                   </label>
                   {form.is_edition&&(
                     <div style={{display:'flex',flexDirection:'column',gap:10,background:'var(--surface-0,#f8f7f5)',borderRadius:6,padding:'12px 14px'}}>
                       <div className="form-group" style={{marginBottom:0}}>
                         <label className="form-label">Edition type</label>
-                        <input className="form-input" placeholder="e.g. Artist's proof, Exhibition copy, Open edition…" value={form.edition_type} onChange={e=>setForm(f=>({...f,edition_type:e.target.value}))}/>
+                        <input className="form-input" placeholder="e.g. Artist's proof, Exhibition copy, Open edition\u2026" value={form.edition_type} onChange={e=>setForm(f=>({...f,edition_type:e.target.value}))}/>
                       </div>
                       <div className="form-row">
                         <div className="form-group" style={{marginBottom:0}}><label className="form-label">Edition number</label><input className="form-input" placeholder="e.g. 3" value={form.edition_number} onChange={e=>setForm(f=>({...f,edition_number:e.target.value}))}/></div>
@@ -269,7 +269,7 @@ export default function Certificates() {
                 </div>
               </div>
 
-              {/* RIGHT — preview */}
+              {/* RIGHT \u2014 preview */}
               <div>
                 <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--muted)',marginBottom:10}}>Live preview</div>
                 <COAPreview form={form} imageUrl={selectedArtwork?.image_url||null} editionLabel={editionLabel()} logo={LOGO_B64} sig={SIG_B64}/>
@@ -278,7 +278,7 @@ export default function Certificates() {
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={()=>setModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={generateAndSave} disabled={saving||!form.title||!form.artist_name}>
-                {saving?'Generating…':'Generate & print'}
+                {saving?'Generating\u2026':'Generate & print'}
               </button>
             </div>
           </div>
@@ -288,7 +288,7 @@ export default function Certificates() {
   )
 }
 
-// ── LIVE PREVIEW ─────────────────────────────────────────────
+// \u2500\u2500 LIVE PREVIEW \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
   const issued = form.issued_date
     ? new Date(form.issued_date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'})
@@ -333,7 +333,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
               <div style={{fontFamily:"'Times New Roman', Times, serif", fontSize:mm(10.3), fontWeight:400, color:'#000', lineHeight:1.05}}>
                 CERTIFICATE OF<br/>AUTHENTICITY
               </div>
-              {/* Orange rule — tight under heading */}
+              {/* Orange rule \u2014 tight under heading */}
               <div style={{width:mm(18), height:mm(0.35), background:ORANGE, marginTop:mm(2)}}/>
               {/* Intro text */}
               <div style={{fontSize:mm(2.6), color:'#555', lineHeight:1.65, marginTop:mm(2), maxWidth:mm(120)}}>
@@ -375,7 +375,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
               </div>
             </div>
 
-            {/* Right column — image centred */}
+            {/* Right column \u2014 image centred */}
             {(() => {
               const rightColX = displayW * 0.46
               const rightColW = displayW * 0.54
@@ -416,7 +416,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
   )
 }
 
-// ── PRINT ────────────────────────────────────────────────────
+// \u2500\u2500 PRINT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function printCOA({ certNumber, artistName, title, medium, dimensions, year, editionLabel, imageUrl, clientName, issued, notes, includeSignature }) {
   function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
   const issuedFmt = issued ? new Date(issued+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}) : ''
@@ -439,7 +439,7 @@ function printCOA({ certNumber, artistName, title, medium, dimensions, year, edi
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Certificate of Authenticity — ${e(title)}</title>
+<title>Certificate of Authenticity \u2014 ${e(title)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 @page{size:A4 landscape;margin:0;}
