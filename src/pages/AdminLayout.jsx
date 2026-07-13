@@ -38,19 +38,17 @@ export default function AdminLayout() {
     return location.pathname.startsWith(path)
   }
 
+  // Inject loading animation CSS once
+  useEffect(() => {
+    if (document.getElementById('hg-loader-css')) return
+    const s = document.createElement('style')
+    s.id = 'hg-loader-css'
+    s.textContent = '@keyframes hg-progress{0%{opacity:1;transform:scaleX(.1);transform-origin:left}50%{opacity:1;transform:scaleX(.7);transform-origin:left}100%{opacity:0;transform:scaleX(1);transform-origin:left}}@keyframes hg-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}'
+    document.head.appendChild(s)
+  }, [])
+
   return (
     <div className="admin-layout">
-      <style>{`
-        @keyframes hg-progress {
-          0%   { opacity: 1; transform: scaleX(0.1); transform-origin: left; }
-          50%  { opacity: 1; transform: scaleX(0.7); transform-origin: left; }
-          100% { opacity: 0; transform: scaleX(1);   transform-origin: left; }
-        }
-        @keyframes hg-spin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-      `}</style>
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-logo">
