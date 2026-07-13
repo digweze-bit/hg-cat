@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
@@ -58,8 +58,8 @@ export default function Sales() {
       <div className="page-header flex items-center justify-between">
         <div>
           <div className="page-title">Sales & Invoices</div>
-          <div className="page-subtitle">
-            {invoices.filter(i=>i.status==='paid').length} paid \u00B7
+            {invoices.filter(i=>i.status==='paid').length} paid {'\u00B7'}
+            {' '}{invoices.filter(i=>['sent','partial'].includes(i.status)).length} outstanding {'\u00B7'}
             {' '}{invoices.filter(i=>['sent','partial'].includes(i.status)).length} outstanding \u00B7
             {' '}{clients.length} clients
             {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length > 0 && <span style={{color:'#b8862a',marginLeft:8}}>{'\u00B7'} {invoices.filter(i=>i.status==='paid'&&i.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered)).length} pending collection</span>}
