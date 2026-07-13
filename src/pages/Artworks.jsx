@@ -650,7 +650,6 @@ export default function Artworks() {
         {/* Pagination */}
         {totalPages > 1 && (
             <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => setPage(p => p-1)}>&larr; Prev</button>
-            <button className="btn btn-ghost btn-sm" disabled={page === 0} onClick={() => setPage(p => p-1)}>â† Prev</button>
             <button className="btn btn-ghost btn-sm" disabled={page >= totalPages-1} onClick={() => setPage(p => p+1)}>Next &rarr;</button>
             <button className="btn btn-ghost btn-sm" disabled={page >= totalPages-1} onClick={() => setPage(p => p+1)}>Next â†’</button>
           </div>
