@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+﻿import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      workbox: {
+        cacheId: 'hgcat-v9',  // Bump to force cache clear
         cacheId: 'hgcat-1783848589',  // Changes on every build = forces cache clear
         // Precache the app shell — everything needed to render the UI
         // Exclude heavy chunks that are only needed occasionally
