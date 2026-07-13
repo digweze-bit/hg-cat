@@ -38,7 +38,7 @@ export default function Dashboard() {
     load()
   }, [])
 
-  if (loading) return <div style={{ color:'var(--muted)', fontSize:14 }}>Loading\u2026</div>
+  if (loading) return <div style={{ color:'var(--muted)', fontSize:14 }}>Loading{'\u2026'}</div>
 
   const statCards = [
     { label: 'Artists', value: stats.totalArtists, path: '/admin/artists', color: 'var(--ink)' },
@@ -55,7 +55,7 @@ export default function Dashboard() {
     <div>
       <div className="page-header">
         <div className="page-title">Dashboard</div>
-        <div className="page-subtitle">Hourglass Gallery \u2014 at a glance</div>
+        <div className="page-subtitle">Hourglass Gallery {'\u2014'} at a glance</div>
       </div>
 
       {/* Stats */}

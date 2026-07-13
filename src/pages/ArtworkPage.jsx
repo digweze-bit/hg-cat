@@ -58,7 +58,7 @@ export default function ArtworkPage() {
 
   if (loading) return (
     <div style={{ minHeight:'100vh', background:'#faf8f5', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ fontFamily:'var(--font-sans,-apple-system,sans-serif)', color:'#9a9490', fontSize:14 }}>Loading\u2026</div>
+      <div style={{ fontFamily:'var(--font-sans,-apple-system,sans-serif)', color:'#9a9490', fontSize:14 }}>Loading{'\u2026'}</div>
     </div>
   )
 
@@ -118,7 +118,7 @@ export default function ArtworkPage() {
             )}
             <button onClick={printPage}
               style={{ display:'flex', alignItems:'center', gap:7, padding:'7px 14px', borderRadius:3, border:'1px solid #e8e3db', background:'#fff', color:'#1a1714', fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>
-              \uD83D\uDDA8 Print
+              {'\uD83D'}{'\uDDA8'} Print
             </button>
           </div>
         </div>
@@ -238,9 +238,9 @@ export default function ArtworkPage() {
           {/* Footer */}
           <div style={{ marginTop:64, paddingTop:24, borderTop:'1px solid #e8e3db', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div style={{ fontSize:12, color:'#9a9490' }}>
-              Hourglass Gallery \u00B7 298A Akin Olugbade Street, Victoria Island, Lagos
+              Hourglass Gallery {'\u00B7'} 298A Akin Olugbade Street, Victoria Island, Lagos
             </div>
-            <a href="/" style={{ fontSize:12, color:'#9a9490', textDecoration:'none' }}>\u2190 Back to catalogue</a>
+            <a href="/" style={{ fontSize:12, color:'#9a9490', textDecoration:'none' }}>{'\u2190'} Back to catalogue</a>
           </div>
         </div>
       </div>

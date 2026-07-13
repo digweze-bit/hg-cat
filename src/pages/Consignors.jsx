@@ -109,7 +109,7 @@ export default function Consignors() {
 
   const saleTypeLabel = { primary:'Primary', secondary:'Secondary', both:'Primary & Secondary' }
 
-  if (loading) return <div style={{color:'var(--muted)'}}>Loading\u2026</div>
+  if (loading) return <div style={{color:'var(--muted)'}}>Loading{'\u2026'}</div>
 
   return (
     <div style={{display:'grid', gridTemplateColumns: selected ? '340px 1fr' : '1fr', gap:20, height:'calc(100vh - 120px)'}}>
@@ -155,7 +155,7 @@ export default function Consignors() {
                 </div>
                 <div style={{display:'flex', gap:6, flexShrink:0, marginLeft:12}}>
                   <button className="btn btn-ghost btn-sm" onClick={e=>openEdit(c,e)}>Edit</button>
-                  <button className="btn btn-ghost btn-sm" style={{color:'var(--danger,#c0392b)'}} onClick={e=>del(c,e)}>\u2715</button>
+                  <button className="btn btn-ghost btn-sm" style={{color:'var(--danger,#c0392b)'}} onClick={e=>del(c,e)}>{'\u2715'}</button>
                 </div>
               </div>
             )
@@ -171,7 +171,7 @@ export default function Consignors() {
               <div className="page-title">{selected.name}</div>
               <div className="page-subtitle">{selected.type} \u00B7 {saleTypeLabel[selected.sale_type]} \u00B7 {termSummary(selected)}</div>
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={()=>setSelected(null)}>\u2715 Close</button>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setSelected(null)}>{'\u2715'} Close</button>
           </div>
 
           {/* Contact strip */}
@@ -242,7 +242,7 @@ export default function Consignors() {
           <div className="modal" style={{maxWidth:540}}>
             <div className="modal-header">
               <div className="modal-title">{editTarget ? 'Edit consignor' : 'Add consignor'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(false)}>\u2715</button>
+              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(false)}>{'\u2715'}</button>
             </div>
             <div className="modal-body" style={{display:'flex', flexDirection:'column', gap:14}}>
 
@@ -309,7 +309,7 @@ export default function Consignors() {
 
                 {form.term_type === 'fixed' && (
                   <div className="form-group" style={{maxWidth:260}}>
-                    <label className="form-label">Net amount to consignor (\u20A6)</label>
+                    <label className="form-label">Net amount to consignor ({'\u20A6'})</label>
                     <input className="form-input" type="number" value={form.fixed_amount}
                       onChange={e=>setForm(f=>({...f,fixed_amount:e.target.value}))} placeholder="e.g. 500000"/>
                   </div>

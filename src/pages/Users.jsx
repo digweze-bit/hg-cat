@@ -38,7 +38,7 @@ export default function Users() {
     </div>
   )
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading users\u2026</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading users{'\u2026'}</div>
 
   const pending = users.filter(u => !u.approved)
   const active = users.filter(u => u.approved)
@@ -126,7 +126,7 @@ export default function Users() {
       </div>
 
       <div style={{ marginTop:28, padding:'16px 20px', background:'var(--parchment)', borderRadius:3, fontSize:13, color:'var(--muted)', lineHeight:1.7 }}>
-        <strong style={{ color:'var(--ink)' }}>How to add staff:</strong> New staff members sign up at <code style={{ background:'var(--white)', padding:'1px 5px', borderRadius:2 }}>/admin/login</code> using their own email and a password they choose. Their account appears here as "pending" \u2014 you approve it to grant access. Admins can approve others, change roles, and revoke access. Staff can manage artists, artworks, archive, sales, and certificates.
+        <strong style={{ color:'var(--ink)' }}>How to add staff:</strong> New staff members sign up at <code style={{ background:'var(--white)', padding:'1px 5px', borderRadius:2 }}>/admin/login</code> using their own email and a password they choose. Their account appears here as "pending" {'\u2014'} you approve it to grant access. Admins can approve others, change roles, and revoke access. Staff can manage artists, artworks, archive, sales, and certificates.
       </div>
     </div>
   )

@@ -77,7 +77,7 @@ export default function Reports() {
   const totalReceivable = useMemo(() =>
     receivableData.reduce((s, inv) => s + Number(inv.balance_due || 0), 0), [receivableData])
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports\u2026</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'\u2026'}</div>
 
   const report = REPORTS.find(r => r.id === activeReport)
 
@@ -418,7 +418,7 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
   <div class="meta">Generated ${today}</div>
 </div>
 ${body}
-<div class="footer">Hourglass Gallery \u00B7 298A Akin Olugbade Street, Victoria Island, Lagos</div>
+<div class="footer">Hourglass Gallery {'\u00B7'} 298A Akin Olugbade Street, Victoria Island, Lagos</div>
 </body></html>`
 
   const w = window.open('', '_blank', 'width=1100,height=750')

@@ -136,7 +136,7 @@ export default function Certificates() {
     XLSX.writeFile(wb, `Hourglass_COA_Registry_${new Date().toISOString().split('T')[0]}.xlsx`)
   }
 
-  if (loading) return <div style={{color:'var(--muted)'}}>Loading\u2026</div>
+  if (loading) return <div style={{color:'var(--muted)'}}>Loading{'\u2026'}</div>
 
   return (
     <div>
@@ -146,7 +146,7 @@ export default function Certificates() {
           <div className="page-subtitle">{certs.length} issued</div>
         </div>
         <div style={{display:'flex',gap:8}}>
-          <button className="btn btn-outline" onClick={exportExcel}>\u2193 Export registry</button>
+          <button className="btn btn-outline" onClick={exportExcel}>{'\u2193'} Export registry</button>
           <button className="btn btn-primary" onClick={()=>setModal(true)}>Generate COA</button>
         </div>
       </div>
@@ -178,14 +178,14 @@ export default function Certificates() {
           <div className="modal modal-xl" style={{maxHeight:'94vh', maxWidth:1100}}>
             <div className="modal-header">
               <div className="modal-title">Generate Certificate of Authenticity</div>
-              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(false)}>\u2715</button>
+              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(false)}>{'\u2715'}</button>
             </div>
             <div className="modal-body" style={{display:'grid',gridTemplateColumns:'380px 1fr',gap:28}}>
 
               {/* LEFT \u2014 form */}
               <div style={{display:'flex',flexDirection:'column',gap:13}}>
                 <div className="form-group">
-                  <label className="form-label">Search artwork (optional \u2014 pre-fills details)</label>
+                  <label className="form-label">Search artwork (optional {'\u2014'} pre-fills details)</label>
                   <input className="form-input" placeholder="Type title or artist name\u2026" value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} />
                   {artworkSearch&&filteredArtworks.length>0&&(
                     <div style={{border:'1px solid var(--line)',borderTop:'none',borderRadius:'0 0 3px 3px',background:'var(--white)',maxHeight:200,overflowY:'auto'}}>
@@ -203,7 +203,7 @@ export default function Certificates() {
                 </div>
 
                 <div style={{borderTop:'1px solid var(--line)',paddingTop:13,display:'flex',flexDirection:'column',gap:11}}>
-                  <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--muted)'}}>Artwork details \u2014 all editable</div>
+                  <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--muted)'}}>Artwork details {'\u2014'} all editable</div>
                   <div className="form-row">
                     <div className="form-group"><label className="form-label">Artist *</label><input className="form-input" value={form.artist_name} onChange={e=>setForm(f=>({...f,artist_name:e.target.value}))}/></div>
                     <div className="form-group"><label className="form-label">Title *</label><input className="form-input" value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))}/></div>
@@ -215,9 +215,9 @@ export default function Certificates() {
                     <label className="form-label">Dimensions (inches)</label>
                     <div style={{display:'flex',gap:6,alignItems:'center'}}>
                       <input className="form-input" style={{width:64}} placeholder="H" value={form.dim_h} onChange={e=>setForm(f=>({...f,dim_h:e.target.value}))}/>
-                      <span style={{color:'var(--muted)',fontSize:13}}>\u00D7</span>
+                      <span style={{color:'var(--muted)',fontSize:13}}>{'\u00D7'}</span>
                       <input className="form-input" style={{width:64}} placeholder="W" value={form.dim_w} onChange={e=>setForm(f=>({...f,dim_w:e.target.value}))}/>
-                      <span style={{color:'var(--muted)',fontSize:13}}>\u00D7</span>
+                      <span style={{color:'var(--muted)',fontSize:13}}>{'\u00D7'}</span>
                       <input className="form-input" style={{width:64}} placeholder="D" value={form.dim_d} onChange={e=>setForm(f=>({...f,dim_d:e.target.value}))}/>
                       <span style={{color:'var(--muted)',fontSize:12,flexShrink:0}}>in</span>
                     </div>
@@ -234,7 +234,7 @@ export default function Certificates() {
                   <label style={{display:'flex',gap:8,alignItems:'center',cursor:'pointer',fontSize:13}}>
                     <input type="checkbox" checked={form.is_edition} onChange={e=>setForm(f=>({...f,is_edition:e.target.checked}))} style={{width:'auto'}}/>
                     <span>Edition</span>
-                    <span style={{fontSize:11,color:'var(--muted)'}}>\u2014 tick if this work is an edition</span>
+                    <span style={{fontSize:11,color:'var(--muted)'}}>{'\u2014'} tick if this work is an edition</span>
                   </label>
                   {form.is_edition&&(
                     <div style={{display:'flex',flexDirection:'column',gap:10,background:'var(--surface-0,#f8f7f5)',borderRadius:6,padding:'12px 14px'}}>

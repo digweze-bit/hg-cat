@@ -160,7 +160,7 @@ export default function Books() {
     return { receive:'Received', sale:'Sale', return:'Return', adjustment:'Adjustment', writeoff:'Write-off' }[type] || type
   }
 
-  if (loading) return <div style={{color:'var(--muted)'}}>Loading\u2026</div>
+  if (loading) return <div style={{color:'var(--muted)'}}>Loading{'\u2026'}</div>
 
   return (
     <div>
@@ -220,7 +220,7 @@ export default function Books() {
                     <td>
                       {b.cover_url
                         ? <img src={b.cover_url} alt="" style={{width:40, height:52, objectFit:'cover', borderRadius:2, border:'1px solid var(--line)'}}/>
-                        : <div style={{width:40, height:52, background:'var(--parchment-2)', borderRadius:2, border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16}}>\uD83D\uDCD6</div>
+                        : <div style={{width:40, height:52, background:'var(--parchment-2)', borderRadius:2, border:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16}}>{'\uD83D'}{'\uDCD6'}</div>
                       }
                     </td>
                     <td>
@@ -246,7 +246,7 @@ export default function Books() {
                       <div style={{display:'flex', gap:4}}>
                         <button className="btn btn-ghost btn-sm" onClick={()=>openEdit(b)}>Edit</button>
                         <button className="btn btn-ghost btn-sm" onClick={()=>openStock(b)} title="Manage stock">Stock</button>
-                        <button className="btn btn-ghost btn-sm" style={{color:'var(--red)'}} onClick={()=>handleDelete(b.id)}>\u2715</button>
+                        <button className="btn btn-ghost btn-sm" style={{color:'var(--red)'}} onClick={()=>handleDelete(b.id)}>{'\u2715'}</button>
                       </div>
                     </td>
                   </tr>
@@ -263,7 +263,7 @@ export default function Books() {
           <div className="modal modal-xl">
             <div className="modal-header">
               <div className="modal-title">{modal === 'edit' ? `Edit \u2014 ${form.title}` : 'Add book'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(null)}>\u2715</button>
+              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(null)}>{'\u2715'}</button>
             </div>
             <div className="modal-body" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:20}}>
 
@@ -308,7 +308,7 @@ export default function Books() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Price (\u20A6)</label>
+                    <label className="form-label">Price ({'\u20A6'})</label>
                     <input className="form-input" type="number" value={form.price||''} onChange={e=>setForm(f=>({...f,price:e.target.value}))} placeholder="0"/>
                   </div>
                   <div className="form-group">
@@ -343,7 +343,7 @@ export default function Books() {
                 <div className="form-group">
                   <label className="form-label">Cover image</label>
                   <input type="file" accept="image/*" onChange={handleImageUpload}/>
-                  {uploading && <div style={{fontSize:11, color:'var(--muted)'}}>Uploading\u2026</div>}
+                  {uploading && <div style={{fontSize:11, color:'var(--muted)'}}>Uploading{'\u2026'}</div>}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Cover URL</label>
@@ -384,7 +384,7 @@ export default function Books() {
                   Current stock: <strong style={{color: activeBook.stock_count === 0 ? '#c0392b' : activeBook.stock_count <= activeBook.stock_low ? '#b8862a' : 'var(--ink)'}}>{activeBook.stock_count}</strong>
                 </div>
               </div>
-              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(null)}>\u2715</button>
+              <button className="btn btn-ghost btn-icon" onClick={()=>setModal(null)}>{'\u2715'}</button>
             </div>
             <div className="modal-body" style={{display:'flex', flexDirection:'column', gap:16}}>
 
@@ -409,7 +409,7 @@ export default function Books() {
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Reference <span style={{fontWeight:400, color:'var(--muted)'}}>\u2014 supplier, PO, etc</span></label>
+                    <label className="form-label">Reference <span style={{fontWeight:400, color:'var(--muted)'}}>{'\u2014'} supplier, PO, etc</span></label>
                     <input className="form-input" value={stockForm.reference} onChange={e=>setStockForm(f=>({...f,reference:e.target.value}))}/>
                   </div>
                   <div className="form-group">

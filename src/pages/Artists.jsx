@@ -126,7 +126,7 @@ export default function Artists() {
   function openEdit(artist) { setForm({ ...EMPTY, ...artist }); setEditId(artist.id); setModal('edit') }
   function closeModal() { setModal(null); setForm(EMPTY); setEditId(null) }
 
-  if (loading) return <div style={{ color:'var(--muted)', padding:32 }}>Loading artists\u2026</div>
+  if (loading) return <div style={{ color:'var(--muted)', padding:32 }}>Loading artists{'\u2026'}</div>
 
   return (
     <div>
@@ -219,7 +219,7 @@ export default function Artists() {
                   {[selected.nationality, selected.medium, selected.born && `b. ${selected.born}`].filter(Boolean).join(' \u00B7 ')}
                 </div>
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>\u2715</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>{'\u2715'}</button>
             </div>
 
             {/* Counts */}
@@ -242,7 +242,7 @@ export default function Artists() {
             </div>
             <div className="card" style={{ padding:0, maxHeight:500, overflowY:'auto' }}>
               {awLoading
-                ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>Loading\u2026</div>
+                ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>Loading{'\u2026'}</div>
                 : artworks.filter(w => w.availability === 'Available').length === 0
                 ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>No available works</div>
                 : artworks.filter(w => w.availability === 'Available').map(w => (
@@ -284,7 +284,7 @@ export default function Artists() {
           <div className="modal modal-lg">
             <div className="modal-header">
               <div className="modal-title">{modal === 'edit' ? 'Edit artist' : 'Add artist'}</div>
-              <button className="btn btn-ghost btn-icon" onClick={closeModal}>\u2715</button>
+              <button className="btn btn-ghost btn-icon" onClick={closeModal}>{'\u2715'}</button>
             </div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div className="form-row">
@@ -329,7 +329,7 @@ export default function Artists() {
                 <div className="form-group">
                   <label className="form-label">Upload portrait</label>
                   <input type="file" accept="image/*" onChange={handlePortraitUpload} style={{ fontSize:12, color:'var(--muted)' }} />
-                  {uploading && <div style={{ fontSize:11, color:'var(--muted)' }}>Uploading\u2026</div>}
+                  {uploading && <div style={{ fontSize:11, color:'var(--muted)' }}>Uploading{'\u2026'}</div>}
                 </div>
               </div>
               {form.portrait_url && (

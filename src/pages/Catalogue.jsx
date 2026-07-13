@@ -90,7 +90,7 @@ export default function Catalogue() {
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#f9f8f6' }}>
-      <div style={{ fontFamily:'Georgia,serif', fontSize:'1.2rem', color:'#999' }}>Loading\u2026</div>
+      <div style={{ fontFamily:'Georgia,serif', fontSize:'1.2rem', color:'#999' }}>Loading{'\u2026'}</div>
     </div>
   )
 
@@ -175,7 +175,7 @@ export default function Catalogue() {
     )
   }
 
-  // \u2500\u2500 ARTIST INDEX VIEW \u2500\u2500
+  // {'\u2500'}{'\u2500'} ARTIST INDEX VIEW {'\u2500'}{'\u2500'}
   return (
     <div style={{ minHeight:'100vh', background:'#f9f8f6', fontFamily:'-apple-system,sans-serif' }}>
 
@@ -305,7 +305,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
               <div style={{ fontFamily:'Georgia,serif', fontSize:'1.4rem', fontWeight:400, color:'#1a1714', marginBottom:4, lineHeight:1.2 }}>{w.title}</div>
               {artist && <div style={{ fontSize:13, color:'#999' }}>{artist.name}</div>}
             </div>
-            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1, padding:4 }}>\u2715</button>
+            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1, padding:4 }}>{'\u2715'}</button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
             {[['Year',w.year],['Medium',w.medium],['Dimensions',w.dimensions],['Series',w.series],['Location',w.location],['Status',w.availability]].filter(([,v])=>v).map(([label,val])=>(

@@ -27,7 +27,7 @@ const FormSign     = lazy(() => import('./pages/FormSign'))
 function PageLoader() {
   return (
     <div style={{ minHeight:'60vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ fontFamily:'sans-serif', fontSize:13, color:'#9a9490' }}>Loading\u2026</div>
+      <div style={{ fontFamily:'sans-serif', fontSize:13, color:'#9a9490' }}>Loading{'\u2026'}</div>
     </div>
   )
 }

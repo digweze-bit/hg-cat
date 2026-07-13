@@ -15,7 +15,7 @@ export default function RequireAuth({ children }) {
   // Not logged in
   if (!user) return <Navigate to="/admin/login" replace />
 
-  // Logged in but profile not yet loaded \u2014 render children anyway
+  // Logged in but profile not yet loaded {'\u2014'} render children anyway
   // Profile check happens below once loaded
   if (!profile) return children
 

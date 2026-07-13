@@ -51,7 +51,7 @@ export default function Sales() {
 
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading sales data\u2026</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading sales data{'\u2026'}</div>
 
   return (
     <div>
@@ -190,7 +190,7 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
     return 'var(--muted)'
   }
 
-  if (loading) return <div style={{ color:'var(--muted)', padding:20 }}>Loading\u2026</div>
+  if (loading) return <div style={{ color:'var(--muted)', padding:20 }}>Loading{'\u2026'}</div>
 
   return (
     <div>
@@ -198,11 +198,11 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
         <div style={{ fontSize:13, color:'var(--muted)' }}>
           {items.length === 0 ? 'No artworks pending collection' : `${items.length} artwork${items.length !== 1 ? 's' : ''} awaiting collection`}
         </div>
-        {items.length > 0 && <div style={{ fontSize:11, color:'var(--muted)' }}>\u00B7 Click an item to open the invoice and mark as collected</div>}
+        {items.length > 0 && <div style={{ fontSize:11, color:'var(--muted)' }}>{'\u00B7'} Click an item to open the invoice and mark as collected</div>}
       </div>
       {items.length === 0 ? (
         <div className="card" style={{ padding:48, textAlign:'center' }}>
-          <div style={{ fontSize:32, marginBottom:12 }}>\u2713</div>
+          <div style={{ fontSize:32, marginBottom:12 }}>{'\u2713'}</div>
           <div style={{ fontWeight:500 }}>All artworks collected</div>
           <div style={{ fontSize:13, color:'var(--muted)', marginTop:4 }}>No paid invoices with uncollected works</div>
         </div>
@@ -349,7 +349,7 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
                   <td style={{ fontFamily:'var(--font-serif)', fontWeight:500, whiteSpace:'nowrap' }}>
                     {inv.invoice_number}
                     {inv.status==='paid' && inv.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered) &&
-                      <span title="Pending collection" style={{ marginLeft:6, color:'var(--amber)' }}>\u25CF</span>}
+                      <span title="Pending collection" style={{ marginLeft:6, color:'var(--amber)' }}>{'\u25CF'}</span>}
                   </td>
                   <td>{inv.clients?.name || '\u2014'}</td>
                   <td style={{ fontVariantNumeric:'tabular-nums' }}>{formatAmount(inv.total, inv.currency)}</td>
@@ -495,7 +495,7 @@ function ClientList({ clients, invoices, onRefresh }) {
                   setSelected(null)
                   await onRefresh()
                 }}>Delete</button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>\u2715</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setSelected(null)}>{'\u2715'}</button>
             </div>
           </div>
 
@@ -547,13 +547,13 @@ function ClientList({ clients, invoices, onRefresh }) {
       {modal && (
         <div className="modal-overlay">
           <div className="modal modal-md">
-            <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={() => setModal(false)}>\u2715</button></div>
+            <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={() => setModal(false)}>{'\u2715'}</button></div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <div className="form-row">
                 <div className="form-group" style={{maxWidth:90}}>
                   <label className="form-label">Prefix</label>
                   <select className="form-select" value={form.prefix||''} onChange={e=>setForm(f=>({...f,prefix:e.target.value}))}>
-                    <option value="">\u2014</option>
+                    <option value="">{'\u2014'}</option>
                     {['Mr','Mrs','Ms','Dr','Prof','Chief','Alhaji','Alhaja','Sir'].map(p=><option key={p}>{p}</option>)}
                   </select>
                 </div>
@@ -568,7 +568,7 @@ function ClientList({ clients, invoices, onRefresh }) {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Full name * <span style={{fontWeight:400,color:'var(--muted)',textTransform:'none',letterSpacing:0}}>\u2014 auto-fills from above</span></label>
+                  <label className="form-label">Full name * <span style={{fontWeight:400,color:'var(--muted)',textTransform:'none',letterSpacing:0}}>{'\u2014'} auto-fills from above</span></label>
                   <input className="form-input" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} />
                 </div>
                 <div className="form-group">
@@ -707,7 +707,7 @@ function ClientModal({ onClose, onSave }) {
   return (
     <div className="modal-overlay">
       <div className="modal modal-md">
-        <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={onClose}>\u2715</button></div>
+        <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={onClose}>{'\u2715'}</button></div>
         <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div className="form-row">
             <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} /></div>
@@ -911,7 +911,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
       <div className="modal modal-xl" style={{ maxHeight:'94vh' }}>
         <div className="modal-header">
           <div className="modal-title">{isEdit ? `Edit ${editInvoice.invoice_number}` : 'New invoice'}</div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}>\u2715</button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}>{'\u2715'}</button>
         </div>
         <div className="modal-body" style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:24 }}>
           {/* Left: items */}
@@ -929,7 +929,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               {bookSearch && (books||[]).filter(b => b.title?.toLowerCase().includes(bookSearch.toLowerCase()) || b.author?.toLowerCase().includes(bookSearch.toLowerCase())).slice(0,6).map(b => (
                 <div key={b.id} style={{ display:'flex', gap:10, alignItems:'center', padding:'8px 12px', cursor:'pointer', border:'1px solid var(--line)', borderRadius:3, marginBottom:4, background:'var(--white)' }}
                   onClick={()=>addBook(b)}>
-                  {b.cover_url ? <img src={b.cover_url} alt="" style={{width:28,height:36,objectFit:'cover',borderRadius:2}}/> : <div style={{width:28,height:36,background:'var(--parchment-2)',borderRadius:2,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>\uD83D\uDCD6</div>}
+                  {b.cover_url ? <img src={b.cover_url} alt="" style={{width:28,height:36,objectFit:'cover',borderRadius:2}}/> : <div style={{width:28,height:36,background:'var(--parchment-2)',borderRadius:2,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>{'\uD83D'}{'\uDCD6'}</div>}
                   <div>
                     <div style={{ fontSize:13, fontWeight:500 }}>{b.title}</div>
                     <div style={{ fontSize:11, color:'var(--muted)' }}>{b.author} \u00B7 \u20A6{Number(b.price||0).toLocaleString()} \u00B7 {b.stock_count} in stock</div>
@@ -958,7 +958,6 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                       <div style={{ marginLeft:'auto', textAlign:'right' }}>
                       {w.price && <div style={{ fontSize:12, color:'var(--green)' }}>{w.price}</div>}
                       {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment \u00B7 {w.commission_rate||40}% comm.</div>}
-                    </div>
                     </div>
                   ))}
                 </div>
@@ -1236,7 +1235,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                   onSave(); onClose()
                 }}>Delete</button>
             )}
-            <button className="btn btn-ghost btn-icon" onClick={onClose}>\u2715</button>
+            <button className="btn btn-ghost btn-icon" onClick={onClose}>{'\u2715'}</button>
           </div>
         </div>
         <div className="modal-body" style={{ display:'grid', gridTemplateColumns:'1fr 300px', gap:24 }}>
@@ -1421,6 +1420,6 @@ ${bal>0?`<tr><td colspan="4" style="text-align:right;font-weight:600">Balance du
 </tbody></table>
 ${inv.notes?`<div style="margin-top:24px;font-size:12px;color:#6b6760;padding:12px 14px;background:#f8f7f5;border-radius:3px;">${e(inv.notes)}</div>`:''}
 ${payments.length>0?`<div style="margin-top:28px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#6b6760;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #ece8e1;font-size:12px"><span>${e(p.paid_at)} \u00B7 ${e(p.method)}${p.reference?' \u00B7 ref: '+e(p.reference):''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
-<div class="footer"><div>Hourglass Gallery \u00B7 info@hourglassgallery.com \u00B7 +234 (0)1 461 0090</div></div>
+<div class="footer"><div>Hourglass Gallery {'\u00B7'} info@hourglassgallery.com {'\u00B7'} +234 (0)1 461 0090</div></div>
 </body></html>`
 }

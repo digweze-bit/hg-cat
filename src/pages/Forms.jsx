@@ -409,7 +409,7 @@ export default function Forms() {
     return w.title?.toLowerCase().includes(q) || artistMap[w.artist_id]?.toLowerCase().includes(q) || w.hg_code?.toLowerCase().includes(q)
   }).slice(0, bType === 'catalogue' ? 200 : 12)
 
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading\u2026</div>
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading{'\u2026'}</div>
 
   return (
     <div>
@@ -550,7 +550,7 @@ export default function Forms() {
                           if (c) setBRecipient({ name: c.name, email: c.email || '', phone: c.phone || '' })
                           if (c) setBMeta(m => ({ ...m, term_type: c.term_type, commission_rate: c.commission_rate, fixed_amount: c.fixed_amount, sale_type: c.sale_type }))
                         }}>
-                        <option value="">\u2014 select consignor \u2014</option>
+                        <option value="">{'\u2014'} select consignor {'\u2014'}</option>
                         {consignors.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
                       </select>
                     </div>
@@ -672,7 +672,7 @@ export default function Forms() {
                             </div>
                           ) : (
                             <div className="form-group">
-                              <label className="form-label">Fixed net to consignor (\u20A6)</label>
+                              <label className="form-label">Fixed net to consignor ({'\u20A6'})</label>
                               <input className="form-input" type="number" value={bMeta.fixed_amount||''} onChange={e => setBMeta(m => ({ ...m, fixed_amount: e.target.value }))}/>
                             </div>
                           )}
@@ -734,7 +734,7 @@ export default function Forms() {
                           <input className="form-input" value={bMeta.purpose||''} onChange={e => setBMeta(m => ({ ...m, purpose: e.target.value }))} placeholder="e.g. Exhibition loan"/>
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Insurance value (\u20A6)</label>
+                          <label className="form-label">Insurance value ({'\u20A6'})</label>
                           <input className="form-input" type="number" value={bMeta.insurance_value||''} onChange={e => setBMeta(m => ({ ...m, insurance_value: e.target.value }))}/>
                         </div>
                       </div>
@@ -870,7 +870,7 @@ export default function Forms() {
 
               {step === 6 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:20, alignItems:'center', padding:'24px 0' }}>
-                  <div style={{ fontSize:32 }}>\u2713</div>
+                  <div style={{ fontSize:32 }}>{'\u2713'}</div>
                   <div style={{ fontWeight:600, fontSize:16 }}>Form generated</div>
                   <div style={{ fontSize:13, color:'var(--muted)', textAlign:'center' }}>
                     Share the link below with the recipient. They'll be able to view the form and add their signature.
@@ -894,7 +894,7 @@ export default function Forms() {
                     {bRecipient.email && (
                       <a className="btn btn-outline"
                         href={`mailto:${bRecipient.email}?subject=Document for signature \u2014 Hourglass Gallery&body=Please review and sign this document: ${shareUrl}`}>
-                        \u2709 Open in email
+                        {'\u2709'} Open in email
                       </a>
                     )}
                   </div>
@@ -904,7 +904,7 @@ export default function Forms() {
 
             <div className="modal-footer">
               {step > 1 && step < 6 && (
-                <button className="btn btn-outline" onClick={() => setStep(s => s - 1)}>\u2190 Back</button>
+                <button className="btn btn-outline" onClick={() => setStep(s => s - 1)}>{'\u2190'} Back</button>
               )}
               <div style={{ flex:1 }}/>
               {step === 6 ? (
@@ -915,7 +915,7 @@ export default function Forms() {
                 </button>
               ) : step === 4 ? (
                 <button className="btn btn-primary" onClick={() => setStep(5)}>
-                  Preview \u2192
+                  Preview {'\u2192'}
                 </button>
               ) : (
                 <button className="btn btn-primary"
@@ -939,7 +939,7 @@ export default function Forms() {
           <div className="modal" style={{ maxWidth:500 }}>
             <div className="modal-header">
               <div className="modal-title">Share \u2014 {activeForm.reference}</div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>\u2715</button>
+              <button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>{'\u2715'}</button>
             </div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:14 }}>
               <div style={{ background:'var(--surface-0)', borderRadius:4, padding:'12px 16px', fontFamily:'monospace', fontSize:12, wordBreak:'break-all', border:'1px solid var(--line)' }}>
@@ -960,7 +960,7 @@ export default function Forms() {
                 {activeForm.recipient_email && (
                   <a className="btn btn-outline"
                     href={`mailto:${activeForm.recipient_email}?subject=Document for signature \u2014 Hourglass Gallery&body=Please review and sign: ${shareUrl}`}>
-                    \u2709 Email
+                    {'\u2709'} Email
                   </a>
                 )}
               </div>

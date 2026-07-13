@@ -73,7 +73,7 @@ export default function AdminLogin() {
         </div>
 
         <div style={{ textAlign:'center', marginTop:20 }}>
-          <a href="/" style={{ fontSize:12, color:'var(--muted)' }}>\u2190 Back to gallery</a>
+          <a href="/" style={{ fontSize:12, color:'var(--muted)' }}>{'\u2190'} Back to gallery</a>
         </div>
       </div>
     </div>

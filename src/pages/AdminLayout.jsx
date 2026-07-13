@@ -86,7 +86,7 @@ export default function AdminLayout() {
              location.pathname.includes('users') ? 'Staff Users' : ''}
           </div>
           <a href="/" target="_blank" style={{ fontSize:12, color:'var(--muted)' }}>
-            View public site \u2197
+            View public site {'\u2197'}
           </a>
         </div>
         <div className="admin-content">

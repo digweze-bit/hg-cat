@@ -325,7 +325,7 @@ export default function FormSign() {
 
   if (loading) return (
     <div style={{ minHeight:'100vh', background:'#faf8f5', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ fontFamily:'sans-serif', color:'#999' }}>Loading document\u2026</div>
+      <div style={{ fontFamily:'sans-serif', color:'#999' }}>Loading document{'\u2026'}</div>
     </div>
   )
 
@@ -338,7 +338,7 @@ export default function FormSign() {
 
   if (form.status === 'signed' || done) return (
     <div style={{ minHeight:'100vh', background:'#faf8f5', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column', gap:16 }}>
-      <div style={{ fontSize:48 }}>\u2713</div>
+      <div style={{ fontSize:48 }}>{'\u2713'}</div>
       <div style={{ fontFamily:'Georgia,serif', fontSize:22 }}>Document signed</div>
       <div style={{ fontSize:14, color:'#666', textAlign:'center', maxWidth:400 }}>
         Thank you, {form.recipient_name}. This document has been signed and filed with Hourglass Gallery.
@@ -346,7 +346,7 @@ export default function FormSign() {
       {form.pdf_url && (
         <a href={form.pdf_url} target="_blank" rel="noopener noreferrer"
           style={{ marginTop:8, padding:'9px 20px', borderRadius:3, border:'1px solid #e0dbd4', fontSize:13, color:'#1a1714', textDecoration:'none' }}>
-          \u2193 Download signed PDF
+          {'\u2193'} Download signed PDF
         </a>
       )}
     </div>
@@ -414,7 +414,7 @@ export default function FormSign() {
               ? `Fixed net to consignor: \u20A6${Number(form.meta.fixed_amount||0).toLocaleString()}`
               : `Gallery commission ${form.meta.commission_rate||40}% \u00B7 Consignor receives ${100-(form.meta.commission_rate||40)}%`
             } &nbsp;\u00B7&nbsp; <strong>Sale type:</strong> {form.meta.sale_type || 'Secondary'}
-            {form.meta.duration && <span> &nbsp;\u00B7&nbsp; <strong>Duration:</strong> {form.meta.duration}</span>}
+            {form.meta.duration && <span> &nbsp;{'\u00B7'}&nbsp; <strong>Duration:</strong> {form.meta.duration}</span>}
           </div>
         )}
         {form.type === 'loan_agreement' && form.meta && (
