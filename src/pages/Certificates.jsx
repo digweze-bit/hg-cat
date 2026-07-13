@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { useAuth } from '../components/AuthProvider'
 import { LOGO_B64, SIG_B64 } from '../lib/assets'
@@ -186,7 +186,7 @@ export default function Certificates() {
               <div style={{display:'flex',flexDirection:'column',gap:13}}>
                 <div className="form-group">
                   <label className="form-label">Search artwork (optional {'\u2014'} pre-fills details)</label>
-                  <input className="form-input" placeholder="Type title or artist name\u2026" value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} />
+                  <input className="form-input" placeholder="Type title or artist name..." value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} />
                   {artworkSearch&&filteredArtworks.length>0&&(
                     <div style={{border:'1px solid var(--line)',borderTop:'none',borderRadius:'0 0 3px 3px',background:'var(--white)',maxHeight:200,overflowY:'auto'}}>
                       {filteredArtworks.map(w=>(
@@ -240,7 +240,7 @@ export default function Certificates() {
                     <div style={{display:'flex',flexDirection:'column',gap:10,background:'var(--surface-0,#f8f7f5)',borderRadius:6,padding:'12px 14px'}}>
                       <div className="form-group" style={{marginBottom:0}}>
                         <label className="form-label">Edition type</label>
-                        <input className="form-input" placeholder="e.g. Artist's proof, Exhibition copy, Open edition\u2026" value={form.edition_type} onChange={e=>setForm(f=>({...f,edition_type:e.target.value}))}/>
+                        <input className="form-input" placeholder="e.g. Artist's proof, Exhibition copy, Open edition..." value={form.edition_type} onChange={e=>setForm(f=>({...f,edition_type:e.target.value}))}/>
                       </div>
                       <div className="form-row">
                         <div className="form-group" style={{marginBottom:0}}><label className="form-label">Edition number</label><input className="form-input" placeholder="e.g. 3" value={form.edition_number} onChange={e=>setForm(f=>({...f,edition_number:e.target.value}))}/></div>

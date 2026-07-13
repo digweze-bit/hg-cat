@@ -139,7 +139,7 @@ export default function Artists() {
       </div>
 
       <div style={{ display:'flex', gap:10, marginBottom:20, alignItems:'center', flexWrap:'wrap' }}>
-        <input className="form-input" style={{ maxWidth:260 }} placeholder="Search artists\u2026" value={search} onChange={e=>setSearch(e.target.value)} />
+        <input className="form-input" style={{ maxWidth:260 }} placeholder="Search artists..." value={search} onChange={e=>setSearch(e.target.value)} />
         <div style={{ display:'flex', gap:0, border:'1px solid var(--line)', borderRadius:3, overflow:'hidden' }}>
           {[['az','A \u2013 Z'],['most','Most works'],['sold','Most sold']].map(([key,label]) => (
             <button key={key} onClick={() => setSortBy(key)}
@@ -324,7 +324,7 @@ export default function Artists() {
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">Portrait URL</label>
-                  <input className="form-input" value={form.portrait_url||''} onChange={e=>setForm(f=>({...f,portrait_url:e.target.value}))} placeholder="https://\u2026 or upload below" />
+                  <input className="form-input" value={form.portrait_url||''} onChange={e=>setForm(f=>({...f,portrait_url:e.target.value}))} placeholder="https://... or upload below" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Upload portrait</label>

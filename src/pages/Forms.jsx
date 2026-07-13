@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthProvider'
 import { LOGO_B64, SIG_B64 } from '../lib/assets'
@@ -520,7 +520,7 @@ export default function Forms() {
                 <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                   <div style={{ display:'flex', gap:8 }}>
                     <div style={{ flex:1, position:'relative' }}>
-                      <input className="form-input" placeholder="Search artworks by title, artist, HG code\u2026"
+                      <input className="form-input" placeholder="Search artworks by title, artist, HG code..."
                         value={artworkSearch} onChange={e => setArtworkSearch(e.target.value)}/>
                       {artworkSearch && filteredArtworks.length > 0 && (
                         <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'var(--white)', border:'1px solid var(--line)', borderTop:'none', borderRadius:'0 0 4px 4px', zIndex:50, maxHeight:220, overflowY:'auto', boxShadow:'0 4px 12px rgba(0,0,0,.08)' }}>
@@ -703,7 +703,7 @@ export default function Forms() {
                         {['Surface', 'Frame', 'Edges', 'Verso', 'Overall'].map(field => (
                           <div key={field} className="form-group">
                             <label className="form-label">{field}</label>
-                            <input className="form-input" value={bMeta[field.toLowerCase()]||''} onChange={e => setBMeta(m => ({ ...m, [field.toLowerCase()]: e.target.value }))} placeholder="Condition notes\u2026"/>
+                            <input className="form-input" value={bMeta[field.toLowerCase()]||''} onChange={e => setBMeta(m => ({ ...m, [field.toLowerCase()]: e.target.value }))} placeholder="Condition notes..."/>
                           </div>
                         ))}
                         <div className="form-group">

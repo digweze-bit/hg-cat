@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 
@@ -124,7 +124,7 @@ export default function Consignors() {
           <button className="btn btn-primary" onClick={openNew}>+ Add consignor</button>
         </div>
 
-        <input className="form-input" placeholder="Search consignors\u2026" value={search}
+        <input className="form-input" placeholder="Search consignors..." value={search}
           onChange={e=>setSearch(e.target.value)} style={{marginBottom:12}}/>
 
         <div className="card" style={{flex:1, overflowY:'auto', padding:0}}>

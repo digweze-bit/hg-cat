@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { LOGO_B64 } from '../lib/assets'
@@ -521,7 +521,7 @@ export default function FormSign() {
             <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
               <input
                 style={{ padding:'12px 14px', fontSize:14, border:'1px solid #e8e3db', borderRadius:4, fontFamily:'inherit', outline:'none' }}
-                placeholder="Type your full name\u2026"
+                placeholder="Type your full name..."
                 value={typedName}
                 onChange={e => setTypedName(e.target.value)}
               />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { fetchAll } from '../lib/supabase'
 
 const PLACEHOLDER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"%3E%3Crect width="400" height="500" fill="%23ede9e2"/%3E%3C/svg%3E'
@@ -207,7 +207,7 @@ export default function Catalogue() {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search by artist, title, tag or e.g. 'Boadi large works'\u2026"
+          placeholder="Search by artist, title, tag or e.g. 'Boadi large works'..."
           style={{ width:'100%', padding:'8px 0', border:'none', borderBottom:'1px solid #e8e5e0', fontSize:13, color:'#333', background:'transparent', fontFamily:'inherit', outline:'none' }}
         />
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { useParams, useNavigate } from 'react-router-dom'
 
@@ -261,7 +261,7 @@ export default function Archive() {
           <input
             className="form-input"
             style={{ fontSize:12 }}
-            placeholder="Search artists\u2026"
+            placeholder="Search artists..."
             value={artistSearch}
             onChange={e => setArtistSearch(e.target.value)}
           />
@@ -613,11 +613,11 @@ export default function Archive() {
               </div>
               <div className="form-group">
                 <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>{'\u2014'} known history, ownership context</span></label>
-                <textarea className="form-textarea" rows={3} value={form.provNotes||''} onChange={e=>setForm(f=>({...f,provNotes:e.target.value}))} placeholder="e.g. Exhibited at FESTAC 77; acquired by Uche Okeke; sold by estate 2026\u2026" />
+                <textarea className="form-textarea" rows={3} value={form.provNotes||''} onChange={e=>setForm(f=>({...f,provNotes:e.target.value}))} placeholder="e.g. Exhibited at FESTAC 77; acquired by Uche Okeke; sold by estate 2026..." />
               </div>
               <div className="form-group">
                 <label className="form-label">Notes</label>
-                <textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Subject, inscriptions, condition\u2026" />
+                <textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Subject, inscriptions, condition..." />
               </div>
             </div>
             <div className="modal-footer">
@@ -672,7 +672,7 @@ export default function Archive() {
               <div className="form-group">
                 <label className="form-label">{modal==='addProvGap' ? 'Gap description' : 'Description / context'}</label>
                 <textarea className="form-textarea" rows={3} value={form.description||''} onChange={e=>setForm(f=>({...f,description:e.target.value}))}
-                  placeholder={modal==='addProvGap' ? 'Reason for gap \u2014 no documentation available, disputed ownership, etc.' : 'How ownership was transferred, exhibition context, acquisition method\u2026'} />
+                  placeholder={modal==='addProvGap' ? 'Reason for gap \u2014 no documentation available, disputed ownership, etc.' : 'How ownership was transferred, exhibition context, acquisition method...'} />
               </div>
 
               {modal !== 'addProvGap' && <>
@@ -1022,7 +1022,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
             {/* Artist picker */}
             <div>
               <div style={{ fontSize:11, color:'var(--muted)', marginBottom:5 }}>Artist</div>
-              <input className="form-input" placeholder="Search artists\u2026" value={artistSearch} onChange={e=>setArtistSearch(e.target.value)} style={{ marginBottom:6 }} />
+              <input className="form-input" placeholder="Search artists..." value={artistSearch} onChange={e=>setArtistSearch(e.target.value)} style={{ marginBottom:6 }} />
               <div style={{ border:'1px solid var(--line)', borderRadius:3, maxHeight:200, overflowY:'auto', background:'var(--white)' }}>
                 {artists.filter(a => !artistSearch || a.name.toLowerCase().includes(artistSearch.toLowerCase())).map(a => (
                   <div key={a.id}
@@ -1036,7 +1036,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
             {/* Artwork picker */}
             <div>
               <div style={{ fontSize:11, color:'var(--muted)', marginBottom:5 }}>Artwork</div>
-              <input className="form-input" placeholder="Search artworks\u2026" value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} style={{ marginBottom:6 }} disabled={!selectedArtistId} />
+              <input className="form-input" placeholder="Search artworks..." value={artworkSearch} onChange={e=>setArtworkSearch(e.target.value)} style={{ marginBottom:6 }} disabled={!selectedArtistId} />
               <div style={{ border:'1px solid var(--line)', borderRadius:3, maxHeight:200, overflowY:'auto', background:'var(--white)' }}>
                 {loadingGlobal
                   ? <div style={{ padding:'12px', fontSize:12, color:'var(--muted)' }}>Loading artworks{'\u2026'}</div>
@@ -1116,23 +1116,23 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
       </div>
       <div className="form-group">
         <label className="form-label">Notes about the work</label>
-        <textarea className="form-textarea" rows={2} value={details.notes||''} onChange={e=>setDetails(d=>({...d,notes:e.target.value}))} placeholder="Subject, inscriptions, signatures\u2026" />
+        <textarea className="form-textarea" rows={2} value={details.notes||''} onChange={e=>setDetails(d=>({...d,notes:e.target.value}))} placeholder="Subject, inscriptions, signatures..." />
       </div>
       <div className="form-group">
         <label className="form-label">Provenance notes <span style={{ fontWeight:400, textTransform:'none', letterSpacing:0, fontSize:10, color:'var(--gold)' }}>{'\u2014'} narrative ownership context, shown in provenance section</span></label>
-        <textarea className="form-textarea" rows={3} value={details.provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026\u2026" />
+        <textarea className="form-textarea" rows={3} value={details.provNotes||''} onChange={e=>setDetails(d=>({...d,provNotes:e.target.value}))} placeholder="e.g. Exhibited FESTAC 77; acquired by Uche Okeke; sold by his estate 2026..." />
       </div>
       <div className="form-group">
         <label className="form-label">Exhibition history</label>
-        <textarea className="form-textarea" rows={3} value={details.exhibitionHistory||''} onChange={e=>setDetails(d=>({...d,exhibitionHistory:e.target.value}))} placeholder="e.g. FESTAC 77, Lagos; Smithsonian Institution 1982; National Gallery of Modern Art, New Delhi 1996\u2026" />
+        <textarea className="form-textarea" rows={3} value={details.exhibitionHistory||''} onChange={e=>setDetails(d=>({...d,exhibitionHistory:e.target.value}))} placeholder="e.g. FESTAC 77, Lagos; Smithsonian Institution 1982; National Gallery of Modern Art, New Delhi 1996..." />
       </div>
       <div className="form-group">
         <label className="form-label">Other information</label>
-        <textarea className="form-textarea" rows={2} value={details.otherInfo||''} onChange={e=>setDetails(d=>({...d,otherInfo:e.target.value}))} placeholder="Literature references, inscriptions, stamps, labels, condition notes\u2026" />
+        <textarea className="form-textarea" rows={2} value={details.otherInfo||''} onChange={e=>setDetails(d=>({...d,otherInfo:e.target.value}))} placeholder="Literature references, inscriptions, stamps, labels, condition notes..." />
       </div>
       <div className="form-group">
         <label className="form-label">Additional notes for this document</label>
-        <textarea className="form-textarea" rows={2} value={details.additionalNotes||''} onChange={e=>setDetails(d=>({...d,additionalNotes:e.target.value}))} placeholder="Any caveats, specific requirements, or context for this report\u2026" />
+        <textarea className="form-textarea" rows={2} value={details.additionalNotes||''} onChange={e=>setDetails(d=>({...d,additionalNotes:e.target.value}))} placeholder="Any caveats, specific requirements, or context for this report..." />
       </div>
 
       {/* Provenance chain preview (existing only) */}

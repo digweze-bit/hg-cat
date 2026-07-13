@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { useAuth } from '../components/AuthProvider'
@@ -178,7 +178,7 @@ export default function Books() {
 
       {/* Filters */}
       <div style={{display:'flex', gap:8, flexWrap:'wrap', marginBottom:18}}>
-        <input className="form-input" style={{width:240}} placeholder="Search title, author, ISBN\u2026"
+        <input className="form-input" style={{width:240}} placeholder="Search title, author, ISBN..."
           value={search} onChange={e=>setSearch(e.target.value)}/>
         <select className="form-select" style={{width:160}} value={filterFormat} onChange={e=>setFilterFormat(e.target.value)}>
           <option value="">All formats</option>
@@ -290,7 +290,7 @@ export default function Books() {
                   </div>
                   <div className="form-group">
                     <label className="form-label">ISBN</label>
-                    <input className="form-input" value={form.isbn||''} onChange={e=>setForm(f=>({...f,isbn:e.target.value}))} placeholder="978-\u2026"/>
+                    <input className="form-input" value={form.isbn||''} onChange={e=>setForm(f=>({...f,isbn:e.target.value}))} placeholder="978-..."/>
                   </div>
                 </div>
                 <div className="form-row">
