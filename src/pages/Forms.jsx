@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+﻿import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthProvider'
 import { LOGO_B64, SIG_B64 } from '../lib/assets'
@@ -911,11 +911,11 @@ export default function Forms() {
                 <button className="btn btn-primary" onClick={() => { setModal(null); resetBuilder() }}>Done</button>
               ) : step === 5 ? (
                 <button className="btn btn-primary" onClick={handleGenerate} disabled={saving}>
-                  {saving ? 'Generating\u2026' : 'Confirm & Generate \u2192'}
+                  {saving ? 'Generating...' : 'Confirm & Generate'}
                 </button>
               ) : step === 4 ? (
                 <button className="btn btn-primary" onClick={() => setStep(5)}>
-                  Preview {'\u2192'}
+                  Preview
                 </button>
               ) : (
                 <button className="btn btn-primary"
@@ -925,7 +925,7 @@ export default function Forms() {
                     (step === 2 && bArtworks.length === 0) ||
                     (step === 3 && !bRecipient.name && bType !== 'catalogue')
                   }>
-                  Next \u2192
+                  Next
                 </button>
               )}
             </div>
