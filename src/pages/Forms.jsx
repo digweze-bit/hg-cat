@@ -21,16 +21,19 @@ const STATUS = {
 }
 
 // ── CATALOGUE PDF GENERATOR ──────────────────────────────────────────
-async function generateCatalogue(options, artworks, logoB64) {
+async function generateCatalogue(options, artworks, logoB64, previewOnly = false, artists = []) {
   const { showLogo, showPricing, showBio, title, intro } = options
 
-  // Collect unique artists with bios
+  // Collect unique artists with bios — from artists array
   const artistsSeen = new Set()
   const artistBios = {}
+  // Build name->bio from artists list
+  const artistBioMap = {}
+  artists.forEach(a => { if (a.name && a.bio) artistBioMap[a.name] = a.bio })
   artworks.forEach(w => {
     if (w.artist_name && !artistsSeen.has(w.artist_name)) {
       artistsSeen.add(w.artist_name)
-      if (w.artist_bio) artistBios[w.artist_name] = w.artist_bio
+      artistBios[w.artist_name] = artistBioMap[w.artist_name] || w.artist_bio || null
     }
   })
 
@@ -253,7 +256,9 @@ ${pages}
   if (!w) { alert('Please allow popups'); return }
   w.document.write(html)
   w.document.close()
-  setTimeout(() => w.print(), 2500)
+  if (!previewOnly) {
+    setTimeout(() => w.print(), 2500)
+  }
 }
 
 function escH(s) {
@@ -271,7 +276,8 @@ export default function Forms() {
   const [loading, setLoading]   = useState(true)
   const [modal, setModal]       = useState(null)   // null | 'new' | 'view'
   const [activeForm, setActiveForm] = useState(null)
-  const [step, setStep]         = useState(1)      // 1=type 2=artworks 3=details 4=sign 5=preview 6=share
+  const [step, setStep]         = useState(1)      // catalogue: 1=type 2=artworks 3=options
+  // other forms: 1=type 2=artworks 3=details 4=sign 5=preview 6=share
   const [saving, setSaving]     = useState(false)
 
   // Builder state
@@ -280,7 +286,7 @@ export default function Forms() {
   const [bRecipient, setBRecipient] = useState({ name:'', email:'', phone:'' })
   const [bMeta, setBMeta]       = useState({})
   const [bGallerySig, setBGallerySig] = useState('stored')  // 'stored' | 'drawn'
-  const [catOptions, setCatOptions] = useState({ showLogo:true, showPricing:true, showBio:true, title:'', intro:'' })
+  const [catOptions, setCatOptions] = useState({ showLogo:true, showPricing:true, showBio:false, title:'', intro:'' })
   const [drawnSig, setDrawnSig] = useState(null)   // base64
   const [artworkSearch, setArtworkSearch] = useState('')
   const [shareUrl, setShareUrl] = useState('')
@@ -401,7 +407,7 @@ export default function Forms() {
     if (!artworkSearch) return false
     const q = artworkSearch.toLowerCase()
     return w.title?.toLowerCase().includes(q) || artistMap[w.artist_id]?.toLowerCase().includes(q) || w.hg_code?.toLowerCase().includes(q)
-  }).slice(0, 8)
+  }).slice(0, bType === 'catalogue' ? 200 : 12)
 
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading…</div>
 
@@ -481,7 +487,7 @@ export default function Forms() {
             <div className="modal-header">
               <div>
                 <div className="modal-title">New form</div>
-                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Step {step} of 6 — {['','Form type','Artworks','Recipient & details','Gallery signature','Preview','Share'][step]}</div>
+                <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>Step {bType === 'catalogue' ? `${step} of 3` : `${step} of 6`} — {bType === 'catalogue' ? ['','Form type','Artworks','Options'][step] || '' : ['','Form type','Artworks','Recipient & details','Gallery signature','Preview','Share'][step]}</div>
               </div>
               <button className="btn btn-ghost btn-icon" onClick={() => { setModal(null); resetBuilder() }}>✕</button>
             </div>
