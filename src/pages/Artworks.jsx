@@ -491,7 +491,7 @@ export default function Artworks() {
     <div>
       <div className="page-header flex items-center justify-between">
         <div>
-          <div className="page-subtitle">{artworks.length} total {'\u00B7'} {artworks.filter(w=>w.visible).length} visible {'\u00B7'} {artworks.filter(w=>w.availability==='Available').length} available</div>
+
           <div className="page-subtitle">{artworks.length} total \u00B7 {artworks.filter(w=>w.visible).length} visible \u00B7 {artworks.filter(w=>w.availability==='Available').length} available</div>
         </div>
       </div>
