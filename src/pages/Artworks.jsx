@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
@@ -492,7 +492,7 @@ export default function Artworks() {
       <div className="page-header flex items-center justify-between">
         <div>
 
-          <div className="page-subtitle">{artworks.length} total \u00B7 {artworks.filter(w=>w.visible).length} visible \u00B7 {artworks.filter(w=>w.availability==='Available').length} available</div>
+          <div className="page-subtitle">{artworks.length} total {'\u00B7'} {artworks.filter(w=>w.visible).length} visible {'\u00B7'} {artworks.filter(w=>w.availability==='Available').length} available</div>
         </div>
       </div>
 
