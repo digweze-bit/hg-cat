@@ -22,22 +22,13 @@ const STATUS = {
 
 // \u2500\u2500 CATALOGUE PDF GENERATOR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 async function generateCatalogue(options, artworks, logoB64, previewOnly = false, artists = []) {
-  const { showLogo, showPricing, showBio, title, intro } = options
+  const { format, showPricing, showBio, artworkBios } = options
 
-  // Collect unique artists with bios \u2014 from artists array
-  const artistsSeen = new Set()
-  const artistBios = {}
-  // Build name->bio from artists list
+  // Build artist bio map
   const artistBioMap = {}
   artists.forEach(a => { if (a.name && a.bio) artistBioMap[a.name] = a.bio })
-  artworks.forEach(w => {
-    if (w.artist_name && !artistsSeen.has(w.artist_name)) {
-      artistsSeen.add(w.artist_name)
-      artistBios[w.artist_name] = artistBioMap[w.artist_name] || w.artist_bio || null
-    }
-  })
 
-  // Convert all images to base64 for reliable rendering in popup
+  // Convert images to base64
   async function toBase64(url) {
     if (!url) return null
     try {
@@ -57,53 +48,79 @@ async function generateCatalogue(options, artworks, logoB64, previewOnly = false
     if (w.image_url) imgMap[w.artwork_id || w.id] = await toBase64(w.image_url)
   }))
 
-  let pages = ''
-
-  // Cover / title page (if title provided)
-  if (title || intro) {
-    pages += `
-    <div class="page cover-page">
-      ${showLogo && logoB64 ? `<div class="logo-wrap"><img src="${logoB64}" class="logo"></div>` : ''}
-      <div class="cover-content">
-        ${title ? `<h1 class="cover-title">${escH(title)}</h1>` : ''}
-        ${intro ? `<p class="cover-intro">${escH(intro)}</p>` : ''}
-      </div>
-    </div>`
+  function artworkCaption(w) {
+    const price = showPricing && (w.price || w.retail_price)
+      ? (w.price || ('N' + Number(w.retail_price).toLocaleString()))
+      : null
+    const details = [w.medium, w.dimensions, w.year ? String(w.year) : null].filter(Boolean).join('  ·  ')
+    return `
+      <div class="caption">
+        <div class="caption-title">${escH(w.title || 'Untitled')}</div>
+        <div class="caption-artist">${escH(w.artist_name || '')}</div>
+        ${details ? `<div class="caption-details">${escH(details)}</div>` : ''}
+        ${price ? `<div class="caption-price">${escH(price)}</div>` : ''}
+      </div>`
   }
 
-  // Artwork pages
-  let lastArtist = null
-  artworks.forEach((w, i) => {
-    const isFirst = i === 0
-    const imgSrc = imgMap[w.artwork_id || w.id] || w.image_url
-    const details = [w.medium, w.dimensions, w.year].filter(Boolean).join('  \u00B7  ')
-    const price = showPricing && (w.price || w.retail_price)
-      ? (w.price || ('\u20A6' + Number(w.retail_price).toLocaleString()))
-      : ''
+  let pages = ''
 
-    pages += `
-    <div class="page artwork-page">
-      ${isFirst && showLogo && logoB64 && !title ? `<div class="logo-wrap"><img src="${logoB64}" class="logo"></div>` : ''}
-      <div class="artwork-image-wrap">
-        ${imgSrc ? `<img src="${imgSrc}" class="artwork-image">` : '<div class="artwork-placeholder"></div>'}
-      </div>
-      <div class="artwork-caption">
-        <div class="artwork-title">${escH(w.title || 'Untitled')}</div>
-        <div class="artwork-artist">${escH(w.artist_name || '')}</div>
-        ${details ? `<div class="artwork-details">${escH(details)}</div>` : ''}
-        ${price ? `<div class="artwork-price">${escH(price)}</div>` : ''}
-      </div>
-    </div>`
-  })
+  // ── COVER PAGE (always) ──
+  pages += `
+  <div class="page cover-page">
+    ${logoB64 ? `<img src="${logoB64}" class="cover-logo">` : `<div class="cover-logo-text">HOURGLASS GALLERY</div>`}
+  </div>`
 
-  // Bio pages \u2014 one per artist, after all artworks
+  // ── ARTWORK PAGES ──
+  if (format === 'single') {
+    // One artwork per page
+    artworks.forEach((w, i) => {
+      const imgSrc = imgMap[w.artwork_id || w.id] || w.image_url
+      pages += `
+      <div class="page artwork-page">
+        <div class="img-wrap single">
+          ${imgSrc ? `<img src="${imgSrc}" class="artwork-img">` : '<div class="img-placeholder"></div>'}
+        </div>
+        ${artworkCaption(w)}
+      </div>`
+    })
+  } else {
+    // Two artworks per page
+    for (let i = 0; i < artworks.length; i += 2) {
+      const w1 = artworks[i]
+      const w2 = artworks[i + 1]
+      const img1 = imgMap[w1.artwork_id || w1.id] || w1.image_url
+      const img2 = w2 ? (imgMap[w2.artwork_id || w2.id] || w2.image_url) : null
+      pages += `
+      <div class="page artwork-page two-up">
+        <div class="two-up-item">
+          <div class="img-wrap two">
+            ${img1 ? `<img src="${img1}" class="artwork-img">` : '<div class="img-placeholder"></div>'}
+          </div>
+          ${artworkCaption(w1)}
+        </div>
+        ${w2 ? `<div class="two-up-item">
+          <div class="img-wrap two">
+            ${img2 ? `<img src="${img2}" class="artwork-img">` : '<div class="img-placeholder"></div>'}
+          </div>
+          ${artworkCaption(w2)}
+        </div>` : '<div class="two-up-item"></div>'}
+      </div>`
+    }
+  }
+
+  // ── BIO PAGES ──
   if (showBio) {
-    Object.entries(artistBios).forEach(([artist, bio]) => {
+    const seenArtists = new Set()
+    artworks.forEach(w => {
+      if (!w.artist_name || seenArtists.has(w.artist_name)) return
+      seenArtists.add(w.artist_name)
+      // Use manually entered bio or pull from artists array
+      const bio = (artworkBios && artworkBios[w.artist_name]) || artistBioMap[w.artist_name]
       if (!bio) return
       pages += `
       <div class="page bio-page">
         <div class="bio-content">
-          <div class="bio-name">${escH(artist)}</div>
+          <div class="bio-name">${escH(w.artist_name)}</div>
           <div class="bio-text">${escH(bio)}</div>
         </div>
       </div>`
@@ -114,132 +131,55 @@ async function generateCatalogue(options, artworks, logoB64, previewOnly = false
 <html>
 <head>
 <meta charset="UTF-8">
-<title>${escH(title || 'Hourglass Gallery Catalogue')}</title>
+<title>Hourglass Gallery Catalogue</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
 
-body {
-  font-family: 'Cormorant Garamond', 'Georgia', serif;
-  background: #fff;
-  color: #1a1714;
-}
+body { font-family: 'Cormorant Garamond', Georgia, serif; color: #1a1714; background: #fff; }
 
 .page {
   width: 100%;
   min-height: 100vh;
   page-break-after: always;
-  position: relative;
-  padding: 32px 40px 28px;
+  padding: 36px 48px 32px;
   display: flex;
   flex-direction: column;
 }
 
-.logo-wrap {
-  position: absolute;
-  top: 28px;
-  right: 36px;
-}
-.logo {
-  height: 22px;
-  object-fit: contain;
-  opacity: .7;
-}
-
-/* Cover page */
+/* Cover */
 .cover-page {
   justify-content: center;
-  align-items: flex-start;
-  padding-top: 120px;
-}
-.cover-title {
-  font-size: 32px;
-  font-weight: 300;
-  letter-spacing: .02em;
-  color: #1a1714;
-  margin-bottom: 24px;
-  line-height: 1.2;
-  max-width: 500px;
-}
-.cover-intro {
-  font-size: 16px;
-  font-weight: 300;
-  color: #666;
-  line-height: 1.8;
-  max-width: 420px;
-}
-
-/* Artwork page */
-.artwork-page {
-  justify-content: space-between;
-}
-.artwork-image-wrap {
-  flex: 1;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 0 20px;
+  background: #fff;
 }
-.artwork-image {
-  max-width: 100%;
-  max-height: 75vh;
-  object-fit: contain;
-  display: block;
-}
-.artwork-placeholder {
-  width: 100%;
-  height: 60vh;
-  background: #f5f2ee;
-}
-.artwork-caption {
-  border-top: 1px solid #e8e3db;
-  padding-top: 14px;
-}
-.artwork-title {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: .01em;
-  margin-bottom: 3px;
-}
-.artwork-artist {
-  font-size: 14px;
-  font-weight: 300;
-  color: #444;
-  margin-bottom: 4px;
-}
-.artwork-details {
-  font-size: 12px;
-  font-weight: 300;
-  color: #888;
-  letter-spacing: .03em;
-  margin-bottom: 4px;
-}
-.artwork-price {
-  font-size: 13px;
-  font-weight: 400;
-  color: #1a1714;
-  margin-top: 2px;
-}
+.cover-logo { height: 48px; object-fit: contain; opacity: .85; }
+.cover-logo-text { font-size: 22px; font-weight: 300; letter-spacing: .18em; color: #1a1714; }
 
-/* Bio page */
-.bio-page {
-  justify-content: center;
-}
-.bio-content {
-  max-width: 480px;
-}
-.bio-name {
-  font-size: 20px;
-  font-weight: 400;
-  margin-bottom: 20px;
-  letter-spacing: .02em;
-}
-.bio-text {
-  font-size: 14px;
-  font-weight: 300;
-  line-height: 1.9;
-  color: #444;
-}
+/* Artwork pages */
+.artwork-page { justify-content: space-between; }
+
+.img-wrap { display: flex; align-items: center; justify-content: center; }
+.img-wrap.single { flex: 1; padding: 12px 0 20px; }
+.img-wrap.two { height: 36vh; margin-bottom: 12px; }
+.artwork-img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.img-placeholder { width: 100%; height: 100%; background: #f5f2ee; }
+
+.two-up { flex-direction: row; gap: 40px; }
+.two-up-item { flex: 1; display: flex; flex-direction: column; }
+
+/* Caption */
+.caption { border-top: 1px solid #e8e3db; padding-top: 12px; }
+.caption-title { font-size: 14px; font-weight: 600; letter-spacing: .01em; margin-bottom: 2px; }
+.caption-artist { font-size: 13px; font-weight: 300; color: #444; margin-bottom: 3px; }
+.caption-details { font-size: 11px; font-weight: 300; color: #999; letter-spacing: .03em; margin-bottom: 3px; }
+.caption-price { font-size: 12px; font-weight: 400; color: #1a1714; margin-top: 4px; }
+
+/* Bio pages */
+.bio-page { justify-content: center; padding-top: 80px; }
+.bio-content { max-width: 480px; }
+.bio-name { font-size: 22px; font-weight: 300; letter-spacing: .03em; margin-bottom: 24px; }
+.bio-text { font-size: 13px; font-weight: 300; line-height: 2; color: #444; }
 
 @media print {
   .page { min-height: 100vh; }
@@ -252,18 +192,11 @@ ${pages}
 </body>
 </html>`
 
-  const w = window.open('', '_blank', 'width=900,height=700')
+  const w = window.open('', '_blank', 'width=900,height=750')
   if (!w) { alert('Please allow popups'); return }
   w.document.write(html)
   w.document.close()
-  if (!previewOnly) {
-    setTimeout(() => w.print(), 2500)
-  }
-}
-
-function escH(s) {
-  if (!s) return ''
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+  if (!previewOnly) setTimeout(() => w.print(), 3000)
 }
 
 
@@ -286,7 +219,7 @@ export default function Forms() {
   const [bRecipient, setBRecipient] = useState({ name:'', email:'', phone:'' })
   const [bMeta, setBMeta]       = useState({})
   const [bGallerySig, setBGallerySig] = useState('stored')  // 'stored' | 'drawn'
-  const [catOptions, setCatOptions] = useState({ showLogo:true, showPricing:true, showBio:false, title:'', intro:'' })
+  const [catOptions, setCatOptions] = useState({ format:'single', showPricing:false, showBio:false, artworkBios:{} })
   const [drawnSig, setDrawnSig] = useState(null)   // base64
   const [artworkSearch, setArtworkSearch] = useState('')
   const [shareUrl, setShareUrl] = useState('')
