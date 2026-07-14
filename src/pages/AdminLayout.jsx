@@ -1,4 +1,4 @@
-import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+﻿import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../components/AuthProvider'
 
 const NAV = [
@@ -12,6 +12,7 @@ const NAV = [
   { path: '/admin/sales', label: 'Sales & Invoices', icon: '\u25D1' },
   { path: '/admin/consignors', label: 'Consignors', icon: '\u25D0' },
   { path: '/admin/books', label: 'Books', icon: '\u25A3' },
+  { path: '/admin/catalogue', label: 'Catalogue', icon: '\u25A4' },
   { path: '/admin/forms', label: 'Forms', icon: '\u25FB' },
   { path: '/admin/reports', label: 'Reports', icon: '\u25E7' },
   { path: '/admin/certificates', label: 'Certificates', icon: '\u25C7' },

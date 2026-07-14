@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AuthProvider } from './components/AuthProvider'
@@ -71,6 +71,7 @@ export default function App() {
               <Route path="consignors" element={<Consignors />} />
               <Route path="books" element={<Books />} />
               <Route path="forms" element={<Forms />} />
+              <Route path="catalogue" element={<CatalogueBuilder />} />
               <Route path="reports" element={<Reports />} />
               <Route path="certificates" element={<Certificates />} />
               <Route path="users" element={<Users />} />
@@ -82,3 +83,4 @@ export default function App() {
     </BrowserRouter>
   )
 }
+import CatalogueBuilder from './pages/CatalogueBuilder'
