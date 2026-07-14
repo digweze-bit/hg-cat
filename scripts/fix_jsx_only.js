@@ -1,13 +1,22 @@
 /**
- * Fixes \uXXXX sequences that appear as raw text in JSX text nodes.
- * Only fixes patterns like: >text \uXXXX text<
- * Does NOT touch JS strings, template literals, or comment lines.
+ * Fixes \uXXXX sequences in JSX that render as literal text.
+ * Catches two patterns:
+ * 1. Between > and < : >text \uXXXX text<
+ * 2. Between > and { : >\uXXXX{expression}
+ * Also replaces \uXXXX in placeholder/title attributes with plain text equivalents.
  */
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SRC = path.join(__dirname, '..', 'src')
+
+// Plain text fallbacks for common chars in attributes
+const ATTR_REPLACEMENTS = {
+  '\\u2026': '...', '\\u2014': '-', '\\u2013': '-',
+  '\\u00B7': '.', '\\u00D7': 'x', '\\u20A6': 'N',
+  '\\u2022': '*', '\\u2192': '>', '\\u2190': '<',
+}
 
 function fixFile(fp) {
   if (!['.jsx'].includes(path.extname(fp))) return
@@ -20,35 +29,46 @@ function fixFile(fp) {
 
   const fixed = lines.map((line, i) => {
     if (!line.includes('\\u')) return line
-    if (line.trim().startsWith('//') || line.trim().startsWith('*') || line.trim().startsWith('/*')) return line
+    if (line.trim().startsWith('//') || line.trim().startsWith('*')) return line
 
-    // Match \uXXXX that is:
-    // 1. After a > (JSX text node start)  
-    // 2. NOT inside quotes (', ", `)
-    // 3. NOT already inside {} expression
-    // Strategy: split line by JSX text segments between > and <
-    // A JSX text segment is between > and the next < or {
-    
     let newLine = line
-    // Replace \uXXXX that appears after > and before < or {, not inside any quotes
-    // Pattern: after closing >, plain text with \uXXXX before next < or {
+
+    // Fix 1: \uXXXX between > and < (not inside quotes or {})
     newLine = newLine.replace(
-      />([^<{}\n]*\\u[0-9A-Fa-f]{4,5}[^<{}\n]*?)(?=[<{])/g,
+      />([^<{}\n'"` ]*\\u[0-9A-Fa-f]{4,5}[^<{}\n'"` ]*?)(?=[<{])/g,
       (m, text) => {
-        // Only fix if the \u is not inside a string (no quotes around it in this segment)
-        if (text.includes("'") || text.includes('"') || text.includes('`')) return m
         const fixedText = text.replace(/\\u([0-9A-Fa-f]{4,5})/g, (_, h) => `{'\\u${h}'}`)
-        if (fixedText !== text) {
-          changed = true
-          console.log(`  ${path.basename(fp)}:${i+1} fixed: ${text.trim().slice(0,50)}`)
-        }
+        if (fixedText !== text) changed = true
         return `>${fixedText}`
       }
     )
+
+    // Fix 2: \uXXXX immediately before { in JSX text (e.g. \u20A6{value})
+    newLine = newLine.replace(
+      />((?:[^<{}"'`])*?)(\\u[0-9A-Fa-f]{4,5})\{/g,
+      (m, before, escape) => {
+        changed = true
+        return `>${before}{'${escape}'}{`
+      }
+    )
+
+    // Fix 3: \uXXXX in placeholder/title/aria attributes - replace with plain text
+    if (newLine.match(/placeholder=|title=|aria-/)) {
+      for (const [bad, good] of Object.entries(ATTR_REPLACEMENTS)) {
+        if (newLine.includes(bad)) {
+          newLine = newLine.split(bad).join(good)
+          changed = true
+        }
+      }
+    }
+
     return newLine
   }).join('\n')
 
-  if (changed) fs.writeFileSync(fp, fixed, 'utf8')
+  if (changed) {
+    fs.writeFileSync(fp, fixed, 'utf8')
+    console.log(`  Fixed: ${path.basename(fp)}`)
+  }
 }
 
 function walk(dir) {
@@ -59,6 +79,6 @@ function walk(dir) {
   }
 }
 
-console.log('Fixing raw \\uXXXX in JSX text nodes...\n')
+console.log('Fixing \\uXXXX in JSX...\n')
 walk(SRC)
 console.log('\nDone.')

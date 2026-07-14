@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { useParams, useNavigate } from 'react-router-dom'
 
@@ -672,7 +672,7 @@ export default function Archive() {
               <div className="form-group">
                 <label className="form-label">{modal==='addProvGap' ? 'Gap description' : 'Description / context'}</label>
                 <textarea className="form-textarea" rows={3} value={form.description||''} onChange={e=>setForm(f=>({...f,description:e.target.value}))}
-                  placeholder={modal==='addProvGap' ? 'Reason for gap \u2014 no documentation available, disputed ownership, etc.' : 'How ownership was transferred, exhibition context, acquisition method...'} />
+                  placeholder={modal==='addProvGap' ? 'Reason for gap - no documentation available, disputed ownership, etc.' : 'How ownership was transferred, exhibition context, acquisition method...'} />
               </div>
 
               {modal !== 'addProvGap' && <>
