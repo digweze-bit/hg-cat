@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { formatAmount } from '../lib/currencies'
 
@@ -126,7 +126,7 @@ export default function Reports() {
             </div>
             <div className="card" style={{ padding:'16px 18px' }}>
               <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>
-                \u20A6{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+                {'\u20A6'}{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
               </div>
               <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Total revenue</div>
             </div>
@@ -165,7 +165,7 @@ export default function Reports() {
                     <tr>
                       <td colSpan={6} style={{ textAlign:'right', fontWeight:600, padding:'10px 14px', borderTop:'2px solid var(--line)' }}>Total</td>
                       <td style={{ fontWeight:600, color:'var(--green)', padding:'10px 14px', borderTop:'2px solid var(--line)' }}>
-                        \u20A6{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+                        {'\u20A6'}{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
                       </td>
                     </tr>
                   </tfoot>
@@ -268,7 +268,7 @@ export default function Reports() {
             </div>
             <div className="card" style={{ padding:'16px 18px' }}>
               <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>
-                \u20A6{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+                {'\u20A6'}{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
               </div>
               <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Total outstanding (NGN equiv.)</div>
             </div>
@@ -311,7 +311,7 @@ export default function Reports() {
                     <tr>
                       <td colSpan={4} style={{ textAlign:'right', fontWeight:600, padding:'10px 14px', borderTop:'2px solid var(--line)' }}>Total outstanding</td>
                       <td style={{ fontWeight:600, color:'var(--amber)', padding:'10px 14px', borderTop:'2px solid var(--line)' }}>
-                        \u20A6{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+                        {'\u20A6'}{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
                       </td>
                       <td colSpan={3} style={{ borderTop:'2px solid var(--line)' }} />
                     </tr>
