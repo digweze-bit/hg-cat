@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
@@ -1205,7 +1205,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
 
   async function printInvoice() {
     let logoB64 = null
-    try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_B64 } catch(_) {}
+    try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_SMALL_B64 || assets.LOGO_B64 } catch(_) {}
     const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
     const w = window.open('', '_blank', 'width=900,height=700')
     if (!w) { alert('Please allow popups for this site to print invoices'); return }
