@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { LOGO_B64 } from '../lib/assets'
@@ -419,7 +419,7 @@ export default function FormSign() {
         )}
         {form.type === 'loan_agreement' && form.meta && (
           <div style={{ background:'#f3f0f9', borderRadius:4, padding:'14px 18px', marginBottom:24, fontSize:13 }}>
-            <strong>Loan period:</strong> {form.meta.loan_from} \u2192 {form.meta.loan_to} &nbsp;\u00B7&nbsp;
+            <strong>Loan period:</strong> {form.meta.loan_from} {'\u2192'} {form.meta.loan_to} &nbsp;\u00B7&nbsp;
             <strong>Purpose:</strong> {form.meta.purpose} &nbsp;\u00B7&nbsp;
             <strong>Insurance value:</strong> {'\u20A6'}{Number(form.meta.insurance_value||0).toLocaleString()}
           </div>

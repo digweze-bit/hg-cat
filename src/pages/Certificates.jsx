@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { useAuth } from '../components/AuthProvider'
 import { LOGO_B64, SIG_B64 } from '../lib/assets'
@@ -194,7 +194,7 @@ export default function Certificates() {
                           {w.image_url&&<img src={w.image_url} alt="" style={{width:32,height:32,objectFit:'cover',borderRadius:2}}/>}
                           <div>
                             <div style={{fontSize:13,fontWeight:500}}>{w.title}</div>
-                            <div style={{fontSize:11,color:'var(--muted)'}}>{artistMap[w.artist_id]?.name} \u00B7 {w.year}</div>
+                            <div style={{fontSize:11,color:'var(--muted)'}}>{artistMap[w.artist_id]?.name} {'\u00B7'} {w.year}</div>
                           </div>
                         </div>
                       ))}

@@ -1,9 +1,10 @@
 /**
  * Fixes \uXXXX sequences in JSX that render as literal text.
- * Catches two patterns:
+ * Catches patterns:
  * 1. Between > and < : >text \uXXXX text<
- * 2. Between > and { : >\uXXXX{expression}
- * Also replaces \uXXXX in placeholder/title attributes with plain text equivalents.
+ * 2. Between > and { : >\uXXXX{
+ * 3. Between } and { : } \uXXXX {  (JSX text between expressions)
+ * 4. In placeholder/title attributes
  */
 import fs from 'fs'
 import path from 'path'
@@ -11,7 +12,6 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SRC = path.join(__dirname, '..', 'src')
 
-// Plain text fallbacks for common chars in attributes
 const ATTR_REPLACEMENTS = {
   '\\u2026': '...', '\\u2014': '-', '\\u2013': '-',
   '\\u00B7': '.', '\\u00D7': 'x', '\\u20A6': 'N',
@@ -43,7 +43,7 @@ function fixFile(fp) {
       }
     )
 
-    // Fix 2: \uXXXX immediately before { in JSX text (e.g. \u20A6{value})
+    // Fix 2: \uXXXX immediately before { in JSX text
     newLine = newLine.replace(
       />((?:[^<{}"'`])*?)(\\u[0-9A-Fa-f]{4,5})\{/g,
       (m, before, escape) => {
@@ -52,7 +52,17 @@ function fixFile(fp) {
       }
     )
 
-    // Fix 3: \uXXXX in placeholder/title/aria attributes - replace with plain text
+    // Fix 3: } \uXXXX { pattern (JSX text between expressions)
+    newLine = newLine.replace(
+      /\}(\s*\\u[0-9A-Fa-f]{4,5}\s*)\{/g,
+      (m, text) => {
+        const fixedText = text.replace(/\\u([0-9A-Fa-f]{4,5})/g, (_, h) => `{'\\u${h}'}`)
+        if (fixedText !== text) changed = true
+        return `}${fixedText}{`
+      }
+    )
+
+    // Fix 4: placeholder/title attributes
     if (newLine.match(/placeholder=|title=|aria-/)) {
       for (const [bad, good] of Object.entries(ATTR_REPLACEMENTS)) {
         if (newLine.includes(bad)) {

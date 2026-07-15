@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 
@@ -169,7 +169,7 @@ export default function Consignors() {
           <div className="page-header" style={{marginBottom:12}}>
             <div>
               <div className="page-title">{selected.name}</div>
-              <div className="page-subtitle">{selected.type} \u00B7 {saleTypeLabel[selected.sale_type]} \u00B7 {termSummary(selected)}</div>
+              <div className="page-subtitle">{selected.type} {'\u00B7'} {saleTypeLabel[selected.sale_type]} {'\u00B7'} {termSummary(selected)}</div>
             </div>
             <button className="btn btn-ghost btn-sm" onClick={()=>setSelected(null)}>{'\u2715'} Close</button>
           </div>

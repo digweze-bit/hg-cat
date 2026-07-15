@@ -736,7 +736,7 @@ function ProvEntry({ entry: p, onEdit, onDelete }) {
     <div style={{ background:'var(--white)', border:'1px solid var(--line)', borderLeft:'3px solid var(--gold)', borderRadius:'0 3px 3px 0', padding:'9px 12px', marginBottom:8, display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--gold)', marginBottom:3 }}>
-          {p.date_from||'?'}{p.date_to?' \u2013 '+p.date_to:' \u2013 present'} \u00B7 {p.entry_type||''} \u00B7{' '}
+          {p.date_from||'?'}{p.date_to?' \u2013 '+p.date_to:' \u2013 present'} {'\u00B7'} {p.entry_type||''} {'\u00B7'}{' '}
           <span style={{ color: p.verified ? 'var(--green)' : 'var(--amber)' }}>{p.verified?'VERIFIED':'UNVERIFIED'}</span>
         </div>
         <div style={{ fontSize:13, fontWeight:500, color:'var(--ink)', marginBottom:2 }}>{p.owner || 'Unknown'}</div>
@@ -1051,7 +1051,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
                             {w.image_url && <img src={w.image_url} alt="" style={{ width:32, height:32, objectFit:'cover', borderRadius:2, flexShrink:0 }} />}
                             <div>
                               <div style={{ fontSize:12, fontWeight:500 }}>{w.title}</div>
-                              <div style={{ fontSize:10, color:'var(--muted)' }}>{w.year} \u00B7 {w.medium}</div>
+                              <div style={{ fontSize:10, color:'var(--muted)' }}>{w.year} {'\u00B7'} {w.medium}</div>
                             </div>
                           </div>
                         ))
@@ -1193,7 +1193,7 @@ function ProvenanceDocBuilder({ artists, allArtworks, allEntries, allProvenance,
               {e.image_url && <img src={e.image_url} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:2, flexShrink:0 }} />}
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:13 }}>{e.title}</div>
-                <div style={{ fontSize:11, color:'var(--muted)' }}>{TYPES.find(t=>t.id===e.type)?.label||e.type} \u00B7 {e.date||'\u2014'}{e.source?' \u00B7 '+e.source:''}</div>
+                <div style={{ fontSize:11, color:'var(--muted)' }}>{TYPES.find(t=>t.id===e.type)?.label||e.type} {'\u00B7'} {e.date||'\u2014'}{e.source?' \u00B7 '+e.source:''}</div>
               </div>
               <span style={{ fontSize:9, padding:'2px 7px', borderRadius:20, background:'var(--parchment-2)', color: RELEVANCE_COLOR[e._relevance]||'var(--muted)', whiteSpace:'nowrap', flexShrink:0 }}>
                 {RELEVANCE_LABEL[e._relevance]||e._relevance}

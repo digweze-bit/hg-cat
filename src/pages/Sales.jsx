@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
@@ -953,7 +953,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                       {w.image_url && <img src={w.image_url} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:2 }} />}
                       <div>
                         <div style={{ fontSize:13, fontWeight:500 }}>{w.title}</div>
-                        <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]?.name} \u00B7 {w.year}</div>
+                        <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]?.name} {'\u00B7'} {w.year}</div>
                       </div>
                       <div style={{ marginLeft:'auto', textAlign:'right' }}>
                       {w.price && <div style={{ fontSize:12, color:'var(--green)' }}>{w.price}</div>}
@@ -1040,7 +1040,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
             <div className="form-group">
               <label className="form-label">Invoice currency</label>
               <select className="form-select" value={form.currency} onChange={e=>setForm(f=>({...f, currency:e.target.value, keep_currency: e.target.value !== 'NGN', fixed_rate:null }))}>
-                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} \u2014 {c.name}</option>)}
+                {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} {'\u2014'} {c.name}</option>)}
               </select>
             </div>
             {form.currency !== 'NGN' && (
