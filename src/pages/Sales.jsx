@@ -932,7 +932,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                   {b.cover_url ? <img src={b.cover_url} alt="" style={{width:28,height:36,objectFit:'cover',borderRadius:2}}/> : <div style={{width:28,height:36,background:'var(--parchment-2)',borderRadius:2,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>{'\uD83D'}{'\uDCD6'}</div>}
                   <div>
                     <div style={{ fontSize:13, fontWeight:500 }}>{b.title}</div>
-                    <div style={{ fontSize:11, color:'var(--muted)' }}>{b.author} \u00B7 \u20A6{Number(b.price||0).toLocaleString()} \u00B7 {b.stock_count} in stock</div>
+                    <div style={{ fontSize:11, color:'var(--muted)' }}>{b.author} {'\u00B7'} {'\u20A6'}{Number(b.price||0).toLocaleString()} {'\u00B7'} {b.stock_count} in stock</div>
                   </div>
                 </div>
               ))}
@@ -974,7 +974,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
                       <div>
                         <div style={{ fontWeight:500, fontSize:13 }}>{it.title}</div>
-                        <div style={{ fontSize:11, color:'var(--muted)' }}>{it.artist_name} \u00B7 {it.year}</div>
+                        <div style={{ fontSize:11, color:'var(--muted)' }}>{it.artist_name} {'\u00B7'} {it.year}</div>
                       </div>
                       <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => removeItem(idx)}>Remove</button>
                     </div>
@@ -1247,10 +1247,10 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
               <div key={it.id} style={{ display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid var(--line-soft)' }}>
                 <div>
                   <div style={{ fontWeight:500 }}>{it.title}</div>
-                  <div style={{ fontSize:12, color:'var(--muted)' }}>{it.artist_name} \u00B7 {it.year} \u00B7 {it.medium}</div>
+                  <div style={{ fontSize:12, color:'var(--muted)' }}>{it.artist_name} {'\u00B7'} {it.year} {'\u00B7'} {it.medium}</div>
                   {it.ownership === 'consignment' && it.commission_rate && (
                     <div style={{ fontSize:11, color:'var(--amber)', marginTop:2 }}>
-                      Consignment \u2014 gallery: {it.commission_rate}% (\u20A6{Math.round(it.line_total * it.commission_rate / 100).toLocaleString()}) \u00B7 owner: {100 - it.commission_rate}% (\u20A6{Math.round(it.line_total * (100 - it.commission_rate) / 100).toLocaleString()})
+                      Consignment {'\u2014'} gallery: {it.commission_rate}% ({'\u20A6'}{Math.round(it.line_total * it.commission_rate / 100).toLocaleString()}) \u00B7 owner: {100 - it.commission_rate}% ({'\u20A6'}{Math.round(it.line_total * (100 - it.commission_rate) / 100).toLocaleString()})
                     </div>
                   )}
                   {(it.item_type === 'artwork' || !it.item_type) && (
@@ -1277,7 +1277,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                 </div>
                 <div style={{ textAlign:'right' }}>
                   <div style={{ fontWeight:500 }}>{formatAmount(it.line_total, inv.currency)}</div>
-                  <div style={{ fontSize:11, color:'var(--muted)' }}>{it.quantity} \u00D7 {formatAmount(it.unit_price, inv.currency)}</div>
+                  <div style={{ fontSize:11, color:'var(--muted)' }}>{it.quantity} {'\u00D7'} {formatAmount(it.unit_price, inv.currency)}</div>
                 </div>
               </div>
             ))}
@@ -1313,7 +1313,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                   <div key={p.id} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--line-soft)', fontSize:13 }}>
                     <div>
                       <span style={{ fontWeight:500 }}>{formatAmount(p.amount, p.currency)}</span>
-                      <span style={{ color:'var(--muted)', marginLeft:8 }}>{p.method} \u00B7 {p.paid_at}</span>
+                      <span style={{ color:'var(--muted)', marginLeft:8 }}>{p.method} {'\u00B7'} {p.paid_at}</span>
                       {p.reference && <span style={{ color:'var(--muted)', marginLeft:8, fontSize:11 }}>ref: {p.reference}</span>}
                     </div>
                     <div style={{ color:'var(--muted)', fontSize:11 }}>
