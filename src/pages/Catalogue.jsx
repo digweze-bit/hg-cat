@@ -105,7 +105,7 @@ export default function Catalogue() {
             onClick={() => { setActiveArtist(null); setSelected(null); setMediumFilter(''); setAvailFilter('') }}
             style={{ background:'none', border:'none', cursor:'pointer', color:'#c8651b', fontSize:13, fontFamily:'inherit', padding:0, display:'flex', alignItems:'center', gap:5 }}
           >
-            \u2190 Artist List
+            &larr; Artist List
           </button>
           <div style={{ width:1, height:16, background:'#e8e5e0' }} />
           <div style={{ fontFamily:'Georgia,serif', fontSize:'1.1rem', color:'#1a1714' }}>{activeArtist.name}</div>
