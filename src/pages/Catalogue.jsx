@@ -242,7 +242,7 @@ export default function Catalogue() {
                     onMouseLeave={e => e.currentTarget.style.background = '#fff'}
                   >
                     <div style={{ fontFamily:'Georgia,serif', fontSize:'1rem', color:'#1a1714', lineHeight:1.3 }}>{a.name}</div>
-                    <div style={{ fontSize:11, color:'#c8651b', marginTop:12, textAlign:'right' }}>{wc} \u2192</div>
+                    <div style={{ fontSize:11, color:'#c8651b', marginTop:12, textAlign:'right' }}>{wc} &rarr;</div>
                   </div>
                 )
               })}
