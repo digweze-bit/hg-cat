@@ -904,7 +904,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
       artistName.includes(q) ||
       w.hg_code?.toLowerCase().includes(q) ||
       w.medium?.toLowerCase().includes(q)
-  }).slice(0, 20).slice(0, 10)
+  }).slice(0, 100)
 
   return (
     <div className="modal-overlay">
