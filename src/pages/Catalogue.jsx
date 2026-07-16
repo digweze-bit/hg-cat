@@ -13,21 +13,13 @@ export default function Catalogue() {
   const [selected, setSelected] = useState(null)
   const [mediumFilter, setMediumFilter] = useState('')
   const [availFilter, setAvailFilter]   = useState('')
-  const [workCounts, setWorkCounts] = useState({})
-  const [workCounts, setWorkCounts] = useState({})
+  const [workCounts, setWorkCounts]       = useState({})
 
   useEffect(() => {
+    async function load() {
+      const a = await fetchAll('artists', { select:'id,name,bio,portrait_url,nationality,born,died,updated_at,created_at,visible', filters: [['visible','eq',true]], order: 'name' })
       setArtists(a)
-      const { data: awCounts } = await supabase.from('artworks').select('artist_id').eq('visible', true).eq('availability', 'Available')
-      if (awCounts) { const counts = {}; awCounts.forEach(w => { counts[w.artist_id] = (counts[w.artist_id]||0)+1 }); setWorkCounts(counts) }
-      setArtists(a)
-      // Load work counts for all artists
-      const { data: wc } = await supabase.from('artworks').select('artist_id').eq('visible', true).eq('availability', 'Available')
-      if (wc) { const counts = {}; wc.forEach(w => { counts[w.artist_id] = (counts[w.artist_id]||0)+1 }); setWorkCounts(counts) }
-      setArtists(a)
-      // Load work counts for all artists
-      const { data: wc } = await supabase.from('artworks').select('artist_id').eq('visible', true).eq('availability', 'Available')
-      if (wc) { const counts = {}; wc.forEach(w => { counts[w.artist_id] = (counts[w.artist_id]||0)+1 }); setWorkCounts(counts) }
+      supabase.from('artworks').select('artist_id').eq('visible',true).eq('availability','Available').then(({data:aw}) => { if(aw){const c={};aw.forEach(w=>{c[w.artist_id]=(c[w.artist_id]||0)+1});setWorkCounts(c)} })
       setLoading(false)
     }
     load()
@@ -47,15 +39,15 @@ export default function Catalogue() {
     }))
   }, [activeArtist?.id])
 
-  // workCounts loaded from DB in useEffect
+  const artistMap = useMemo(() =>
+    Object.fromEntries(artists.map(a => [a.id, a])), [artists])
 
-
-
-
-
-
-
-
+  // Work counts per artist
+  const workCounts = useMemo(() => {
+    const counts = {}
+    artworks.forEach(w => { counts[w.artist_id] = (counts[w.artist_id] || 0) + 1 })
+    return counts
+  }, [artworks])
 
   // Filtered + sorted artists
   const sorted = useMemo(() => {
