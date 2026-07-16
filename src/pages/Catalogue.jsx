@@ -42,12 +42,12 @@ export default function Catalogue() {
   const artistMap = useMemo(() =>
     Object.fromEntries(artists.map(a => [a.id, a])), [artists])
 
-  // Work counts per artist
-  const workCounts = useMemo(() => {
-    const counts = {}
-    artworks.forEach(w => { counts[w.artist_id] = (counts[w.artist_id] || 0) + 1 })
-    return counts
-  }, [artworks])
+
+
+
+
+
+
 
   // Filtered + sorted artists
   const sorted = useMemo(() => {
