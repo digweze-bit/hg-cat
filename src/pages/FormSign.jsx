@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { LOGO_B64 } from '../lib/assets'
@@ -413,14 +413,14 @@ export default function FormSign() {
             <strong>Terms:</strong> {form.meta.term_type === 'fixed'
               ? `Fixed net to consignor: \u20A6${Number(form.meta.fixed_amount||0).toLocaleString()}`
               : `Gallery commission ${form.meta.commission_rate||40}% \u00B7 Consignor receives ${100-(form.meta.commission_rate||40)}%`
-            } &nbsp;\u00B7&nbsp; <strong>Sale type:</strong> {form.meta.sale_type || 'Secondary'}
+            } &nbsp;&middot;&nbsp; <strong>Sale type:</strong> {form.meta.sale_type || 'Secondary'}
             {form.meta.duration && <span> &nbsp;{'\u00B7'}&nbsp; <strong>Duration:</strong> {form.meta.duration}</span>}
           </div>
         )}
         {form.type === 'loan_agreement' && form.meta && (
           <div style={{ background:'#f3f0f9', borderRadius:4, padding:'14px 18px', marginBottom:24, fontSize:13 }}>
             <strong>Loan period:</strong> {form.meta.loan_from} {'\u2192'} {form.meta.loan_to} &nbsp;\u00B7&nbsp;
-            <strong>Purpose:</strong> {form.meta.purpose} &nbsp;\u00B7&nbsp;
+            <strong>Purpose:</strong> {form.meta.purpose} &nbsp;&middot;&nbsp;
             <strong>Insurance value:</strong> {'\u20A6'}{Number(form.meta.insurance_value||0).toLocaleString()}
           </div>
         )}

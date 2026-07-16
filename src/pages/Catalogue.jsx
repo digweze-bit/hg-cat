@@ -90,7 +90,7 @@ export default function Catalogue() {
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#f9f8f6' }}>
-      <div style={{ fontFamily:'Georgia,serif', fontSize:'1.2rem', color:'#999' }}>Loading{'\u2026'}</div>
+      <div style={{ fontFamily:'Georgia,serif', fontSize:'1.2rem', color:'#999' }}>Loading{'...'}</div>
     </div>
   )
 
