@@ -1228,6 +1228,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
           </div>
           <div style={{ display:'flex', gap:8 }}>
             <button className="btn btn-outline btn-sm" onClick={() => requestAnimationFrame(printInvoice)}>Print / PDF</button>
+            <button className="btn btn-outline btn-sm" style={{ background:'#25D366', color:'#fff', border:'none' }} onClick={() => { const url = window.location.origin + '/sign/' + inv.id; window.open('https://wa.me/?text=' + encodeURIComponent('Invoice ' + inv.invoice_number + ' from Hourglass Gallery: ' + url), '_blank') }}>WhatsApp</button>
             {(inv.status === 'cancelled' || inv.status === 'draft') && (
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
@@ -1406,7 +1407,7 @@ async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
     } catch(_) { return it }
   }))
   const logoHtml = logoB64
-    ? `<img src='${logoB64}' alt='Hourglass Gallery' style='height:36px;object-fit:contain;object-position:left center;display:block;'>`
+    ? `<img src='${logoB64}' alt='Hourglass Gallery' style='height:25px;object-fit:contain;object-position:left center;display:block;'>`
     : `<div style="font-family:Georgia,serif;font-size:18px;color:#1a1714;font-weight:300;letter-spacing:.04em;">HOURGLASS GALLERY</div>`
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${e(inv.invoice_number)}</title>
 <style>
@@ -1434,7 +1435,7 @@ td{padding:10px 8px;border-bottom:1px solid #ece8e1;vertical-align:top;font-size
   </div>
 </div>
 ${client?`<div style="margin-bottom:24px"><div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:5px">Invoice to</div><div style="font-weight:600;font-size:14px;">${e(client.name)}</div>${client.company?`<div style="font-size:12px;color:#6b6760">${e(client.company)}</div>`:''}${client.street||client.address?`<div style="font-size:12px;color:#6b6760">${e(client.street||client.address)}</div>`:''}${client.email?`<div style="font-size:12px;color:#6b6760">${e(client.email)}</div>`:''}${client.phone||client.phone_mobile?`<div style="font-size:12px;color:#6b6760">${e(client.phone||client.phone_mobile)}</div>`:''}</div>`:''}
-<table><thead><tr><th style="width:54px"></th><th>Artwork</th><th style="text-align:right">Amount (${e(inv.currency)})</th></tr></thead><tbody>
+<table><tbody>
 ${itemsWithImages.map(it=>`<tr><td>${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div style="width:46px;height:46px;background:#f0ece7;border-radius:2px;"></div>'}</td><td><strong>${e(it.title)}</strong><br><span style="font-size:11px;color:#6b6760">${e(it.artist_name||'')}${it.year?', '+e(it.year):''}</span>${it.medium?`<br><span style="font-size:11px;color:#aaa">${e(it.medium)}${it.dimensions?' &middot; '+e(it.dimensions):''}</span>`:''}</td><td style="text-align:right;white-space:nowrap;">${formatAmount(it.line_total,inv.currency)}</td></tr>`).join('')}
 ${Number(inv.vat_amount)>0?`<tr><td colspan="2" style="text-align:right;color:#6b6760;font-size:12px">VAT (${inv.vat_rate}%)</td><td style="text-align:right">${formatAmount(inv.vat_amount,inv.currency)}</td></tr>`:''}
 <tr class="total-row"><td colspan="2" style="text-align:right">Total</td><td style="text-align:right;white-space:nowrap;">${formatAmount(inv.total,inv.currency)}</td></tr>
@@ -1447,7 +1448,7 @@ ${payments.length>0?`<div style="margin-top:24px"><div style="font-size:9px;text
   <div>Hourglass Gallery</div>
   <div>298A Akin Olugbade Street, Victoria Island, Lagos</div>
   <div>info@hourglassgallery.com</div>
-  <div>+234 (0)1 461 0090</div>
+  
 </div>
 </body></html>`
 }
