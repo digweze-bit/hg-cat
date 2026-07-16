@@ -19,7 +19,7 @@ export default function Catalogue() {
     async function load() {
       const a = await fetchAll('artists', { select:'id,name,bio,portrait_url,nationality,born,died,updated_at,created_at,visible', filters: [['visible','eq',true]], order: 'name' })
       setArtists(a)
-      fetchAll('artworks', { select:'artist_id', filters:[['visible','eq',true],['availability','eq','Available']] }).then(aw => { if(aw){const c={};aw.forEach(w=>{c[w.artist_id]=(c[w.artist_id]||0)+1});setWorkCounts(c)} })
+      supabase.rpc('get_artwork_counts').then(({data:rows}) => { if(rows){const c={};rows.forEach(r=>{c[r.artist_id]=Number(r.count)});setWorkCounts(c)} })
       setLoading(false)
     }
     load()
