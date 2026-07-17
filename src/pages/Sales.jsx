@@ -1361,6 +1361,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
+            <button className="btn btn-outline btn-sm" onClick={() => { onClose(); setTimeout(() => onEdit && onEdit(inv), 50) }}>Edit</button>
             <button className="btn btn-outline btn-sm" onClick={() => requestAnimationFrame(printInvoice)}>Print / PDF</button>
             <button className="btn btn-outline btn-sm" style={{ background:'#25D366', color:'#fff', border:'none' }} onClick={() => { const url = window.location.origin + '/sign/' + inv.id; window.open('https://wa.me/?text=' + encodeURIComponent('Invoice ' + inv.invoice_number + ' from Hourglass Gallery: ' + url), '_blank') }}>WhatsApp</button>
             {(inv.status === 'cancelled' || inv.status === 'draft') && (
