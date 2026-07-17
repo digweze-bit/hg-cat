@@ -117,7 +117,7 @@ export default function Sales() {
       {modal === 'client' && (
         <ClientModal onClose={() => setModal(null)} onSave={load} />
       )}
-      {(modal === 'invoice' || editingInvoice) && (
+      {modal === 'invoice' && !editingInvoice && (
         <InvoiceModal
           clients={clients}
           artworks={artworks}
