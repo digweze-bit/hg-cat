@@ -559,7 +559,7 @@ function ClientList({ clients, invoices, onRefresh }) {
               <div>
                 <div style={{ fontWeight:500, fontSize:13 }}>
                   {c.prefix ? <span style={{ color:'var(--muted)', fontSize:12 }}>{c.prefix} </span> : null}
-                  {c.name}
+                  {(c.name||'').split(/[\r\n]/)[0].slice(0,40)}{(c.name||'').length>40?'...':''}
                 </div>
                 <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>
                   {[c.company, c.city].filter(Boolean).join(' \u00B7 ') || c.email || '\u2014'}
