@@ -89,7 +89,7 @@ export default function Reports() {
           <div className="page-subtitle">Gallery financial and inventory reports</div>
         </div>
         <button className="btn btn-outline" onClick={() => printReport(activeReport, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable })}>
-          \uD83D\uDDA8 Print this report
+          Print Print this report
         </button>
       </div>
 
