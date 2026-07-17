@@ -19,7 +19,7 @@ export default function Catalogue() {
     async function load() {
       const a = await fetchAll('artists', { select:'id,name,bio,portrait_url,nationality,born,died,updated_at,created_at,visible', filters: [['visible','eq',true]], order: 'name' })
       setArtists(a)
-      supabase.rpc('get_artwork_counts').then(({data:rows}) => { if(rows){const c={};rows.forEach(r=>{c[r.artist_id]=Number(r.count)});setWorkCounts(c)} })
+      supabase.rpc('get_artwork_counts').then(({data:rows, error:rpcErr}) => { if(rpcErr) console.error('RPC error:',rpcErr); if(rows){const c={};rows.forEach(r=>{c[r.artist_id]=Number(r.count)});setWorkCounts(c);console.log('Counts loaded:',Object.keys(c).length)} })
       setLoading(false)
     }
     load()
