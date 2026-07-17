@@ -197,7 +197,7 @@ export default function Catalogue() {
             <div style={{ fontFamily:'Georgia,serif', fontSize:'2rem', color:'#c8651b', lineHeight:1 }}>{artists.length}</div>
             <div style={{ fontSize:9, letterSpacing:'.12em', textTransform:'uppercase', color:'#999', marginTop:4 }}>Artists</div>
           </div>
-          <div style={{ padding:'10px 48px' }}>
+            <div style={{ fontFamily:'Georgia,serif', fontSize:'2rem', color:'#c8651b', lineHeight:1 }}>{Object.values(workCounts).reduce((s,n)=>s+n,0)}</div>
             <div style={{ fontFamily:'Georgia,serif', fontSize:'2rem', color:'#c8651b', lineHeight:1 }}>{artworks.length}</div>
             <div style={{ fontSize:9, letterSpacing:'.12em', textTransform:'uppercase', color:'#999', marginTop:4 }}>Works</div>
           </div>
