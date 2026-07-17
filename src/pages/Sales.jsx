@@ -147,6 +147,7 @@ export default function Sales() {
           onClose={() => { setModal(null); setActiveInvoice(null) }}
           onSave={load}
           onEdit={(inv) => { setModal(null); setActiveInvoice(null); setEditingInvoice(inv) }}
+        />
       )}
     </div>
   )
