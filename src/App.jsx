@@ -38,7 +38,7 @@ function UpdateBanner() {
   return (
     <div style={{ position:'fixed', bottom:16, left:'50%', transform:'translateX(-50%)', background:'#1a1714', color:'#fff', padding:'10px 20px', borderRadius:4, fontSize:13, zIndex:9999, display:'flex', gap:12, alignItems:'center', boxShadow:'0 4px 16px rgba(0,0,0,.3)' }}>
       <span>New version available</span>
-      <button onClick={() => updateServiceWorker(true)}
+      <button onClick={() => { updateServiceWorker(true); setTimeout(() => window.location.reload(), 500) }}
         style={{ background:'#E05C2A', border:'none', color:'#fff', padding:'4px 12px', borderRadius:3, cursor:'pointer', fontSize:12, fontWeight:600 }}>
         Update
       </button>
