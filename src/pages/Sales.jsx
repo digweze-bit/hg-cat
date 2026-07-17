@@ -146,7 +146,7 @@ export default function Sales() {
           userId={user?.id}
           onClose={() => { setModal(null); setActiveInvoice(null) }}
           onSave={load}
-        />
+          onEdit={(inv) => { setModal(null); setActiveInvoice(null); setEditingInvoice(inv) }}
       )}
     </div>
   )
