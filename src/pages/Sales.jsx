@@ -1546,7 +1546,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
               </div>
               {inv.currency !== 'NGN' && (
                 <div style={{ textAlign:'right', fontSize:11, color:'var(--muted)', marginTop:4 }}>
-                  \u2248 \u20A6{Number(inv.total_ngn).toLocaleString('en-NG',{maximumFractionDigits:0})} at invoice rate
+                  {'\u2248'} {'\u20A6'}{Number(inv.total_ngn).toLocaleString('en-NG',{maximumFractionDigits:0})} at invoice rate
                 </div>
               )}
             </div>
