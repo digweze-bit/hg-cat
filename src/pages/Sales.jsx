@@ -1228,7 +1228,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
                   )}
                   <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer' }}>
                     <input type="radio" checked={!!form.keep_currency} onChange={() => setForm(f=>({...f, keep_currency:true, fixed_rate:null}))} />
-                    Keep in {form.currency} \u2014 create foreign currency receivable
+                    Keep in {form.currency} - create foreign currency receivable
                   </label>
                   {form.keep_currency && (
                     <div style={{ marginLeft:20, fontSize:11, color:'var(--amber,#b8862a)', padding:'6px 10px', background:'#fef9ec', borderRadius:3 }}>
@@ -1393,10 +1393,10 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
             <button className="btn btn-outline btn-sm" onClick={() => { onClose(); setTimeout(() => onEdit && onEdit(inv), 50) }}>Edit</button>
             <button className="btn btn-outline btn-sm" onClick={() => requestAnimationFrame(printInvoice)}>Print / PDF</button>
             <button className="btn btn-outline btn-sm" style={{ background:'#25D366', color:'#fff', border:'none' }} onClick={() => { const url = window.location.origin + '/sign/' + inv.id; window.open('https://wa.me/?text=' + encodeURIComponent('Invoice ' + inv.invoice_number + ' from Hourglass Gallery: ' + url), '_blank') }}>WhatsApp</button>
-            {(inv.status === 'cancelled' || inv.status === 'draft') && (
+            {true && (
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
-                  if (!confirm('Permanently delete this invoice? This cannot be undone.')) return
+                  if (!confirm(inv.amount_paid > 0 ? 'This invoice has recorded payments. Permanently delete anyway? This cannot be undone.' : 'Permanently delete this invoice? This cannot be undone.')) return
                   await supabase.from('invoices').delete().eq('id', inv.id)
                   onSave(); onClose()
                 }}>Delete</button>
