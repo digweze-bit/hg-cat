@@ -973,6 +973,34 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
     if (items.length === 0) return alert('Please add at least one artwork')
     setSaving(true)
     try {
+      if (isEdit) {
+        const { error: updErr } = await supabase.from('invoices').update({
+          client_id: form.client_id, currency: form.currency,
+          exchange_rate: form.keep_currency ? null : (form.fixed_rate || exchangeRate),
+          keep_currency: form.keep_currency || false,
+          discount_type: form.discount_type, discount_value: Number(form.discount_value)||0,
+          vat_rate: Number(form.vat_rate)||0, vat_amount: vatAmt, subtotal, total,
+          total_ngn: form.keep_currency ? null : totalNGN,
+          balance_due: Math.max(0, total - Number(editInvoice.amount_paid||0)),
+          issue_date: form.issue_date, due_date: form.due_date || null,
+          notes: form.notes, terms: form.terms,
+        }).eq('id', editInvoice.id)
+        if (updErr) throw updErr
+        await supabase.from('invoice_items').delete().eq('invoice_id', editInvoice.id)
+        await supabase.from('invoice_items').insert(items.map((it,i) => ({
+          invoice_id: editInvoice.id, artwork_id: it.artwork_id||null, book_id: it.book_id||null,
+          item_type: it.item_type||'artwork', title: it.title, artist_name: it.artist_name,
+          year: it.year, medium: it.medium, dimensions: it.dimensions,
+          unit_price: Number(it.unit_price)||0, quantity: Number(it.quantity)||1,
+          discount: Number(it.discount)||0,
+          line_total: (Number(it.unit_price)||0)*(Number(it.quantity)||1)-(Number(it.discount)||0),
+          sort_order: i, ownership: it.ownership||'gallery',
+          commission_rate: it.ownership==='consignment'?(it.commission_rate||40):null,
+          consignor_name: it.consignor_name||null,
+        })))
+        onSave(); onClose(); return
+      }
+      // EDIT existing invoice -- CREATE new invoice below
       // Get next invoice number
       const { data: numData } = await supabase.rpc('next_invoice_number')
       const invoiceNumber = numData
