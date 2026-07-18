@@ -132,7 +132,7 @@ export default function Sales() {
       {editingInvoice && (
         <InvoiceModal
           clients={clients} artworks={artworks} artistMap={artistMap}
-          books={books} rates={rates} userId={userId}
+          books={books} rates={rates} userId={user?.id}
           editInvoice={editingInvoice}
           onClose={() => setEditingInvoice(null)}
           onSave={() => { load(); setEditingInvoice(null) }}
