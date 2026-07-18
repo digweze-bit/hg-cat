@@ -3,6 +3,8 @@ import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
 import { useAuth } from '../components/AuthProvider'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 const TABS = ['Invoices', 'Pending Collection', 'Clients', 'Payments']
 const STATUS_COLORS = { draft:'var(--muted)', sent:'var(--blue)', partial:'var(--amber)', paid:'var(--green)', cancelled:'var(--red)' }
@@ -1378,6 +1380,54 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
     setTimeout(() => { w.print() }, 800)
   }
 
+  async function downloadInvoicePDF() {
+    let logoB64 = null
+    try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_SMALL_B64 || assets.LOGO_B64 } catch(_) {}
+    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
+    // Render into hidden iframe, then capture with html2canvas
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.left = '-9999px'
+    iframe.style.width = '650px'
+    iframe.style.height = '900px'
+    document.body.appendChild(iframe)
+    iframe.contentDocument.open()
+    iframe.contentDocument.write(html)
+    iframe.contentDocument.close()
+    await new Promise(res => setTimeout(res, 600))
+    const target = iframe.contentDocument.body
+    const canvas = await html2canvas(target, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
+    const imgData = canvas.toDataURL('image/jpeg', 0.95)
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    const imgWidth = pageWidth
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    let heightLeft = imgHeight
+    let position = 0
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+    heightLeft -= pageHeight
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight
+      pdf.addPage()
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+    }
+    document.body.removeChild(iframe)
+    const filename = `${inv.invoice_number}.pdf`
+    pdf.save(filename)
+    return filename
+  }
+
+  async function sendInvoiceWhatsApp() {
+    const filename = await downloadInvoicePDF()
+    await new Promise(res => setTimeout(res, 400))
+    const phone = (client?.phone_mobile || client?.phone || '').replace(/\D/g, '')
+    const msg = `Hi ${client?.name || ''}, please find attached your invoice ${inv.invoice_number} from Hourglass Gallery. The PDF (${filename}) has just downloaded to your device — please attach it here.`
+    const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`
+    window.open(url, '_blank')
+  }
+
   return (
     <div className="modal-overlay">
       <div className="modal modal-xl" style={{ maxHeight:'94vh' }}>
@@ -1392,7 +1442,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
           <div style={{ display:'flex', gap:8 }}>
             <button className="btn btn-outline btn-sm" onClick={() => { onClose(); setTimeout(() => onEdit && onEdit(inv), 50) }}>Edit</button>
             <button className="btn btn-outline btn-sm" onClick={() => requestAnimationFrame(printInvoice)}>Print / PDF</button>
-            <button className="btn btn-outline btn-sm" style={{ background:'#25D366', color:'#fff', border:'none' }} onClick={() => { const url = window.location.origin + '/sign/' + inv.id; window.open('https://wa.me/?text=' + encodeURIComponent('Invoice ' + inv.invoice_number + ' from Hourglass Gallery: ' + url), '_blank') }}>WhatsApp</button>
+            <button className="btn btn-outline btn-sm" style={{ background:'#25D366', color:'#fff', border:'none' }} onClick={sendInvoiceWhatsApp}>WhatsApp</button>
             {true && (
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
