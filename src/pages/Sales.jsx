@@ -1315,6 +1315,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   const [payments, setPayments] = useState([])
   const [items, setItems] = useState([])
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
+  const [editingPayment, setEditingPayment] = useState(null)
   const [addingPay, setAddingPay] = useState(false)
   const [saving, setSaving] = useState(false)
   const client = clients.find(c => c.id === inv.client_id)
@@ -1354,6 +1355,37 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
       onClose()
     } catch (err) {
       alert('Payment failed: ' + err.message)
+    } finally { setSaving(false) }
+  }
+
+  async function updatePayment(paymentId, updates) {
+    setSaving(true)
+    try {
+      const payRate = rates[updates.currency] || 1
+      await supabase.from('payments').update({
+        amount: parseFloat(updates.amount),
+        currency: updates.currency,
+        exchange_rate: payRate,
+        amount_ngn: parseFloat(updates.amount) * payRate,
+        method: updates.method,
+        paid_at: updates.paid_at,
+        reference: updates.reference,
+        notes: updates.notes,
+      }).eq('id', paymentId)
+      onSave()
+    } catch (err) {
+      alert('Failed to update payment: ' + err.message)
+    } finally { setSaving(false) }
+  }
+
+  async function deletePayment(paymentId) {
+    if (!confirm('Delete this payment record? The invoice balance will be recalculated.')) return
+    setSaving(true)
+    try {
+      await supabase.from('payments').delete().eq('id', paymentId)
+      onSave()
+    } catch (err) {
+      alert('Failed to delete payment: ' + err.message)
     } finally { setSaving(false) }
   }
 
@@ -1525,16 +1557,28 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
               {payments.length === 0
                 ? <div style={{ fontSize:13, color:'var(--muted)' }}>No payments recorded</div>
                 : payments.map(p => (
-                  <div key={p.id} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--line-soft)', fontSize:13 }}>
-                    <div>
-                      <span style={{ fontWeight:500 }}>{formatAmount(p.amount, p.currency)}</span>
-                      <span style={{ color:'var(--muted)', marginLeft:8 }}>{p.method} {'\u00B7'} {p.paid_at}</span>
-                      {p.reference && <span style={{ color:'var(--muted)', marginLeft:8, fontSize:11 }}>ref: {p.reference}</span>}
+                  editingPayment === p.id ? (
+                    <div key={p.id} style={{ padding:'10px 0', borderBottom:'1px solid var(--line-soft)', background:'var(--surface-1,#f8f7f5)' }}>
+                      <PaymentEditRow payment={p} rates={rates}
+                        onCancel={() => setEditingPayment(null)}
+                        onSave={(vals) => { updatePayment(p.id, vals); setEditingPayment(null) }} />
                     </div>
-                    <div style={{ color:'var(--muted)', fontSize:11 }}>
-                      {p.currency !== 'NGN' && `\u2248 \u20A6${Number(p.amount_ngn).toLocaleString('en-NG',{maximumFractionDigits:0})}`}
+                  ) : (
+                    <div key={p.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid var(--line-soft)', fontSize:13 }}>
+                      <div>
+                        <span style={{ fontWeight:500 }}>{formatAmount(p.amount, p.currency)}</span>
+                        <span style={{ color:'var(--muted)', marginLeft:8 }}>{p.method} {'\u00B7'} {p.paid_at}</span>
+                        {p.reference && <span style={{ color:'var(--muted)', marginLeft:8, fontSize:11 }}>ref: {p.reference}</span>}
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <div style={{ color:'var(--muted)', fontSize:11 }}>
+                          {p.currency !== 'NGN' && `\u2248 \u20A6${Number(p.amount_ngn).toLocaleString('en-NG',{maximumFractionDigits:0})}`}
+                        </div>
+                        <button onClick={() => setEditingPayment(p.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:12 }}>Edit</button>
+                        <button onClick={() => deletePayment(p.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--red,#c0392b)', fontSize:12 }}>Delete</button>
+                      </div>
                     </div>
-                  </div>
+                  )
                 ))
               }
               <div style={{ marginTop:12, display:'flex', justifyContent:'space-between', fontWeight:500 }}>
@@ -1603,6 +1647,34 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
             )}
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function PaymentEditRow({ payment, rates, onSave, onCancel }) {
+  const [vals, setVals] = useState({
+    amount: payment.amount,
+    currency: payment.currency,
+    method: payment.method,
+    paid_at: payment.paid_at,
+    reference: payment.reference || '',
+    notes: payment.notes || '',
+  })
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:8, padding:'4px 8px' }}>
+      <div style={{ display:'flex', gap:8 }}>
+        <input className="form-input" type="number" style={{ width:120 }} value={vals.amount} onChange={e=>setVals(v=>({...v,amount:e.target.value}))} placeholder="Amount" />
+        <select className="form-select" style={{ width:90 }} value={vals.currency} onChange={e=>setVals(v=>({...v,currency:e.target.value}))}>
+          {['NGN','USD','GBP','EUR'].map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <input className="form-input" style={{ width:120 }} value={vals.method} onChange={e=>setVals(v=>({...v,method:e.target.value}))} placeholder="Method" />
+        <input className="form-input" type="date" style={{ width:140 }} value={vals.paid_at} onChange={e=>setVals(v=>({...v,paid_at:e.target.value}))} />
+      </div>
+      <div style={{ display:'flex', gap:8 }}>
+        <input className="form-input" style={{ flex:1 }} value={vals.reference} onChange={e=>setVals(v=>({...v,reference:e.target.value}))} placeholder="Reference" />
+        <button className="btn btn-primary btn-sm" onClick={() => onSave(vals)}>Save</button>
+        <button className="btn btn-outline btn-sm" onClick={onCancel}>Cancel</button>
       </div>
     </div>
   )
