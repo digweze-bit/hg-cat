@@ -49,6 +49,11 @@ export default function Sales() {
     setLoading(false)
   }
 
+  async function refreshClients() {
+    const c = await fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name', cache:false })
+    setClients(c)
+  }
+
   useEffect(() => { load() }, [])
 
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
@@ -109,6 +114,7 @@ export default function Sales() {
           clients={clients}
           invoices={invoices}
           onRefresh={load}
+          onRefreshClients={refreshClients}
         />
       )}
       {tab === 'Payments' && (
@@ -469,7 +475,7 @@ td{padding:9px 8px;border-bottom:1px solid #f0ece7;font-size:12px;vertical-align
 }
 
 function ClientList({ clients, invoices, onRefresh }) {
-  const [modal, setModal] = useState(false)       // false | 'add' | 'edit'
+function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
   const [selected, setSelected] = useState(null)  // client being viewed/edited
   const [showReport, setShowReport] = useState(false)
   const [reportOpts, setReportOpts] = useState({ dateFrom:'', dateTo:'', showAll:true })
@@ -529,7 +535,7 @@ function ClientList({ clients, invoices, onRefresh }) {
         if (error) throw error
       }
       cacheInvalidate('clients')
-      await onRefresh()
+      await (onRefreshClients ? onRefreshClients() : onRefresh())
       setModal(false)
     } catch(err) {
       alert('Failed: ' + err.message)
