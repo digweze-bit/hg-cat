@@ -77,6 +77,18 @@ export default function Reports() {
   const totalReceivable = useMemo(() =>
     receivableData.reduce((s, inv) => s + Number(inv.balance_due || 0), 0), [receivableData])
 
+  const receivableByCurrency = useMemo(() => {
+    const groups = {}
+    receivableData.forEach(inv => {
+      const cur = inv.currency || 'NGN'
+      if (!groups[cur]) groups[cur] = { currency: cur, total: 0, count: 0, invoices: [] }
+      groups[cur].total += Number(inv.balance_due || 0)
+      groups[cur].count += 1
+      groups[cur].invoices.push(inv)
+    })
+    return Object.values(groups).sort((a,b) => b.total - a.total)
+  }, [receivableData])
+
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'\u2026'}</div>
 
   const report = REPORTS.find(r => r.id === activeReport)
@@ -89,7 +101,7 @@ export default function Reports() {
           <div className="page-subtitle">Gallery financial and inventory reports</div>
         </div>
         <button className="btn btn-outline" onClick={() => printReport(activeReport, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable })}>
-          Print Print this report
+          Print this report
         </button>
       </div>
 
@@ -261,21 +273,25 @@ export default function Reports() {
       {/* \u2500\u2500 ACCOUNTS RECEIVABLE \u2500\u2500 */}
       {activeReport === 'receivable' && (
         <div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
-            <div className="card" style={{ padding:'16px 18px' }}>
+          <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>
+            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>
               <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>{receivableData.length}</div>
               <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Open invoices</div>
-            </div>
-            <div className="card" style={{ padding:'16px 18px' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>
-                {'\u20A6'}{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
-              </div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Total outstanding (NGN equiv.)</div>
             </div>
             <div className="card" style={{ padding:'16px 18px' }}>
               <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{receivableData.filter(i=>i.status==='partial').length}</div>
               <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Partially paid</div>
             </div>
+            {receivableByCurrency.map(g => (
+              <div key={g.currency} className="card" style={{ padding:'16px 18px', minWidth:160 }}>
+                <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>
+                  {formatAmount(g.total, g.currency)}
+                </div>
+                <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>
+                  {g.currency} outstanding ({g.count})
+                </div>
+              </div>
+            ))}
           </div>
           <div className="card">
             <div className="table-wrap">
@@ -286,37 +302,36 @@ export default function Reports() {
                 <tbody>
                   {receivableData.length === 0
                     ? <tr><td colSpan={8} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>No outstanding balances</td></tr>
-                    : receivableData.map(inv => {
-                        const overdue = inv.due_date && inv.due_date < new Date().toISOString().split('T')[0]
-                        return (
-                          <tr key={inv.id}>
-                            <td style={{ fontFamily:'var(--font-serif)', fontWeight:500 }}>{inv.invoice_number}</td>
-                            <td>{inv.clients?.name || '\u2014'}</td>
-                            <td>{formatAmount(inv.total, inv.currency)}</td>
-                            <td style={{ color:'var(--green)' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>
-                            <td style={{ fontWeight:600, color: overdue ? 'var(--red)' : 'var(--amber)' }}>
-                              {formatAmount(inv.balance_due, inv.currency)}
-                              {overdue && <span style={{ fontSize:10, marginLeft:5, color:'var(--red)' }}>OVERDUE</span>}
-                            </td>
-                            <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.currency}</td>
-                            <td><span className="badge badge-amber">{inv.status}</span></td>
-                            <td style={{ fontSize:12, color: overdue ? 'var(--red)' : 'var(--muted)' }}>{inv.due_date || '\u2014'}</td>
+                    : receivableByCurrency.map(group => (
+                        <>
+                          <tr key={'hdr-'+group.currency}><td colSpan={8} style={{ background:'var(--parchment)', fontWeight:600, fontSize:12, padding:'8px 14px' }}>{group.currency}</td></tr>
+                          {group.invoices.map(inv => {
+                            const overdue = inv.due_date && inv.due_date < new Date().toISOString().split('T')[0]
+                            return (
+                              <tr key={inv.id}>
+                                <td style={{ fontFamily:'var(--font-serif)', fontWeight:500 }}>{inv.invoice_number}</td>
+                                <td>{inv.clients?.name || '\u2014'}</td>
+                                <td>{formatAmount(inv.total, inv.currency)}</td>
+                                <td style={{ color:'var(--green)' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>
+                                <td style={{ fontWeight:600, color: overdue ? 'var(--red)' : 'var(--amber)' }}>
+                                  {formatAmount(inv.balance_due, inv.currency)}
+                                  {overdue && <span style={{ fontSize:10, marginLeft:5, color:'var(--red)' }}>OVERDUE</span>}
+                                </td>
+                                <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.currency}</td>
+                                <td><span className="badge badge-amber">{inv.status}</span></td>
+                                <td style={{ fontSize:12, color: overdue ? 'var(--red)' : 'var(--muted)' }}>{inv.due_date || '\u2014'}</td>
+                              </tr>
+                            )
+                          })}
+                          <tr key={'sub-'+group.currency} style={{ background:'var(--surface-1,#f8f7f5)' }}>
+                            <td colSpan={4} style={{ textAlign:'right', fontWeight:600, padding:'8px 14px', fontSize:12 }}>Subtotal ({group.currency})</td>
+                            <td style={{ fontWeight:600, color:'var(--amber)', padding:'8px 14px', fontSize:12 }}>{formatAmount(group.total, group.currency)}</td>
+                            <td colSpan={3} />
                           </tr>
-                        )
-                      })
+                        </>
+                      ))
                   }
                 </tbody>
-                {receivableData.length > 0 && (
-                  <tfoot>
-                    <tr>
-                      <td colSpan={4} style={{ textAlign:'right', fontWeight:600, padding:'10px 14px', borderTop:'2px solid var(--line)' }}>Total outstanding</td>
-                      <td style={{ fontWeight:600, color:'var(--amber)', padding:'10px 14px', borderTop:'2px solid var(--line)' }}>
-                        {'\u20A6'}{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}
-                      </td>
-                      <td colSpan={3} style={{ borderTop:'2px solid var(--line)' }} />
-                    </tr>
-                  </tfoot>
-                )}
               </table>
             </div>
           </div>
