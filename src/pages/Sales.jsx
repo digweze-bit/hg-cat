@@ -1514,6 +1514,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                           checked={it.delivered || false}
                           onChange={async e => {
                             const now = new Date().toISOString()
+                            console.log('CHECKBOX CLICKED', it.id, e.target.checked)
                             await supabase.from('invoice_items').update({
                               delivered: e.target.checked,
                               delivered_at: e.target.checked ? now : null,
