@@ -474,7 +474,7 @@ td{padding:9px 8px;border-bottom:1px solid #f0ece7;font-size:12px;vertical-align
   setTimeout(() => w.print(), 800)
 }
 
-function ClientList({ clients, invoices, onRefresh }) {
+
 function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
   const [selected, setSelected] = useState(null)  // client being viewed/edited
   const [showReport, setShowReport] = useState(false)
