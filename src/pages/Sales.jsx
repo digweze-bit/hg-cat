@@ -1512,14 +1512,15 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                       <label style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:12 }}>
                         <input type="checkbox" style={{ width:20, height:20 }}
                           checked={it.delivered || false}
-                          onClick={() => alert('CLICKED: ' + it.id)}
+                          onClick={() => {}}
                           onChange={async e => {
                             const checked = e.target.checked
+                            const now = new Date().toISOString()
                             await supabase.from('invoice_items').update({
-                              delivered: e.target.checked,
-                              delivered_at: e.target.checked ? now : null,
+                              delivered: checked,
+                              delivered_at: checked ? now : null,
                             }).eq('id', it.id)
-                            setItems(prev => prev.map(i => i.id === it.id ? { ...i, delivered: e.target.checked, delivered_at: e.target.checked ? now : null } : i))
+                            setItems(prev => prev.map(i => i.id === it.id ? { ...i, delivered: checked, delivered_at: checked ? now : null } : i))
                             cacheInvalidate('invoices')
                           }}
                         />
