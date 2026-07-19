@@ -1325,6 +1325,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   const [items, setItems] = useState([])
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
   const [editingPayment, setEditingPayment] = useState(null)
+  const [collectingItem, setCollectingItem] = useState(null)
   const [addingPay, setAddingPay] = useState(false)
   const [saving, setSaving] = useState(false)
   const client = clients.find(c => c.id === inv.client_id)
