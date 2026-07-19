@@ -320,8 +320,8 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
         <input className="form-input" style={{ width:220 }} placeholder="Search invoices..." value={search} onChange={e=>setSearch(e.target.value)} />
         <select className="form-select" style={{ width:140 }} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
           <option value="">All status</option>
-          <option value="">All status</option>
           <option value="open">All open</option>
+          {['draft','sent','partial','paid','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <select className="form-select" style={{ width:140 }} value={sortKey} onChange={e=>setSortKey(e.target.value)}>
           {SORTS.map(s => <option key={s.key} value={s.key}>{s.key === sortKey ? '\u2713 ' : ''}{s.label}</option>)}
