@@ -1519,7 +1519,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                               delivered_at: e.target.checked ? now : null,
                             }).eq('id', it.id)
                             setItems(prev => prev.map(i => i.id === it.id ? { ...i, delivered: e.target.checked, delivered_at: e.target.checked ? now : null } : i))
-                            onSave()
+                            cacheInvalidate('invoices')
                           }}
                         />
                         <span style={{ color: it.delivered ? 'var(--green,#27ae60)' : '#b8862a', fontWeight:500 }}>
