@@ -1510,11 +1510,11 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                   {(it.item_type === 'artwork' || !it.item_type) && (
                     <div style={{ marginTop:6 }}>
                       <label style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:12 }}>
-                        <input type="checkbox" style={{ width:'auto' }}
+                        <input type="checkbox" style={{ width:20, height:20 }}
                           checked={it.delivered || false}
+                          onClick={() => alert('CLICKED: ' + it.id)}
                           onChange={async e => {
-                            const now = new Date().toISOString()
-                            console.log('CHECKBOX CLICKED', it.id, e.target.checked)
+                            const checked = e.target.checked
                             await supabase.from('invoice_items').update({
                               delivered: e.target.checked,
                               delivered_at: e.target.checked ? now : null,
