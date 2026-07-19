@@ -284,7 +284,8 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
 
   const filtered = useMemo(() => {
     let list = invoices.filter(i => {
-      if (statusFilter && i.status !== statusFilter) return false
+      if (statusFilter === 'open' && !['draft','sent','partial'].includes(i.status)) return false
+      if (statusFilter && statusFilter !== 'open' && i.status !== statusFilter) return false
       if (search) {
         const q = search.toLowerCase()
         return i.invoice_number?.toLowerCase().includes(q) ||
@@ -319,7 +320,8 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
         <input className="form-input" style={{ width:220 }} placeholder="Search invoices..." value={search} onChange={e=>setSearch(e.target.value)} />
         <select className="form-select" style={{ width:140 }} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
           <option value="">All status</option>
-          {['draft','sent','partial','paid','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
+          <option value="">All status</option>
+          <option value="open">All open</option>
         </select>
         <select className="form-select" style={{ width:140 }} value={sortKey} onChange={e=>setSortKey(e.target.value)}>
           {SORTS.map(s => <option key={s.key} value={s.key}>{s.key === sortKey ? '\u2713 ' : ''}{s.label}</option>)}
@@ -1509,25 +1511,36 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                   )}
                   {(it.item_type === 'artwork' || !it.item_type) && (
                     <div style={{ marginTop:6 }}>
-                      <label style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:12 }}>
-                        <input type="checkbox" style={{ width:20, height:20 }}
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <input type="checkbox" style={{ width:18, height:18, cursor:'pointer' }}
                           checked={it.delivered || false}
-                          onClick={() => {}}
                           onChange={async e => {
                             const checked = e.target.checked
                             const now = new Date().toISOString()
-                            await supabase.from('invoice_items').update({
-                              delivered: checked,
-                              delivered_at: checked ? now : null,
-                            }).eq('id', it.id)
-                            setItems(prev => prev.map(i => i.id === it.id ? { ...i, delivered: checked, delivered_at: checked ? now : null } : i))
+                            if (checked) { setCollectingItem(it.id); return }
+                            await supabase.from('invoice_items').update({ delivered: false, delivered_at: null, collected_by: null }).eq('id', it.id)
+                            setItems(prev => prev.map(i => i.id === it.id ? { ...i, delivered: false, delivered_at: null, collected_by: null } : i))
                             cacheInvalidate('invoices')
                           }}
                         />
-                        <span style={{ color: it.delivered ? 'var(--green,#27ae60)' : '#b8862a', fontWeight:500 }}>
-                          {it.delivered ? `\u2713 Collected${it.delivered_at ? ' \u00B7 ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : ''}` : '\u23F3 Pending collection'}
+                        <span onClick={() => it.delivered && setCollectingItem(it.id)}
+                          style={{ color: it.delivered ? 'var(--green,#27ae60)' : '#b8862a', fontWeight:500, fontSize:12, cursor: it.delivered ? 'pointer' : 'default' }}>
+                          {it.delivered
+                            ? `Collected${it.delivered_at ? ' - ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : ''}${it.collected_by ? ' by ' + it.collected_by : ''}`
+                            : 'Pending collection'}
                         </span>
-                      </label>
+                        {it.delivered && <button onClick={() => setCollectingItem(it.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:11, textDecoration:'underline' }}>edit</button>}
+                      </div>
+                      {collectingItem === it.id && (
+                        <CollectionEditRow item={it}
+                          onCancel={() => setCollectingItem(null)}
+                          onSave={async (vals) => {
+                            await supabase.from('invoice_items').update({ delivered: true, delivered_at: vals.date, collected_by: vals.agent }).eq('id', it.id)
+                            setItems(prev => prev.map(i => i.id === it.id ? { ...i, delivered: true, delivered_at: vals.date, collected_by: vals.agent } : i))
+                            cacheInvalidate('invoices')
+                            setCollectingItem(null)
+                          }} />
+                      )}
                     </div>
                   )}
                 </div>
@@ -1657,6 +1670,25 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function CollectionEditRow({ item, onSave, onCancel }) {
+  const [agent, setAgent] = useState(item.collected_by || '')
+  const [date, setDate] = useState(item.delivered_at ? item.delivered_at.split('T')[0] : new Date().toISOString().split('T')[0])
+  return (
+    <div style={{ display:'flex', gap:8, alignItems:'flex-end', marginTop:6, padding:'8px 10px', background:'var(--surface-1,#f8f7f5)', borderRadius:3 }}>
+      <div className="form-group" style={{ marginBottom:0 }}>
+        <label className="form-label">Collected by</label>
+        <input className="form-input" style={{ width:160 }} value={agent} onChange={e=>setAgent(e.target.value)} placeholder="Agent / staff name" />
+      </div>
+      <div className="form-group" style={{ marginBottom:0 }}>
+        <label className="form-label">Date</label>
+        <input className="form-input" type="date" style={{ width:150 }} value={date} onChange={e=>setDate(e.target.value)} />
+      </div>
+      <button className="btn btn-primary btn-sm" onClick={() => onSave({ agent, date: new Date(date).toISOString() })}>Save</button>
+      <button className="btn btn-outline btn-sm" onClick={onCancel}>Cancel</button>
     </div>
   )
 }
