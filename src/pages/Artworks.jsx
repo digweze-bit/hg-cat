@@ -439,6 +439,7 @@ export default function Artworks() {
       alert('Save failed: ' + (err.message || JSON.stringify(err)))
     } finally {
       setSaving(false)
+      savingRef.current = false
     }
   }
 
