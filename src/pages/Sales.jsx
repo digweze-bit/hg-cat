@@ -500,7 +500,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
   const [visits, setVisits] = useState([])
   const [interests, setInterests] = useState([])
   const [visitForm, setVisitForm] = useState({ visit_type:'in-person', notes:'', staff_name:'', visit_date: new Date().toISOString().split('T')[0] })
-  const [interestForm, setInterestForm] = useState({ artist_name:'', medium:'', budget_range:'', notes:'' })
+  const [interestForm, setInterestForm] = useState({ artist_name:'', medium:'', budget_range:'', notes:'', follow_up_date:'' })
   const [showVisitForm, setShowVisitForm] = useState(false)
   const [showInterestForm, setShowInterestForm] = useState(false)
 
@@ -531,7 +531,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
     await supabase.from('client_interests').insert({ ...interestForm, client_id: selected.id })
     const { data } = await supabase.from('client_interests').select('*').eq('client_id', selected.id).order('created_at', { ascending: false })
     setInterests(data || [])
-    setInterestForm({ artist_name:'', medium:'', budget_range:'', notes:'' })
+    setInterestForm({ artist_name:'', medium:'', budget_range:'', notes:'', follow_up_date:'' })
     setShowInterestForm(false)
   }
 
@@ -735,6 +735,10 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
                   <input className="form-input" value={interestForm.budget_range} onChange={e=>setInterestForm(f=>({...f,budget_range:e.target.value}))} placeholder="e.g. ₦2m - ₦5m" />
                 </div>
                 <div className="form-group" style={{ marginBottom:0 }}>
+                  <label className="form-label">Follow up by</label>
+                  <input className="form-input" type="date" value={interestForm.follow_up_date} onChange={e=>setInterestForm(f=>({...f,follow_up_date:e.target.value}))} />
+                </div>
+                <div className="form-group" style={{ marginBottom:0 }}>
                   <label className="form-label">Notes</label>
                   <textarea className="form-textarea" rows={2} value={interestForm.notes} onChange={e=>setInterestForm(f=>({...f,notes:e.target.value}))} />
                 </div>
@@ -751,6 +755,11 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
                   <div style={{ fontSize:13, fontWeight:500 }}>{i.artist_name}{i.medium ? ` · ${i.medium}` : ''}</div>
                   {i.budget_range && <div style={{ fontSize:11, color:'var(--muted)' }}>Budget: {i.budget_range}</div>}
                   {i.notes && <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>{i.notes}</div>}
+                  {i.follow_up_date && (
+                    <div style={{ fontSize:11, marginTop:3, color: i.follow_up_date < new Date().toISOString().split('T')[0] ? 'var(--red,#c0392b)' : 'var(--amber,#b8862a)', fontWeight:500 }}>
+                      Follow up: {i.follow_up_date}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                   <select className="form-select" style={{ fontSize:11, padding:'2px 6px', width:'auto' }} value={i.status} onChange={e => updateInterestStatus(i.id, e.target.value)}>
