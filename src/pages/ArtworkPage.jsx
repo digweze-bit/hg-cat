@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import QRCode from 'qrcode'
@@ -63,16 +63,16 @@ export default function ArtworkPage() {
 
         .aw-grid { display:grid; grid-template-columns: 1fr 1fr; gap:56px; align-items:start; }
         .aw-img { max-height: 560px; }
-        .aw-title { font-size: 22px; }
+        .aw-title { font-size: 17px; }
 
         @media (min-width: 900px) {
           .aw-img { max-height: 680px; }
-          .aw-title { font-size: 26px; }
+          .aw-title { font-size: 19px; }
         }
         @media (max-width: 760px) {
           .aw-grid { grid-template-columns: 1fr; gap:0; }
           .aw-img { max-height: 480px; }
-          .aw-title { font-size: 19px; }
+          .aw-title { font-size: 15px; }
         }
         .aw-body { font-family:'Inter',-apple-system,sans-serif; }
       `}</style>
