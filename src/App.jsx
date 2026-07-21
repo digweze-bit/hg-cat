@@ -15,6 +15,7 @@ const Artists      = lazy(() => import('./pages/Artists'))
 const Artworks     = lazy(() => import('./pages/Artworks'))
 const Archive      = lazy(() => import('./pages/Archive'))
 const Sales        = lazy(() => import('./pages/Sales'))
+const Safekeeping  = lazy(() => import('./pages/Safekeeping'))
 const Consignors   = lazy(() => import('./pages/Consignors'))
 const Books        = lazy(() => import('./pages/Books'))
 const Forms        = lazy(() => import('./pages/Forms'))
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="archive" element={<Archive />} />
               <Route path="archive/:artistId" element={<Archive />} />
               <Route path="sales" element={<Sales />} />
+              <Route path="safekeeping" element={<Safekeeping />} />
               <Route path="consignors" element={<Consignors />} />
               <Route path="books" element={<Books />} />
               <Route path="forms" element={<Forms />} />

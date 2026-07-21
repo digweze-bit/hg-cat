@@ -10,6 +10,7 @@ const NAV = [
   { path: '/admin/archive', label: 'Live Archive', icon: '\u25C8' },
   { section: 'Commerce' },
   { path: '/admin/sales', label: 'Sales & Invoices', icon: '\u25D1' },
+  { path: '/admin/safekeeping', label: 'Safekeeping', icon: '\u25C8' },
   { path: '/admin/consignors', label: 'Consignors', icon: '\u25D0' },
   { path: '/admin/books', label: 'Books', icon: '\u25A3' },
   { path: '/admin/catalogue', label: 'Catalogue', icon: '\u25A4' },
