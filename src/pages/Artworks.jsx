@@ -7,7 +7,18 @@ const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
+const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
+
+
+function convertDimensions(str, fromUnit, toUnit) {
+  if (!str || fromUnit === toUnit) return str
+  const factor = fromUnit === 'in' && toUnit === 'cm' ? 2.54 : (1 / 2.54)
+  return str.replace(/(\d+(\.\d+)?)/g, (m) => {
+    const val = parseFloat(m) * factor
+    const rounded = Math.round(val * 100) / 100
+    return String(rounded)
+  })
+}
 
 // ── PRICE FIELDS COMPONENT ────────────────────────────────────
 function PriceFields({ form, setForm }) {
@@ -314,7 +325,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -392,6 +403,7 @@ export default function Artworks() {
         year:              form.year || null,
         medium:            form.medium || null,
         dimensions:        form.dimensions || null,
+        dimension_unit:    form.dimension_unit || 'in',
         availability:      form.availability || 'Available',
         ownership:         form.ownership || 'gallery',
         location:          form.location || null,
@@ -679,7 +691,19 @@ export default function Artworks() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Dimensions</label>
-                  <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} />
+                  <input className="form-input" value={form.dimensions||''} onChange={e=>setForm(f=>({...f,dimensions:e.target.value}))} placeholder="e.g. 50 x 60" />
+                  <div style={{ display:'flex', gap:14, marginTop:6 }}>
+                    <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, cursor:'pointer' }}>
+                      <input type="radio" name="dimUnit" checked={(form.dimension_unit||'in')==='in'}
+                        onChange={() => setForm(f => ({...f, dimensions: convertDimensions(f.dimensions, f.dimension_unit||'in', 'in'), dimension_unit:'in'}))} />
+                      Inches
+                    </label>
+                    <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, cursor:'pointer' }}>
+                      <input type="radio" name="dimUnit" checked={(form.dimension_unit||'in')==='cm'}
+                        onChange={() => setForm(f => ({...f, dimensions: convertDimensions(f.dimensions, f.dimension_unit||'in', 'cm'), dimension_unit:'cm'}))} />
+                      cm
+                    </label>
+                  </div>
                 </div>
                 <PriceFields form={form} setForm={setForm} />
                 <div className="form-row">
