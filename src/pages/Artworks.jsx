@@ -7,7 +7,7 @@ const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
+const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
 
 
 function convertDimensions(str, fromUnit, toUnit) {
@@ -325,7 +325,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -378,12 +378,32 @@ export default function Artworks() {
     if (!file) return
     setUploading(true)
     try {
-      const resized = await resizeImage(file, 1200)
-      const path = `works/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
-      const { error } = await supabase.storage.from('artwork-images').upload(path, resized)
-      if (error) throw error
-      const { data: { publicUrl } } = supabase.storage.from('artwork-images').getPublicUrl(path)
-      setForm(f => ({ ...f, image_url: publicUrl }))
+      const base = `works/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+
+      const [thumbBlob, displayBlob, fullBlob] = await Promise.all([
+        resizeImage(file, 150),
+        resizeImage(file, 600),
+        resizeImage(file, 1600),
+      ])
+
+      const thumbPath = base.replace(/(\.\w+)?$/, '_thumb.jpg')
+      const displayPath = base.replace(/(\.\w+)?$/, '_display.jpg')
+      const fullPath = base.replace(/(\.\w+)?$/, '_full.jpg')
+
+      const [r1, r2, r3] = await Promise.all([
+        supabase.storage.from('artwork-images').upload(thumbPath, thumbBlob),
+        supabase.storage.from('artwork-images').upload(displayPath, displayBlob),
+        supabase.storage.from('artwork-images').upload(fullPath, fullBlob),
+      ])
+      if (r1.error) throw r1.error
+      if (r2.error) throw r2.error
+      if (r3.error) throw r3.error
+
+      const thumbUrl = supabase.storage.from('artwork-images').getPublicUrl(thumbPath).data.publicUrl
+      const displayUrl = supabase.storage.from('artwork-images').getPublicUrl(displayPath).data.publicUrl
+      const fullUrl = supabase.storage.from('artwork-images').getPublicUrl(fullPath).data.publicUrl
+
+      setForm(f => ({ ...f, image_url: displayUrl, thumbnail_url: thumbUrl, full_image_url: fullUrl }))
     } catch (err) {
       alert('Upload failed: ' + err.message)
     } finally {
@@ -404,6 +424,8 @@ export default function Artworks() {
         medium:            form.medium || null,
         dimensions:        form.dimensions || null,
         dimension_unit:    form.dimension_unit || 'in',
+        thumbnail_url:     form.thumbnail_url || null,
+        full_image_url:    form.full_image_url || null,
         availability:      form.availability || 'Available',
         ownership:         form.ownership || 'gallery',
         location:          form.location || null,
@@ -573,7 +595,7 @@ export default function Artworks() {
                 <tr key={w.id}>
                   <td>
                     {w.image_url
-                      ? <img src={w.image_url} alt="" loading="lazy" decoding="async" style={{ width:44, height:44, objectFit:'cover', objectPosition: w.image_position||'center', borderRadius:2, border:'1px solid var(--line)' }} />
+                      ? <img src={w.thumbnail_url || w.image_url} alt="" loading="lazy" decoding="async" style={{ width:44, height:44, objectFit:'cover', objectPosition: w.image_position||'center', borderRadius:2, border:'1px solid var(--line)' }} />
                       : <div style={{ width:44, height:44, background:'var(--parchment-2)', borderRadius:2, border:'1px solid var(--line)' }} />
                     }
                   </td>

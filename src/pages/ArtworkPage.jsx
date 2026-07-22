@@ -10,6 +10,7 @@ export default function ArtworkPage() {
   const [artist, setArtist]   = useState(null)
   const [loading, setLoading] = useState(true)
   const [qrDataUrl, setQrDataUrl] = useState(null)
+  const [showFullRes, setShowFullRes] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -116,8 +117,16 @@ export default function ArtworkPage() {
             {/* Image — always first */}
             <div>
               {artwork.image_url ? (
-                <img className="aw-img" src={artwork.image_url} alt={artwork.title}
-                  style={{ width:'100%', display:'block', borderRadius:2, objectFit:'contain', background:'#f0ece6' }} />
+                <>
+                  <img className="aw-img" src={showFullRes && artwork.full_image_url ? artwork.full_image_url : artwork.image_url} alt={artwork.title}
+                    style={{ width:'100%', display:'block', borderRadius:2, objectFit:'contain', background:'#f0ece6' }} />
+                  {artwork.full_image_url && !showFullRes && (
+                    <button onClick={() => setShowFullRes(true)}
+                      style={{ marginTop:8, fontSize:11, color:'#9a9490', background:'none', border:'1px solid #e8e3db', borderRadius:3, padding:'5px 10px', cursor:'pointer', fontFamily:'inherit' }}>
+                      View higher resolution
+                    </button>
+                  )}
+                </>
               ) : (
                 <div style={{ width:'100%', aspectRatio:'3/4', background:'#ede9e2', borderRadius:2, display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <span style={{ fontSize:12, color:'#b0aa9f' }}>No image on file</span>
