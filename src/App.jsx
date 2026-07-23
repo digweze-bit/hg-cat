@@ -57,6 +57,7 @@ export default function App() {
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Catalogue />} />
+            <Route path="/artist/:artistId" element={<Catalogue />} />
             <Route path="/artwork/:id" element={<ArtworkPage />} />
             <Route path="/sign/:token" element={<FormSign />} />
             <Route path="/admin/login" element={<AdminLogin />} />

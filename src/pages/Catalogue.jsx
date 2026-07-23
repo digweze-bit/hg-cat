@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 
 const PLACEHOLDER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"%3E%3Crect width="400" height="500" fill="%23ede9e2"/%3E%3C/svg%3E'
@@ -9,6 +10,8 @@ export default function Catalogue() {
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const [sortTab, setSortTab]   = useState('az') // 'az' | 'most' | 'recent'
+  const { artistId: urlArtistId } = useParams()
+  const navigate = useNavigate()
   const [activeArtist, setActiveArtist] = useState(null)
   const [selected, setSelected] = useState(null)
   const [mediumFilter, setMediumFilter] = useState('')
@@ -19,6 +22,10 @@ export default function Catalogue() {
     async function load() {
       const a = await fetchAll('artists', { select:'id,name,bio,portrait_url,nationality,born,died,updated_at,created_at,visible', filters: [['visible','eq',true]], order: 'name' })
       setArtists(a)
+      if (urlArtistId) {
+        const found = a.find(x => x.id === urlArtistId)
+        if (found) setActiveArtist(found)
+      }
       supabase.rpc('get_artwork_counts').then(({data:rows, error:rpcErr}) => { if(rpcErr) console.error('RPC error:',rpcErr); if(rows){const c={};rows.forEach(r=>{c[r.artist_id]=Number(r.count)});setWorkCounts(c);console.log('Counts loaded:',Object.keys(c).length)} })
       setLoading(false)
     }
@@ -96,6 +103,16 @@ export default function Catalogue() {
     </div>
   )
 
+  function shareArtist(artist) {
+    const url = `${window.location.origin}/artist/${artist.id}`
+    const text = `*${artist.name}*${artist.nationality ? ', ' + artist.nationality : ''}\n\n${url}`
+    if (navigator.share) {
+      navigator.share({ title: artist.name, text, url }).catch(() => {})
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+    }
+  }
+
   // \u2500\u2500 ARTIST DETAIL VIEW \u2500\u2500
   if (activeArtist) {
     const wc = workCounts[activeArtist.id] || 0
@@ -104,14 +121,20 @@ export default function Catalogue() {
         {/* Header */}
         <div style={{ background:'#fff', borderBottom:'1px solid #e8e5e0', padding:'18px 40px', display:'flex', alignItems:'center', gap:16 }}>
           <button
-            onClick={() => { setActiveArtist(null); setSelected(null); setMediumFilter(''); setAvailFilter('') }}
+            onClick={() => { setActiveArtist(null); setSelected(null); setMediumFilter(''); setAvailFilter(''); navigate('/') }}
             style={{ background:'none', border:'none', cursor:'pointer', color:'#c8651b', fontSize:13, fontFamily:'inherit', padding:0, display:'flex', alignItems:'center', gap:5 }}
           >
             &larr; Artist List
           </button>
           <div style={{ width:1, height:16, background:'#e8e5e0' }} />
           <div style={{ fontFamily:'Georgia,serif', fontSize:'1.1rem', color:'#1a1714' }}>{activeArtist.name}</div>
-          <div style={{ marginLeft:'auto', fontSize:13, color:'#999' }}>{wc} work{wc !== 1 ? 's' : ''}</div>
+          <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:14 }}>
+            <span style={{ fontSize:13, color:'#999' }}>{wc} work{wc !== 1 ? 's' : ''}</span>
+            <button onClick={() => shareArtist(activeArtist)}
+              style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3, border:'1px solid #25D366', background:'#fff', color:'#25D366', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+              Share
+            </button>
+          </div>
         </div>
 
         {/* Artist info */}
@@ -127,9 +150,13 @@ export default function Catalogue() {
                 {[activeArtist.nationality, activeArtist.born && activeArtist.died ? `${activeArtist.born}\u2013${activeArtist.died}` : activeArtist.born, activeArtist.medium].filter(Boolean).join(' \u00B7 ')}
               </div>
               {activeArtist.bio && (
-                <p style={{ fontSize:13, color:'#555', lineHeight:1.75, maxWidth:640, margin:0 }}>
-                  {activeArtist.bio.slice(0, 300)}{activeArtist.bio.length > 300 ? '\u2026' : ''}
-                </p>
+                <div style={{ maxWidth:640 }}>
+                  {activeArtist.bio.split(/\n\s*\n/).map((para, i) => (
+                    <p key={i} style={{ fontSize:13, color:'#555', lineHeight:1.75, margin: i === 0 ? 0 : '12px 0 0' }}>
+                      {para.trim()}
+                    </p>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -236,7 +263,7 @@ export default function Catalogue() {
                 const wc = workCounts[a.id] || 0
                 return (
                   <div key={a.id}
-                    onClick={() => setActiveArtist(a)}
+                    onClick={() => { setActiveArtist(a); navigate(`/artist/${a.id}`) }}
                     style={{ padding:'16px 20px 14px', borderRight:'1px solid #e8e5e0', borderBottom:'1px solid #e8e5e0', cursor:'pointer', background:'#fff', transition:'background 120ms', minHeight:80, display:'flex', flexDirection:'column', justifyContent:'space-between' }}
                     onMouseEnter={e => e.currentTarget.style.background = '#faf9f7'}
                     onMouseLeave={e => e.currentTarget.style.background = '#fff'}
