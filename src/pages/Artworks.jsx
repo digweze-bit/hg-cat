@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
@@ -306,6 +307,8 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
 
 
 export default function Artworks() {
+  const navigate = useNavigate()
+
   const [artists, setArtists] = useState([])
   const [artworks, setArtworks] = useState([])
   const [loading, setLoading] = useState(true)
