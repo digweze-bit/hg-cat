@@ -176,7 +176,7 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
         .from('invoice_items')
         .select('*, invoices(invoice_number, issue_date, client_id, clients(name))')
         .in('invoice_id', paidIds)
-        .in('item_type', ['artwork', null])
+        .or('item_type.eq.artwork,item_type.is.null')
         .eq('delivered', false)
         .order('created_at', { ascending: true })
       setItems(data || [])
