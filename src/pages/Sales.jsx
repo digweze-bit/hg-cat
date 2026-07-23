@@ -175,9 +175,9 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
       const { data } = await supabase
         .from('invoice_items')
         .select('*, invoices(invoice_number, issue_date, client_id, clients(name))')
+        .in('invoice_id', paidIds)
         .eq('item_type', 'artwork')
         .eq('delivered', false)
-        .not('delivered', 'is', true)
         .order('created_at', { ascending: true })
       setItems(data || [])
       setLoading(false)
