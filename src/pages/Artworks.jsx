@@ -904,7 +904,7 @@ function printArtworkList(artworks, artistMap, filters) {
       ${hideArtistCol ? '' : `<td>${escH(artistMap[w.artist_id]?.name || '—')}</td>`}
       <td>${escH(w.year || '—')}</td>
       <td>${escH(w.medium || '—')}</td>
-      <td>${escH(w.dimensions || '—')}</td>
+      <td>${w.dimensions ? escH(w.dimensions + ' ' + (w.dimension_unit === 'cm' ? 'cm' : 'in')) : '—'}</td>
       ${hideLocationCol ? '' : `<td>${escH(w.location || '—')}</td>`}
       <td style="color:${w.availability === 'Available' ? '#2d6a4f' : w.availability === 'Sold' ? '#8b1a1a' : '#92600a'};font-weight:500">${escH(w.availability || '—')}</td>
       <td>${escH(w.price || '—')}</td>

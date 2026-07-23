@@ -32,7 +32,7 @@ export default function ArtworkPage() {
   function whatsappShare() {
     const url = `${window.location.origin}/artwork/${id}`
     const text = artwork
-      ? `*${artwork.title}*\n${artist?.name || ''}\n${[artwork.year, artwork.medium, artwork.dimensions].filter(Boolean).join(' · ')}\n\n${url}`
+      ? `*${artwork.title}*\n${artist?.name || ''}\n${[artwork.year, artwork.medium, artwork.dimensions ? artwork.dimensions + ' ' + (artwork.dimension_unit === 'cm' ? 'cm' : 'in') : null].filter(Boolean).join(' · ')}\n\n${url}`
       : url
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
@@ -164,7 +164,7 @@ export default function ArtworkPage() {
                 {[
                   ['Year', artwork.year],
                   ['Medium', artwork.medium],
-                  ['Dimensions', artwork.dimensions],
+                  ['Dimensions', artwork.dimensions ? `${artwork.dimensions} ${artwork.dimension_unit === 'cm' ? 'cm' : 'in'}` : null],
                   ['Category', artwork.category],
                   ['Edition', artwork.edition_info],
                   ['Series', artwork.series],
