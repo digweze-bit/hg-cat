@@ -170,16 +170,16 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
   useEffect(() => {
     async function load() {
       // Get all undelivered artwork items on paid invoices
-      const paidIds = invoices.filter(i => i.status === 'paid').map(i => i.id)
-      if (paidIds.length === 0) { setItems([]); setLoading(false); return }
-      const { data } = await supabase
+      // Query joined invoices directly - avoids huge URL from .in() with 1000+ IDs
+
+      const { data, error } = await supabase
         .from('invoice_items')
-        .select('*, invoices(invoice_number, issue_date, client_id, clients(name))')
-        .in('invoice_id', paidIds)
+        .select('*, invoices!inner(invoice_number, issue_date, status, client_id, clients(name))')
+        .eq('invoices.status', 'paid')
         .eq('item_type', 'artwork')
         .eq('delivered', false)
         .order('created_at', { ascending: true })
-      console.log('PENDING QUERY: paidIds=', paidIds.length, 'result=', data?.length, data)
+      if (error) console.error('Pending collection query error:', error)
       setItems(data || [])
       setLoading(false)
     }
