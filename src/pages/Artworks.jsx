@@ -896,6 +896,7 @@ function printArtworkList(artworks, artistMap, filters) {
   const rows = artworks.map((w, i) => `
     <tr>
       <td>${i + 1}</td>
+      <td class="thumb-cell">${(w.thumbnail_url || w.image_url) ? `<img src="${w.thumbnail_url || w.image_url}" class="thumb-img" />` : '<div class="thumb-placeholder"></div>'}</td>
       <td><strong>${escH(w.title)}</strong>${w.series ? `<br><span style="color:#888;font-size:10px">${escH(w.series)}</span>` : ''}</td>
       <td>${escH(artistMap[w.artist_id]?.name || '—')}</td>
       <td>${escH(w.year || '—')}</td>
@@ -919,6 +920,9 @@ table{width:100%;border-collapse:collapse;margin-top:8px;}
 th{padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;border-bottom:2px solid #1a1714;background:#f9f8f6;}
 td{padding:7px 10px;border-bottom:1px solid #ece8e1;font-size:11px;vertical-align:top;}
 tr:nth-child(even) td{background:#faf9f7;}
+.thumb-cell{width:52px;padding:6px !important;}
+.thumb-img{width:44px;height:44px;object-fit:cover;border-radius:2px;display:block;}
+.thumb-placeholder{width:44px;height:44px;background:#ece8e1;border-radius:2px;}
 .footer{margin-top:24px;padding-top:12px;border-top:1px solid #ddd9d1;font-size:10px;color:#aaa;text-align:center;}
 @media print{body{padding:16px 20px;}th{background:#f0ece4 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
 </style></head><body>
@@ -929,7 +933,7 @@ tr:nth-child(even) td{background:#faf9f7;}
   <div class="meta">Generated ${today} · ${artworks.length} work${artworks.length !== 1 ? 's' : ''}</div>
 </div>
 <table>
-  <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Year</th><th>Medium</th><th>Dimensions</th><th>Location</th><th>Status</th><th>Price</th></tr></thead>
+  <thead><tr><th>#</th><th></th><th>Title</th><th>Artist</th><th>Year</th><th>Medium</th><th>Dimensions</th><th>Location</th><th>Status</th><th>Price</th></tr></thead>
   <tbody>${rows}</tbody>
 </table>
 <div class="footer">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
