@@ -1889,9 +1889,10 @@ async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
   const bal = Number(inv.balance_due||0)
   function e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
   const itemsWithImages = await Promise.all(items.map(async it => {
-    if (!it.image_url) return it
+    const imgSrc = it.thumbnail_url || it.image_url || it.cover_url
+    if (!imgSrc) return it
     try {
-      const resp = await fetch(it.thumbnail_url || it.image_url)
+      const resp = await fetch(imgSrc)
       const blob = await resp.blob()
       const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob) })
       return { ...it, _imgData: dataUrl }
@@ -1933,8 +1934,9 @@ ${client?`<div style="margin-bottom:24px"><div style="font-size:9px;text-transfo
 ${itemsWithImages.map(it=>`<tr>
   <td class="td-img">${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div class="art-placeholder"></div>'}</td>
   <td class="td-title">
-    <em style="font-style:italic;color:#1a1714">${e(it.title)}</em>
-    <br><span style="font-size:11px;color:#6b6760">${e(it.artist_name||'')}${it.year?', '+e(it.year):''}</span>
+    <em style="font-style:italic;font-size:12px;color:#1a1714"></em>
+    
+    ${it.year?'<br><span style="font-size:11px;color:#aaa">'+e(it.year)+'</span>':''}
     ${it.medium?'<br><span style="font-size:11px;color:#aaa">'+e(it.medium)+'</span>':''}${it.dimensions?'<br><span style="font-size:11px;color:#aaa">'+e(it.dimensions)+'</span>':''}
   </td>
   <td class="td-amt">${formatAmount(it.line_total,inv.currency)}</td>
