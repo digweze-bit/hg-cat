@@ -623,7 +623,7 @@ export default function Artworks() {
                       ? <span title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
                           Consignment{w.consignment_price ? ` · ₦${Number(w.consignment_price).toLocaleString()}` : ''}
                         </span>
-                      : <span>Gallery</span>
+                      : w.ownership === 'artist_owned' ? <span style={{ fontSize:11, color:'var(--green,#2d6a4f)' }}>Artist owned</span> : <span>Gallery</span>
                     }
                   </td>
                   <td style={{ fontSize:12, color:'var(--muted)' }}>
