@@ -203,3 +203,47 @@ tr:hover td { background: var(--parchment); }
   .no-print { display: none !important; }
   body { background: white; }
 }
+
+/* ── MOBILE NAV ─────────────────────────────────────── */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  color: var(--ink);
+  flex-direction: column;
+  gap: 5px;
+  align-items: center;
+  justify-content: center;
+}
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 39;
+}
+.sidebar-overlay.open { display: block; }
+
+@media (max-width: 600px) {
+  .hamburger { display: flex; }
+  .sidebar {
+    position: fixed !important;
+    top: 0; left: 0; bottom: 0;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 220ms ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,.18);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .main-content { margin-left: 0 !important; padding: 16px !important; }
+  .topbar { padding: 0 16px !important; }
+}

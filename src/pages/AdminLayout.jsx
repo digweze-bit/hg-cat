@@ -25,6 +25,7 @@ const NAV = [
 export default function AdminLayout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
 
   const isActive = (path) => {
@@ -34,7 +35,8 @@ export default function AdminLayout() {
 
   return (
     <div className="admin-layout">
-      <aside className="sidebar">
+      <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
+      <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
           <div className="sidebar-logo-text">Hourglass</div>
           <div className="sidebar-logo-sub">Gallery Platform</div>
