@@ -4,84 +4,94 @@ import { fileURLToPath } from 'url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const file = path.join(__dirname, '../src/pages/Reports.jsx')
 
-let src = fs.readFileSync(file, 'utf8')
+let raw = fs.readFileSync(file, 'utf8')
+const usesCRLF = raw.includes('\r\n')
+let src = raw.replace(/\r\n/g, '\n')
 
-// 1. Fix duplicate "Print Print this report"
-src = src.replace('Print Print this report', 'Print this report')
+if (src.includes("reportId === 'pending'")) {
+  console.log('Already patched')
+  process.exit(0)
+}
 
-// 2. Add per-currency grouping useMemo after totalReceivable
-const oldTotal = `  const totalReceivable = useMemo(() =>\r\n    receivableData.reduce((s, inv) => s + Number(inv.balance_due || 0), 0), [receivableData])`
-const newTotal = `  const totalReceivable = useMemo(() =>\r\n    receivableData.reduce((s, inv) => s + Number(inv.balance_due || 0), 0), [receivableData])\r\n\r\n  const receivableByCurrency = useMemo(() => {\r\n    const groups = {}\r\n    receivableData.forEach(inv => {\r\n      const cur = inv.currency || 'NGN'\r\n      if (!groups[cur]) groups[cur] = { currency: cur, total: 0, count: 0, invoices: [] }\r\n      groups[cur].total += Number(inv.balance_due || 0)\r\n      groups[cur].count += 1\r\n      groups[cur].invoices.push(inv)\r\n    })\r\n    return Object.values(groups).sort((a,b) => b.total - a.total)\r\n  }, [receivableData])`
+// 1. Update the print button call to pass the new data sets
+const oldCall = `onClick={() => printReport(activeReport, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable })}`
+if (!src.includes(oldCall)) { console.error('Print button call not found'); process.exit(1) }
+const newCall = `onClick={() => printReport(activeReport, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable, pendingData, collectionData, consignmentByArtist, consignmentByClient })}`
+src = src.replace(oldCall, newCall)
 
-if (!src.includes(oldTotal)) { console.error('totalReceivable pattern not found'); process.exit(1) }
-src = src.replace(oldTotal, newTotal)
+// 2. Update printReport function signature to destructure the new fields
+const oldSig = `function printReport(reportId, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable }) {`
+if (!src.includes(oldSig)) { console.error('printReport signature not found'); process.exit(1) }
+const newSig = `function printReport(reportId, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable, pendingData, collectionData, consignmentByArtist, consignmentByClient }) {`
+src = src.replace(oldSig, newSig)
 
-// 3. Replace the summary cards section to show per-currency totals
-const oldCards = `          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>\r\n            <div className="card" style={{ padding:'16px 18px' }}>\r\n              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>{receivableData.length}</div>\r\n              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Open invoices</div>\r\n            </div>\r\n            <div className="card" style={{ padding:'16px 18px' }}>\r\n              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>\r\n                {'\\u20A6'}{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}\r\n              </div>\r\n              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Total outstanding (NGN equiv.)</div>\r\n            </div>\r\n            <div className="card" style={{ padding:'16px 18px' }}>\r\n              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{receivableData.filter(i=>i.status==='partial').length}</div>\r\n              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Partially paid</div>\r\n            </div>\r\n          </div>`
+// 3. Insert new report handlers after the receivable block, before the closing of that section
+// Find anchor: end of receivable block (the })).join('')}</tbody>\n      </table>` right after receivable stat-row)
+const anchor = `  if (reportId === 'receivable') {`
+const anchorIdx = src.indexOf(anchor)
+if (anchorIdx < 0) { console.error('receivable anchor not found'); process.exit(1) }
 
-const newCards = `          <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>\r
-            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>\r
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>{receivableData.length}</div>\r
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Open invoices</div>\r
-            </div>\r
-            <div className="card" style={{ padding:'16px 18px' }}>\r
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{receivableData.filter(i=>i.status==='partial').length}</div>\r
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Partially paid</div>\r
-            </div>\r
-            {receivableByCurrency.map(g => (\r
-              <div key={g.currency} className="card" style={{ padding:'16px 18px', minWidth:160 }}>\r
-                <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>\r
-                  {formatAmount(g.total, g.currency)}\r
-                </div>\r
-                <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>\r
-                  {g.currency} outstanding ({g.count})\r
-                </div>\r
-              </div>\r
-            ))}\r
-          </div>`
+// Find the closing of the receivable if-block: look for the next "  }" after anchorIdx at same indent
+// We know structure: ends with `</table>\`\n  }`
+const closeMarker = "</table>`\n  }"
+const closeIdx = src.indexOf(closeMarker, anchorIdx)
+if (closeIdx < 0) { console.error('receivable close marker not found'); process.exit(1) }
+const insertPoint = closeIdx + closeMarker.length
 
-if (!src.includes(oldCards)) { console.error('Cards pattern not found - trying loose search'); }
-else { src = src.replace(oldCards, newCards); console.log('Cards replaced') }
+const newHandlers = `
 
-// 4. Replace table to group rows by currency with subtotals, and fix table footer
-const oldTable = `                <tbody>\r\n                  {receivableData.length === 0\r\n                    ? <tr><td colSpan={8} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>No outstanding balances</td></tr>\r\n                    : receivableData.map(inv => {\r\n                        const overdue = inv.due_date && inv.due_date < new Date().toISOString().split('T')[0]\r\n                        return (\r\n                          <tr key={inv.id}>\r\n                            <td style={{ fontFamily:'var(--font-serif)', fontWeight:500 }}>{inv.invoice_number}</td>\r\n                            <td>{inv.clients?.name || '\\u2014'}</td>\r\n                            <td>{formatAmount(inv.total, inv.currency)}</td>\r\n                            <td style={{ color:'var(--green)' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>\r\n                            <td style={{ fontWeight:600, color: overdue ? 'var(--red)' : 'var(--amber)' }}>\r\n                              {formatAmount(inv.balance_due, inv.currency)}\r\n                              {overdue && <span style={{ fontSize:10, marginLeft:5, color:'var(--red)' }}>OVERDUE</span>}\r\n                            </td>\r\n                            <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.currency}</td>\r\n                            <td><span className="badge badge-amber">{inv.status}</span></td>\r\n                            <td style={{ fontSize:12, color: overdue ? 'var(--red)' : 'var(--muted)' }}>{inv.due_date || '\\u2014'}</td>\r\n                          </tr>\r\n                        )\r\n                      })\r\n                  }\r\n                </tbody>\r\n                {receivableData.length > 0 && (\r\n                  <tfoot>\r\n                    <tr>\r\n                      <td colSpan={4} style={{ textAlign:'right', fontWeight:600, padding:'10px 14px', borderTop:'2px solid var(--line)' }}>Total outstanding</td>\r\n                      <td style={{ fontWeight:600, color:'var(--amber)', padding:'10px 14px', borderTop:'2px solid var(--line)' }}>\r\n                        {'\\u20A6'}{totalReceivable.toLocaleString('en-NG', { maximumFractionDigits:0 })}\r\n                      </td>\r\n                      <td colSpan={3} style={{ borderTop:'2px solid var(--line)' }} />\r\n                    </tr>\r\n                  </tfoot>\r\n                )}`
+  if (reportId === 'pending') {
+    body = \`
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">\${pendingData.length}</div><div class="stat-l">Awaiting collection</div></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Invoice date</th><th>Value</th></tr></thead>
+        <tbody>\${pendingData.map((item,i)=>\`<tr><td>\${i+1}</td><td><strong>\${e(item.title)}</strong></td><td>\${e(item.artist_name||'\u2014')}</td><td>\${e(item.client_name)}</td><td>\${e(item.invoice_number)}</td><td>\${e(item.invoice_date)}</td><td>\${formatAmount(item.line_total,item.currency)}</td></tr>\`).join('')}</tbody>
+      </table>\`
+  }
 
-const newTable = `                <tbody>\r
-                  {receivableData.length === 0\r
-                    ? <tr><td colSpan={8} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>No outstanding balances</td></tr>\r
-                    : receivableByCurrency.map(group => (\r
-                        <>\r
-                          <tr key={'hdr-'+group.currency}><td colSpan={8} style={{ background:'var(--parchment)', fontWeight:600, fontSize:12, padding:'8px 14px' }}>{group.currency}</td></tr>\r
-                          {group.invoices.map(inv => {\r
-                            const overdue = inv.due_date && inv.due_date < new Date().toISOString().split('T')[0]\r
-                            return (\r
-                              <tr key={inv.id}>\r
-                                <td style={{ fontFamily:'var(--font-serif)', fontWeight:500 }}>{inv.invoice_number}</td>\r
-                                <td>{inv.clients?.name || '\\u2014'}</td>\r
-                                <td>{formatAmount(inv.total, inv.currency)}</td>\r
-                                <td style={{ color:'var(--green)' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>\r
-                                <td style={{ fontWeight:600, color: overdue ? 'var(--red)' : 'var(--amber)' }}>\r
-                                  {formatAmount(inv.balance_due, inv.currency)}\r
-                                  {overdue && <span style={{ fontSize:10, marginLeft:5, color:'var(--red)' }}>OVERDUE</span>}\r
-                                </td>\r
-                                <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.currency}</td>\r
-                                <td><span className="badge badge-amber">{inv.status}</span></td>\r
-                                <td style={{ fontSize:12, color: overdue ? 'var(--red)' : 'var(--muted)' }}>{inv.due_date || '\\u2014'}</td>\r
-                              </tr>\r
-                            )\r
-                          })}\r
-                          <tr key={'sub-'+group.currency} style={{ background:'var(--surface-1,#f8f7f5)' }}>\r
-                            <td colSpan={4} style={{ textAlign:'right', fontWeight:600, padding:'8px 14px', fontSize:12 }}>Subtotal ({group.currency})</td>\r
-                            <td style={{ fontWeight:600, color:'var(--amber)', padding:'8px 14px', fontSize:12 }}>{formatAmount(group.total, group.currency)}</td>\r
-                            <td colSpan={3} />\r
-                          </tr>\r
-                        </>\r
-                      ))\r
-                  }\r
-                </tbody>`
+  if (reportId === 'collection') {
+    body = \`
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">\${collectionData.length}</div><div class="stat-l">Collected in period</div></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Collected by</th><th>Collection date</th><th>Value</th></tr></thead>
+        <tbody>\${collectionData.map((item,i)=>\`<tr><td>\${i+1}</td><td><strong>\${e(item.title)}</strong></td><td>\${e(item.artist_name||'\u2014')}</td><td>\${e(item.client_name)}</td><td>\${e(item.invoice_number)}</td><td>\${e(item.collected_by||'\u2014')}</td><td>\${e(item.delivered_at ? new Date(item.delivered_at).toLocaleDateString('en-GB') : '\u2014')}</td><td>\${formatAmount(item.line_total,item.currency)}</td></tr>\`).join('')}</tbody>
+      </table>\`
+  }
 
-if (!src.includes(oldTable)) { console.error('Table pattern not found - trying loose search') }
-else { src = src.replace(oldTable, newTable); console.log('Table replaced') }
+  if (reportId === 'consignment_artist') {
+    body = \`
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">\${consignmentByArtist.reduce((s,g)=>s+g.count,0)}</div><div class="stat-l">Consigned works</div></div>
+        <div class="stat"><div class="stat-n">\${consignmentByArtist.length}</div><div class="stat-l">Artists</div></div>
+      </div>
+      \${consignmentByArtist.map(group => \`
+        <table style="margin-top:16px">
+          <thead><tr><th colspan="5" style="background:#f0ece4;font-size:12px;padding:8px 10px">\${e(group.name)} \u2014 \${group.count} work\${group.count!==1?'s':''}</th></tr>
+          <tr><th>Title</th><th>Year</th><th>Medium</th><th>Location</th><th>Value</th></tr></thead>
+          <tbody>\${group.works.map(w=>\`<tr><td><strong>\${e(w.title)}</strong></td><td>\${e(w.year||'\u2014')}</td><td>\${e(w.medium||'\u2014')}</td><td>\${e(w.location||'\u2014')}</td><td>\${formatAmount(w.consignment_price||w.price||w.retail_price||0,'NGN')}</td></tr>\`).join('')}</tbody>
+        </table>\`).join('')}\`
+  }
 
-fs.writeFileSync(file, src, 'utf8')
-console.log('Done')
+  if (reportId === 'consignment_client') {
+    body = \`
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">\${consignmentByClient.reduce((s,g)=>s+g.count,0)}</div><div class="stat-l">Consigned works</div></div>
+        <div class="stat"><div class="stat-n">\${consignmentByClient.length}</div><div class="stat-l">Consignors</div></div>
+      </div>
+      \${consignmentByClient.map(group => \`
+        <table style="margin-top:16px">
+          <thead><tr><th colspan="5" style="background:#f0ece4;font-size:12px;padding:8px 10px">\${e(group.name)} \u2014 \${group.count} work\${group.count!==1?'s':''}</th></tr>
+          <tr><th>Title</th><th>Artist</th><th>Year</th><th>Location</th><th>Value</th></tr></thead>
+          <tbody>\${group.works.map(w=>\`<tr><td><strong>\${e(w.title)}</strong></td><td>\${e(artistMap[w.artist_id]?.name||'\u2014')}</td><td>\${e(w.year||'\u2014')}</td><td>\${e(w.location||'\u2014')}</td><td>\${formatAmount(w.consignment_price||w.price||w.retail_price||0,'NGN')}</td></tr>\`).join('')}</tbody>
+        </table>\`).join('')}\`
+  }`
+
+src = src.slice(0, insertPoint) + newHandlers + src.slice(insertPoint)
+
+const final = usesCRLF ? src.replace(/\n/g, '\r\n') : src
+fs.writeFileSync(file, final, 'utf8')
+console.log('Patched successfully - added pending, collection, consignment_artist, consignment_client print handlers')

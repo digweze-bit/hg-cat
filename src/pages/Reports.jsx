@@ -162,7 +162,7 @@ export default function Reports() {
           <div className="page-title">Reports</div>
           <div className="page-subtitle">Gallery financial and inventory reports</div>
         </div>
-        <button className="btn btn-outline" onClick={() => printReport(activeReport, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable })}>
+        <button className="btn btn-outline" onClick={() => printReport(activeReport, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable, pendingData, collectionData, consignmentByArtist, consignmentByClient })}>
           Print this report
         </button>
       </div>
@@ -566,7 +566,7 @@ export default function Reports() {
 }
 
 // \u2500\u2500 PRINT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function printReport(reportId, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable }) {
+function printReport(reportId, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable, pendingData, collectionData, consignmentByArtist, consignmentByClient }) {
   const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
   const period = `${dateFrom} to ${dateTo}`
 
@@ -641,6 +641,56 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
         }).join('')}</tbody>
         <tfoot><tr><td colspan="4" style="text-align:right">Total outstanding</td><td style="color:#92600a">{'\u20A6'}${totalReceivable.toLocaleString('en-NG',{maximumFractionDigits:0})}</td><td colspan="3"></td></tr></tfoot>
       </table>`
+  }
+
+  if (reportId === 'pending') {
+    body = `
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">${pendingData.length}</div><div class="stat-l">Awaiting collection</div></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Invoice date</th><th>Value</th></tr></thead>
+        <tbody>${pendingData.map((item,i)=>`<tr><td>${i+1}</td><td><strong>${e(item.title)}</strong></td><td>${e(item.artist_name||'—')}</td><td>${e(item.client_name)}</td><td>${e(item.invoice_number)}</td><td>${e(item.invoice_date)}</td><td>${formatAmount(item.line_total,item.currency)}</td></tr>`).join('')}</tbody>
+      </table>`
+  }
+
+  if (reportId === 'collection') {
+    body = `
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">${collectionData.length}</div><div class="stat-l">Collected in period</div></div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Collected by</th><th>Collection date</th><th>Value</th></tr></thead>
+        <tbody>${collectionData.map((item,i)=>`<tr><td>${i+1}</td><td><strong>${e(item.title)}</strong></td><td>${e(item.artist_name||'—')}</td><td>${e(item.client_name)}</td><td>${e(item.invoice_number)}</td><td>${e(item.collected_by||'—')}</td><td>${e(item.delivered_at ? new Date(item.delivered_at).toLocaleDateString('en-GB') : '—')}</td><td>${formatAmount(item.line_total,item.currency)}</td></tr>`).join('')}</tbody>
+      </table>`
+  }
+
+  if (reportId === 'consignment_artist') {
+    body = `
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">${consignmentByArtist.reduce((s,g)=>s+g.count,0)}</div><div class="stat-l">Consigned works</div></div>
+        <div class="stat"><div class="stat-n">${consignmentByArtist.length}</div><div class="stat-l">Artists</div></div>
+      </div>
+      ${consignmentByArtist.map(group => `
+        <table style="margin-top:16px">
+          <thead><tr><th colspan="5" style="background:#f0ece4;font-size:12px;padding:8px 10px">${e(group.name)} — ${group.count} work${group.count!==1?'s':''}</th></tr>
+          <tr><th>Title</th><th>Year</th><th>Medium</th><th>Location</th><th>Value</th></tr></thead>
+          <tbody>${group.works.map(w=>`<tr><td><strong>${e(w.title)}</strong></td><td>${e(w.year||'—')}</td><td>${e(w.medium||'—')}</td><td>${e(w.location||'—')}</td><td>${formatAmount(w.consignment_price||w.price||w.retail_price||0,'NGN')}</td></tr>`).join('')}</tbody>
+        </table>`).join('')}`
+  }
+
+  if (reportId === 'consignment_client') {
+    body = `
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n">${consignmentByClient.reduce((s,g)=>s+g.count,0)}</div><div class="stat-l">Consigned works</div></div>
+        <div class="stat"><div class="stat-n">${consignmentByClient.length}</div><div class="stat-l">Consignors</div></div>
+      </div>
+      ${consignmentByClient.map(group => `
+        <table style="margin-top:16px">
+          <thead><tr><th colspan="5" style="background:#f0ece4;font-size:12px;padding:8px 10px">${e(group.name)} — ${group.count} work${group.count!==1?'s':''}</th></tr>
+          <tr><th>Title</th><th>Artist</th><th>Year</th><th>Location</th><th>Value</th></tr></thead>
+          <tbody>${group.works.map(w=>`<tr><td><strong>${e(w.title)}</strong></td><td>${e(artistMap[w.artist_id]?.name||'—')}</td><td>${e(w.year||'—')}</td><td>${e(w.location||'—')}</td><td>${formatAmount(w.consignment_price||w.price||w.retail_price||0,'NGN')}</td></tr>`).join('')}</tbody>
+        </table>`).join('')}`
   }
 
   const titles = { sold:'Artworks Sold', loaned:'Artworks on Loan', received:'Artworks Received', receivable:'Accounts Receivable' }
