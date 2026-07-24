@@ -1127,6 +1127,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
       ownership: 'gallery',
       commission_rate: null,
       consignor_name: null,
+      image_url: book.cover_url || null,
     }])
     setBookSearch('')
   }
