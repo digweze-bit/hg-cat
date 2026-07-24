@@ -1915,7 +1915,7 @@ td{padding:10px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 .art-placeholder{width:46px;height:46px;background:#f0ece7;border-radius:2px;}
 .total-row td{font-weight:600;font-size:14px;border-top:2px solid #1a1714;border-bottom:none;padding-top:12px;}
 .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e8e3db;font-size:10px;color:#999;line-height:1.8;}
-@media print{@page{margin:10mm 12mm;size:A4 portrait;}body{padding:0;max-width:100%;}}
+@media print{@page{margin:0;size:A4 portrait;}body{padding:20px 24px;max-width:100%;}}
 </style></head><body>
 <div class="header">
   <div>${logoHtml}</div>
