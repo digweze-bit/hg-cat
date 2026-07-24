@@ -177,7 +177,7 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
         .select('*, invoices!inner(invoice_number, issue_date, status, client_id, clients(name))')
         .eq('invoices.status', 'paid')
         .eq('item_type', 'artwork')
-        .eq('delivered', false)
+        .or('delivered.eq.false,delivered.is.null')
         .order('sort_order', { ascending: true })
       if (error) console.error('Pending collection query error:', error)
       setItems(data || [])

@@ -34,7 +34,7 @@ export default function Reports() {
         supabase.from('invoices')
           .select('*, clients(name, email, phone), invoice_items(*, artworks(title, artist_id))')
           .order('created_at', { ascending: false })
-          .limit(500)
+          .limit(2000)
           .then(r => r.data || []),
         fetchAll('clients', { order: 'name' }),
       ])
