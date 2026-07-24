@@ -1907,7 +1907,7 @@ body{font-family:-apple-system,Helvetica,sans-serif;color:#1a1714;padding:32px 3
 .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:18px;border-bottom:2px solid #1a1714;margin-bottom:24px;}
 .inv-no{font-size:12px;color:#6b6760;font-family:Georgia,serif;}
 .status-badge{margin-top:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
-table{width:100%;border-collapse:collapse;}
+td{padding:14px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 td{padding:10px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 .td-img{width:54px;padding:8px 8px 8px 0;vertical-align:middle;}
 .td-title{padding:10px 12px;vertical-align:middle;}
@@ -1921,7 +1921,8 @@ td{padding:10px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 <div class="header">
   <div>${logoHtml}</div>
   <div style="text-align:right">
-    <div class="inv-no"></div>
+    <div class="inv-no">${e(inv.invoice_number)}</div>
+    ${inv.issue_date?'<div style="font-size:10px;color:#aaa;margin-top:3px">Issued: '+e(inv.issue_date)+'</div>':''}
 
     ${inv.status==='paid'?'<div class="status-badge" style="color:#27ae60">Paid</div>':''}
     ${inv.status==='partial'?'<div class="status-badge" style="color:#b8862a">Partial payment</div>':''}
@@ -1934,7 +1935,7 @@ ${itemsWithImages.map(it=>`<tr>
   <td class="td-title">
     <em style="font-style:italic;color:#1a1714">${e(it.title)}</em>
     <br><span style="font-size:11px;color:#6b6760">${e(it.artist_name||'')}${it.year?', '+e(it.year):''}</span>
-    ${it.medium?`<br><span style="font-size:11px;color:#aaa">${e(it.medium)}${it.dimensions?' &middot; '+e(it.dimensions):''}</span>`:''}
+    ${it.medium?'<br><span style="font-size:11px;color:#aaa">'+e(it.medium)+'</span>':''}${it.dimensions?'<br><span style="font-size:11px;color:#aaa">'+e(it.dimensions)+'</span>':''}
   </td>
   <td class="td-amt">${formatAmount(it.line_total,inv.currency)}</td>
 </tr>`).join('')}
