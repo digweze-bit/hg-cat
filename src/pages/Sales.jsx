@@ -1920,7 +1920,7 @@ td{padding:10px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 <div class="header">
   <div>${logoHtml}</div>
   <div style="text-align:right">
-
+    <div class="inv-no"></div>
 
     ${inv.status==='paid'?'<div class="status-badge" style="color:#27ae60">Paid</div>':''}
     ${inv.status==='partial'?'<div class="status-badge" style="color:#b8862a">Partial payment</div>':''}
