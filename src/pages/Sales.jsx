@@ -1920,8 +1920,8 @@ td{padding:10px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 <div class="header">
   <div>${logoHtml}</div>
   <div style="text-align:right">
-    <div class="inv-no">${e(inv.invoice_number)}</div>
-    ${inv.issue_date?'<div style="font-size:10px;color:#aaa;margin-top:3px">'+e(inv.issue_date)+'</div>':''}
+
+
     ${inv.status==='paid'?'<div class="status-badge" style="color:#27ae60">Paid</div>':''}
     ${inv.status==='partial'?'<div class="status-badge" style="color:#b8862a">Partial payment</div>':''}
   </div>
