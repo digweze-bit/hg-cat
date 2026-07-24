@@ -328,7 +328,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -440,6 +440,7 @@ export default function Artworks() {
         image_url:         form.image_url || null,
         writeup:           form.writeup || null,
         provenance:        form.provenance || null,
+        notes:             form.notes || null,
         exhibition_history:form.exhibition_history || null,
         tags:              form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
         series:            form.series || null,
@@ -820,6 +821,11 @@ export default function Artworks() {
                   <label className="form-label">Write-up / description</label>
                   <textarea className="form-textarea" rows={4} value={form.writeup||''} onChange={e=>setForm(f=>({...f,writeup:e.target.value}))} />
                 </div>
+
+                <div className="form-group">
+                  <label className="form-label">Internal notes</label>
+                  <textarea className="form-textarea" rows={3} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} placeholder="Private notes — not visible on public site" />
+                </div>
               </div>
 
               {/* Right — image + metadata */}
@@ -830,6 +836,12 @@ export default function Artworks() {
                     <span style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'.08em' }}>Gallery code</span>
                     <span style={{ fontSize:15, fontWeight:700, color:'var(--gold,#b8862a)', letterSpacing:'.06em' }}>{form.hg_code}</span>
                   </div>
+                  {modal === 'edit' && form.created_at && (
+                    <div style={{ background:'var(--surface-0,#f8f7f5)', borderRadius:4, padding:'10px 14px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <span style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'.08em' }}>Date added</span>
+                      <span style={{ fontSize:12, color:'var(--muted)' }}>{new Date(form.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</span>
+                    </div>
+                  )}
                 )}
                 {modal === 'add' && (
                   <div style={{ background:'var(--surface-0,#f8f7f5)', borderRadius:4, padding:'10px 14px', fontSize:12, color:'var(--muted)' }}>
