@@ -37,9 +37,9 @@ export default function Reports() {
           .limit(2000)
           .then(r => r.data || []),
         fetchAll('clients', { order: 'name' }),
+      ])
       setArtists(a); setArtworks(w); setInvoices(inv); setClients(c)
-      console.log('Reports loaded', inv.length, 'invoices')
-      setArtists(a); setArtworks(w); setInvoices(inv); setClients(c)
+      console.log('Reports loaded', inv.length)
       setLoading(false)
     }
     load()
