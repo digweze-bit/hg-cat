@@ -37,7 +37,8 @@ export default function Reports() {
           .limit(2000)
           .then(r => r.data || []),
         fetchAll('clients', { order: 'name' }),
-      ])
+      setArtists(a); setArtworks(w); setInvoices(inv); setClients(c)
+      console.log('Reports invoices loaded:', inv.length, 'first paid items:', inv.filter(i=>i.status==='paid').slice(0,2).map(i=>({inv:i.invoice_number,items:i.invoice_items?.length,delivered:i.invoice_items?.map(ii=>ii.delivered)})))
       setArtists(a); setArtworks(w); setInvoices(inv); setClients(c)
       setLoading(false)
     }
