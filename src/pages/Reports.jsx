@@ -32,14 +32,14 @@ export default function Reports() {
         fetchAll('artists', { order: 'name' }),
         fetchAll('artworks', { order: 'created_at' }),
         supabase.from('invoices')
-          .select('*, clients(name, email, phone), invoice_items(*, artworks(title, artist_id))')
+          .select('*, clients(name, email, phone), invoice_items(id, title, artist_name, item_type, delivered, delivered_at, collected_by, line_total, sort_order, image_url, cover_url)')
           .order('created_at', { ascending: false })
           .limit(2000)
           .then(r => r.data || []),
         fetchAll('clients', { order: 'name' }),
       ])
       setArtists(a); setArtworks(w); setInvoices(inv); setClients(c)
-      console.log('Reports loaded', inv.length)
+      setLoading(false)
       setLoading(false)
     }
     load()
