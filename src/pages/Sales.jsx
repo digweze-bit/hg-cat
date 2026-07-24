@@ -1171,6 +1171,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
           sort_order: i, ownership: it.ownership||'gallery',
           commission_rate: it.ownership==='consignment'?(it.commission_rate||40):null,
           consignor_name: it.consignor_name||null,
+          image_url: it.image_url||null,
         })))
         onSave(); onClose(); return
       }
@@ -1223,6 +1224,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
         ownership: it.ownership || 'gallery',
         commission_rate: it.ownership === 'consignment' ? (it.commission_rate || 40) : null,
         consignor_name: it.consignor_name || null,
+        image_url: it.image_url || null,
       })))
 
       onSave(); onClose()
@@ -1497,10 +1499,10 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   useEffect(() => {
     async function load() {
       const [{ data: p }, { data: it }] = await Promise.all([
-        supabase.from('payments').select('*').eq('invoice_id', inv.id).order('paid_at'),
+        supabase.from('invoice_items').select('*, artworks(image_url, thumbnail_url)').eq('invoice_id', inv.id).order('sort_order'),
         supabase.from('invoice_items').select('*, artworks(image_url)').eq('invoice_id', inv.id).order('sort_order'),
       ])
-      setPayments(p || [])
+      setItems((it || []).map(item => ({ ...item, image_url: item.image_url || item.artworks?.image_url || null, thumbnail_url: item.thumbnail_url || item.artworks?.thumbnail_url || null })))
       setItems((it || []).map(item => ({ ...item, image_url: item.image_url || item.artworks?.image_url || null })))
     }
     load()
