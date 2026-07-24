@@ -836,12 +836,18 @@ export default function Artworks() {
                     <span style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'.08em' }}>Gallery code</span>
                     <span style={{ fontSize:15, fontWeight:700, color:'var(--gold,#b8862a)', letterSpacing:'.06em' }}>{form.hg_code}</span>
                   </div>
-                  {modal === 'edit' && form.created_at && (
-                    <div style={{ background:'var(--surface-0,#f8f7f5)', borderRadius:4, padding:'10px 14px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                      <span style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'.08em' }}>Date added</span>
-                      <span style={{ fontSize:12, color:'var(--muted)' }}>{new Date(form.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</span>
-                    </div>
-                  )}
+                )}
+                {modal === 'edit' && form.created_at && (
+                  <div style={{ background:'var(--surface-0,#f8f7f5)', borderRadius:4, padding:'10px 14px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <span style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'.08em' }}>Date added</span>
+                    <span style={{ fontSize:12, color:'var(--muted)' }}>{new Date(form.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</span>
+                  </div>
+
+
+
+
+
+
                 )}
                 {modal === 'add' && (
                   <div style={{ background:'var(--surface-0,#f8f7f5)', borderRadius:4, padding:'10px 14px', fontSize:12, color:'var(--muted)' }}>
