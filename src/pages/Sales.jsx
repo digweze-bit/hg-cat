@@ -1912,7 +1912,7 @@ body{font-family:-apple-system,Helvetica,sans-serif;color:#1a1714;padding:32px 3
 .status-badge{margin-top:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
 td{padding:14px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 td{padding:10px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
-.td-img{width:54px;padding:8px 8px 8px 0;vertical-align:middle;}
+
 .td-title{padding:10px 12px;vertical-align:middle;}
 .td-amt{text-align:right;white-space:nowrap;padding:10px 0;vertical-align:middle;}
 .art-img{width:46px;height:46px;object-fit:cover;border-radius:2px;display:block;}
@@ -1936,8 +1936,8 @@ ${client?`<div style="margin-bottom:24px"><div style="font-size:9px;text-transfo
 ${itemsWithImages.map(it=>`<tr>
   <td class="td-img">${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div class="art-placeholder"></div>'}</td>
   <td class="td-title">
-    <em style="font-style:italic;font-size:12px;color:#1a1714"></em>
-    
+    <em style="font-style:italic;font-size:12px;color:#1a1714">${e(it.title)}</em>
+    ${it.artist_name?'<br><span style="font-size:11px;color:#6b6760">'+e(it.artist_name)+'</span>':''}
     ${it.year?'<br><span style="font-size:11px;color:#aaa">'+e(it.year)+'</span>':''}
     ${it.medium?'<br><span style="font-size:11px;color:#aaa">'+e(it.medium)+'</span>':''}${it.dimensions?'<br><span style="font-size:11px;color:#aaa">'+e(it.dimensions)+'</span>':''}
   </td>
