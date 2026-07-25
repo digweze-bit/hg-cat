@@ -1101,12 +1101,15 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
       year: artwork.year || '',
       medium: artwork.medium || '',
       dimensions: artwork.dimensions || '',
+      dimension_unit: artwork.dimension_unit || 'in',
       unit_price: priceNum,
       quantity: 1,
       discount: 0,
       ownership: artwork.ownership || 'gallery',
       commission_rate: artwork.commission_rate || 40,
       consignor_name: artwork.consignor_name || null,
+      image_url: artwork.image_url || null,
+      thumbnail_url: artwork.thumbnail_url || null,
     }])
     setArtworkSearch('')
   }
@@ -1172,6 +1175,8 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
           commission_rate: it.ownership==='consignment'?(it.commission_rate||40):null,
           consignor_name: it.consignor_name||null,
           image_url: it.image_url||null,
+          thumbnail_url: it.thumbnail_url||null,
+          dimension_unit: it.dimension_unit||'in',
         })))
         onSave(); onClose(); return
       }
@@ -1225,6 +1230,8 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
         commission_rate: it.ownership === 'consignment' ? (it.commission_rate || 40) : null,
         consignor_name: it.consignor_name || null,
         image_url: it.image_url || null,
+        thumbnail_url: it.thumbnail_url || null,
+        dimension_unit: it.dimension_unit || 'in',
       })))
 
       onSave(); onClose()
@@ -1499,11 +1506,11 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   useEffect(() => {
     async function load() {
       const [{ data: p }, { data: it }] = await Promise.all([
+        supabase.from('payments').select('*').eq('invoice_id', inv.id).order('paid_at'),
         supabase.from('invoice_items').select('*, artworks(image_url, thumbnail_url)').eq('invoice_id', inv.id).order('sort_order'),
-        supabase.from('invoice_items').select('*, artworks(image_url)').eq('invoice_id', inv.id).order('sort_order'),
       ])
+      setPayments(p || [])
       setItems((it || []).map(item => ({ ...item, image_url: item.image_url || item.artworks?.image_url || null, thumbnail_url: item.thumbnail_url || item.artworks?.thumbnail_url || null })))
-      setItems((it || []).map(item => ({ ...item, image_url: item.image_url || item.artworks?.image_url || null })))
     }
     load()
   }, [inv.id])
@@ -1936,10 +1943,10 @@ ${client?`<div style="margin-bottom:24px"><div style="font-size:9px;text-transfo
 ${itemsWithImages.map(it=>`<tr>
   <td class="td-img">${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div class="art-placeholder"></div>'}</td>
   <td class="td-title">
-    <em style="font-style:italic;font-size:12px;color:#1a1714">${e(it.title)}</em>
-    ${it.artist_name?'<br><span style="font-size:11px;color:#6b6760">'+e(it.artist_name)+'</span>':''}
-    ${it.year?'<br><span style="font-size:11px;color:#aaa">'+e(it.year)+'</span>':''}
-    ${it.medium?'<br><span style="font-size:11px;color:#aaa">'+e(it.medium)+'</span>':''}${it.dimensions?'<br><span style="font-size:11px;color:#aaa">'+e(it.dimensions)+'</span>':''}
+    <span style="font-weight:600;font-size:11px;color:#1a1714">${e(it.title)}</span>
+    ${it.artist_name?'<br><span style="font-size:12px;color:#1a1714">'+e(it.artist_name)+'</span>':''}
+    ${it.year?'<br><span style="font-size:12px;color:#1a1714">'+e(it.year)+'</span>':''}
+    ${it.medium?'<br><span style="font-size:12px;color:#1a1714">'+e(it.medium)+'</span>':''}${it.dimensions?'<br><span style="font-size:12px;color:#1a1714">'+e(it.dimensions)+' '+(it.dimension_unit==='cm'?'cm':'in')+'</span>':''}
   </td>
   <td class="td-amt">${formatAmount(it.line_total,inv.currency)}</td>
 </tr>`).join('')}
