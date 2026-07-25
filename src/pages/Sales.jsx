@@ -1897,17 +1897,6 @@ function PaymentEditRow({ payment, rates, onSave, onCancel }) {
 async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
   const bal = Number(inv.balance_due||0)
   function e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
-  const itemsWithImages = await Promise.all(items.map(async it => {
-    const imgSrc = it.thumbnail_url || it.image_url || it.cover_url
-    if (!imgSrc) return it
-    try {
-      const cacheBustUrl = imgSrc + (imgSrc.includes('?') ? '&' : '?') + '_cb=' + Date.now()
-      const resp = await fetch(cacheBustUrl, { cache: 'no-store' })
-      const blob = await resp.blob()
-      const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob) })
-      return { ...it, _imgData: dataUrl }
-    } catch(err) { console.warn('Invoice image fetch failed for', it.title, imgSrc, err.message); return it }
-  }))
   const logoHtml = logoB64
     ? `<img src='${logoB64}' alt='Hourglass Gallery' style='height:28px;object-fit:contain;object-position:left center;display:block;'>`
     : `<div style="font-size:15px;font-weight:300;letter-spacing:.04em;">HOURGLASS GALLERY</div>`
@@ -1923,7 +1912,7 @@ td{padding:13px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 .td-img{width:52px;padding:8px 8px 8px 0;vertical-align:middle;}
 .td-title{padding:9px 11px;vertical-align:middle;}
 .td-amt{text-align:right;white-space:nowrap;padding:9px 0;vertical-align:middle;font-size:12px;}
-.art-img{width:44px;height:44px;object-fit:cover;border-radius:2px;display:block;}
+.art-img{width:44px;height:44px;object-fit:cover;border-radius:2px;display:block;background:#f0ece7;}
 .art-placeholder{width:44px;height:44px;background:#f0ece7;border-radius:2px;}
 .total-row td{font-weight:600;font-size:13px;border-top:2px solid #1a1714;border-bottom:none;padding-top:11px;}
 .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e8e3db;font-size:9px;color:#999;line-height:1.8;}
@@ -1940,8 +1929,10 @@ td{padding:13px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 </div>
 ${client?`<div style="margin-bottom:24px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:5px">Invoice to</div><div style="font-weight:600;font-size:12px">${e(client.name)}</div>${client.company?`<div style="font-size:11px;color:#6b6760">${e(client.company)}</div>`:''}${client.email?`<div style="font-size:11px;color:#6b6760">${e(client.email)}</div>`:''}${client.phone||client.phone_mobile?`<div style="font-size:11px;color:#6b6760">${e(client.phone||client.phone_mobile)}</div>`:''}</div>`:''}
 <table><tbody>
-${itemsWithImages.map(it=>`<tr>
-  <td class="td-img">${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div class="art-placeholder"></div>'}</td>
+${items.map(it=>{
+  const imgUrl = it.thumbnail_url || it.image_url || it.cover_url || ''
+  return `<tr>
+  <td class="td-img">${imgUrl?`<img src="${imgUrl}" class="art-img" alt="" crossorigin="anonymous">`:'<div class="art-placeholder"></div>'}</td>
   <td class="td-title">
     <span style="font-weight:600;font-size:10px;color:#1a1714">${e(it.title)}</span>
     ${it.artist_name?'<br><span style="font-size:11px;color:#1a1714">'+e(it.artist_name)+'</span>':''}
@@ -1950,7 +1941,8 @@ ${itemsWithImages.map(it=>`<tr>
     ${it.dimensions?'<br><span style="font-size:11px;color:#1a1714">'+e(it.dimensions)+' '+(it.dimension_unit==='cm'?'cm':'in')+'</span>':''}
   </td>
   <td class="td-amt">${formatAmount(it.line_total,inv.currency)}</td>
-</tr>`).join('')}
+</tr>`
+}).join('')}
 ${Number(inv.vat_amount)>0?`<tr><td></td><td style="text-align:right;color:#6b6760;font-size:11px">VAT (${inv.vat_rate}%)</td><td class="td-amt">${formatAmount(inv.vat_amount,inv.currency)}</td></tr>`:''}
 <tr class="total-row"><td></td><td style="text-align:right">Total</td><td class="td-amt">${formatAmount(inv.total,inv.currency)}</td></tr>
 ${payments.length>0?`<tr><td></td><td style="text-align:right;color:#2d6a4f;font-size:11px">Amount paid</td><td class="td-amt" style="color:#2d6a4f">${formatAmount(inv.amount_paid,inv.currency)}</td></tr>`:''}
