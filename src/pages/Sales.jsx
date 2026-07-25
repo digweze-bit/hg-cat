@@ -81,7 +81,7 @@ export default function Sales() {
           Promise.all([
             fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', order:'title', cache:false }),
             fetchAll('artists', { order:'name' }),
-          ]).then(([w, a]) => { setArtworks(w); setArtists(a) })
+          ]).then(([w, a]) => { setArtworks(w); setArtists(a); console.log('Loaded artworks for invoice:', w.length) }).catch(err => { console.error('Failed to load artworks:', err); alert('Failed to load artworks: ' + err.message) })
         }}>+ Invoice</button>
         </div>
       </div>
