@@ -1901,7 +1901,8 @@ async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
     const imgSrc = it.thumbnail_url || it.image_url || it.cover_url
     if (!imgSrc) return it
     try {
-      const resp = await fetch(imgSrc)
+      const cacheBustUrl = imgSrc + (imgSrc.includes('?') ? '&' : '?') + '_cb=' + Date.now()
+      const resp = await fetch(cacheBustUrl, { cache: 'no-store' })
       const blob = await resp.blob()
       const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob) })
       return { ...it, _imgData: dataUrl }
