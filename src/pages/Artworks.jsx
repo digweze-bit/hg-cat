@@ -654,6 +654,7 @@ export default function Artworks() {
                       <button className="btn btn-ghost btn-sm" onClick={() => openEdit(w)}>Edit</button>
                       <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => handleDelete(w.id)}>Del</button>
                       <button className="btn btn-ghost btn-sm" onClick={() => printArtworkLabel(w, artistMap)}>Label</button>
+                    </div>
                   </td>
                 </tr>
               ))}
