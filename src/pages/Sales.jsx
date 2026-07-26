@@ -148,12 +148,13 @@ export default function Sales() {
       )}
       {modal === 'invoice-detail' && activeInvoice && (
         <InvoiceDetail
-          invoice={activeInvoice}
+        <InvoiceDetail
+          key={detailKey}
           clients={clients}
           rates={rates}
           userId={user?.id}
           onClose={() => { setModal(null); setActiveInvoice(null) }}
-          onSave={load}
+          onSave={async () => { await load(); setActiveInvoice(prev => invoices.find(i => i.id === prev?.id) || prev) }}
           onEdit={(inv) => { setModal(null); setActiveInvoice(null); setEditingInvoice(inv) }}
         />
       )}
