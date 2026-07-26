@@ -906,40 +906,50 @@ export default function Artworks() {
 }
 
 async function printArtworkLabel(w, artistMap) {
-  const url = `${window.location.origin}/artwork/${w.id}`
-  const qrDataUrl = await QRCode.toDataURL(url, { width: 200, margin: 1, color: { dark: '#000', light: '#fff' } })
+  const url = window.location.origin + '/artwork/' + w.id
+  const qrDataUrl = await QRCode.toDataURL(url, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
   function e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
-  const artistName = artistMap[w.artist_id]?.name || ''
+  const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
   const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Label</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,Helvetica,sans-serif;background:#fff;padding:20px}
-.label{width:480px;min-height:200px;border:2px solid #000;display:flex;align-items:center;padding:14px 16px;gap:16px}
-.qr img{width:150px;height:150px;display:block;flex-shrink:0}
-.details{flex:1;min-width:0}
-.title{font-weight:700;font-size:12px;line-height:1.4;margin-bottom:6px}
-.line{font-size:11px;line-height:1.7;color:#111}
-@media print{body{padding:0}@page{size:4in 2in;margin:0}.label{width:4in;min-height:2in;border:1.5px solid #000;padding:10px 12px;gap:12px}.qr img{width:1.3in;height:1.3in}.title{font-size:10px}.line{font-size:9px}}
-</style></head><body>
-<div class="label">
-  <div class="qr"><img src="${qrDataUrl}" alt="QR"></div>
-  <div class="details">
-    <div class="title">${e(w.title)}</div>
-    ${artistName?'<div class="line">'+e(artistName)+'</div>':''}
-    ${w.year?'<div class="line">'+e(w.year)+'</div>':''}
-    ${w.medium?'<div class="line">'+e(w.medium)+'</div>':''}
-    ${w.dimensions?'<div class="line">'+e(w.dimensions)+' '+dimUnit+'</div>':''}
-  </div>
-</div>
-</body></html>`
+  const details = [
+    w.title ? '<b>' + e(w.title) + '</b>' : '',
+    artistName ? e(artistName) : '',
+    w.year ? e(w.year) : '',
+    w.medium ? e(w.medium) : '',
+    w.dimensions ? e(w.dimensions) + ' ' + dimUnit : '',
+  ].filter(Boolean).join('<br>')
 
-  const win = window.open('', '_blank', 'width=560,height=280')
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Label</title>' +
+    '<style>' +
+    '* { box-sizing: border-box; margin: 0; padding: 0; }' +
+    'body { font-family: Arial, Helvetica, sans-serif; background: #fff; padding: 20px; }' +
+    'table { border-collapse: collapse; border: 2px solid #000; width: 480px; }' +
+    'td { vertical-align: middle; padding: 12px; }' +
+    'td.qr { width: 160px; }' +
+    'td.qr img { width: 150px; height: 150px; display: block; }' +
+    'td.info { font-size: 12px; line-height: 1.7; }' +
+    '@media print {' +
+    '@page { size: 4in 2in; margin: 0; }' +
+    'body { padding: 0; }' +
+    'table { width: 4in; }' +
+    'td.qr { width: 1.4in; }' +
+    'td.qr img { width: 1.3in; height: 1.3in; }' +
+    'td.info { font-size: 10px; }' +
+    '}' +
+    '</style></head><body>' +
+    '<table><tr>' +
+    '<td class="qr"><img src="' + qrDataUrl + '" alt="QR"></td>' +
+    '<td class="info">' + details + '</td>' +
+    '</tr></table>' +
+    '</body></html>'
+
+  const win = window.open('', '_blank', 'width=560,height=260')
   if (!win) { alert('Allow popups to print labels'); return }
+  win.document.open()
   win.document.write(html)
   win.document.close()
   win.focus()
-  setTimeout(() => win.print(), 500)
+  setTimeout(function() { win.print() }, 600)
 }
 
 
