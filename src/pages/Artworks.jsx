@@ -653,7 +653,7 @@ export default function Artworks() {
                     <div style={{ display:'flex', gap:5 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => openEdit(w)}>Edit</button>
                       <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => handleDelete(w.id)}>Del</button>
-                      <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); e.preventDefault(); alert('clicked'); printArtworkLabel(w, artistMap) }}>Label</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => printArtworkLabel(w, artistMap)}>Label</button>
                     </div>
                   </td>
                 </tr>
@@ -907,51 +907,87 @@ export default function Artworks() {
 }
 
 async function printArtworkLabel(w, artistMap) {
+  // 5x2 inches at 150 DPI = 750 x 300 px
+  const DPI = 150
+  const W = 5 * DPI   // 750px
+  const H = 2 * DPI   // 300px
+  const PAD = 20
+
+  // Generate QR code as data URL
   const url = window.location.origin + '/artwork/' + w.id
-  const qrDataUrl = await QRCode.toDataURL(url, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
-  function e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+  const qrSize = H - PAD * 2  // 260px
+  const qrDataUrl = await QRCode.toDataURL(url, {
+    width: qrSize,
+    margin: 1,
+    color: { dark: '#000000', light: '#ffffff' },
+  })
+
+  // Draw on canvas
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d')
+
+  // White background
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, W, H)
+
+  // Black border
+  ctx.strokeStyle = '#000000'
+  ctx.lineWidth = 3
+  ctx.strokeRect(2, 2, W - 4, H - 4)
+
+  // Draw QR code
+  await new Promise(res => {
+    const qrImg = new Image()
+    qrImg.onload = () => {
+      ctx.drawImage(qrImg, PAD, PAD, qrSize, qrSize)
+      res()
+    }
+    qrImg.src = qrDataUrl
+  })
+
+  // Text area starts after QR code
+  const textX = PAD + qrSize + PAD
+  const textMaxW = W - textX - PAD
   const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
-  alert('LABEL: title=' + w.title + ', year=' + w.year + ', medium=' + w.medium)
   const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
-  const details = [
-    w.title ? '<b>' + e(w.title) + '</b>' : '',
-    artistName ? e(artistName) : '',
-    w.year ? e(w.year) : '',
-    w.medium ? e(w.medium) : '',
-    w.dimensions ? e(w.dimensions) + ' ' + dimUnit : '',
-  ].filter(Boolean).join('<br>')
 
-  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Label</title>' +
-    '<style>' +
-    '* { box-sizing: border-box; margin: 0; padding: 0; }' +
-    'body { font-family: Arial, Helvetica, sans-serif; background: #fff; padding: 20px; }' +
-    'table { border-collapse: collapse; border: 2px solid #000; width: 480px; }' +
-    'td { vertical-align: middle; padding: 12px; }' +
-    'td.qr { width: 160px; }' +
-    'td.qr img { width: 150px; height: 150px; display: block; }' +
-    'td.info { font-size: 12px; line-height: 1.7; }' +
-    '@media print {' +
-    '@page { size: 4in 2in; margin: 0; }' +
-    'body { padding: 0; }' +
-    'table { width: 4in; }' +
-    'td.qr { width: 1.4in; }' +
-    'td.qr img { width: 1.3in; height: 1.3in; }' +
-    'td.info { font-size: 10px; }' +
-    '}' +
-    '</style></head><body>' +
-    '<table><tr>' +
-    '<td class="qr"><img src="' + qrDataUrl + '" alt="QR"></td>' +
-    '<td class="info">' + details + '</td>' +
-    '</tr></table>' +
-    '</body></html>'
+  const lines = [
+    { text: w.title || '', bold: true, size: 18 },
+    { text: artistName, bold: false, size: 15 },
+    { text: w.year || '', bold: false, size: 14 },
+    { text: w.medium || '', bold: false, size: 14 },
+    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', bold: false, size: 14 },
+  ].filter(l => l.text)
 
-  const win = window.open('', '_blank', 'width=560,height=260')
-  if (!win) { alert('Allow popups to print labels'); return }
-  win.document.open()
-  win.document.write(html)
-  win.document.close()
-  win.focus()
-  setTimeout(function() { win.print() }, 600)
+  let y = PAD + 22
+  for (const line of lines) {
+    ctx.font = (line.bold ? 'bold ' : '') + line.size + 'px Arial, sans-serif'
+    ctx.fillStyle = '#1a1714'
+    // Word wrap
+    const words = line.text.split(' ')
+    let currentLine = ''
+    for (const word of words) {
+      const test = currentLine ? currentLine + ' ' + word : word
+      if (ctx.measureText(test).width > textMaxW && currentLine) {
+        ctx.fillText(currentLine, textX, y)
+        y += line.size + 4
+        currentLine = word
+      } else {
+        currentLine = test
+      }
+    }
+    if (currentLine) ctx.fillText(currentLine, textX, y)
+    y += line.size + (line.bold ? 10 : 6)
+  }
+
+  // Download as PNG
+  const link = document.createElement('a')
+  const safeTitle = (w.title || 'label').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)
+  link.download = safeTitle + '_label.png'
+  link.href = canvas.toDataURL('image/png')
+  link.click()
 }
 
 
