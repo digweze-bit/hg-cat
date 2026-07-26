@@ -907,37 +907,36 @@ export default function Artworks() {
 }
 
 async function printArtworkLabel(w, artistMap) {
-  // 5x2 inches at 150 DPI = 750 x 300 px
-  const DPI = 150
-  const W = 5 * DPI   // 750px
-  const H = 2 * DPI   // 300px
-  const PAD = 20
+  // 4x2 inches at 200 DPI
+  const DPI = 200
+  const W = 4 * DPI   // 800px
+  const H = 2 * DPI   // 400px
+  const PAD = 24
+  const BORDER = 3
 
-  // Generate QR code as data URL
   const url = window.location.origin + '/artwork/' + w.id
-  const qrSize = H - PAD * 2  // 260px
+  const qrSize = H - PAD * 2  // 352px — fills most of the height
   const qrDataUrl = await QRCode.toDataURL(url, {
     width: qrSize,
     margin: 1,
     color: { dark: '#000000', light: '#ffffff' },
   })
 
-  // Draw on canvas
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
   const ctx = canvas.getContext('2d')
 
-  // White background
+  // Background
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, W, H)
 
-  // Black border
+  // Border
   ctx.strokeStyle = '#000000'
-  ctx.lineWidth = 3
-  ctx.strokeRect(2, 2, W - 4, H - 4)
+  ctx.lineWidth = BORDER
+  ctx.strokeRect(BORDER / 2, BORDER / 2, W - BORDER, H - BORDER)
 
-  // Draw QR code
+  // QR code
   await new Promise(res => {
     const qrImg = new Image()
     qrImg.onload = () => {
@@ -947,44 +946,44 @@ async function printArtworkLabel(w, artistMap) {
     qrImg.src = qrDataUrl
   })
 
-  // Text area starts after QR code
+  // Text layout
   const textX = PAD + qrSize + PAD
   const textMaxW = W - textX - PAD
   const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
   const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
 
   const lines = [
-    { text: w.title || '', bold: true, size: 18 },
-    { text: artistName, bold: false, size: 15 },
-    { text: w.year || '', bold: false, size: 14 },
-    { text: w.medium || '', bold: false, size: 14 },
-    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', bold: false, size: 14 },
+    { text: w.title || '', size: 26, bold: true },
+    { text: artistName, size: 22, bold: false },
+    { text: w.year || '', size: 20, bold: false },
+    { text: w.medium || '', size: 20, bold: false },
+    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: 20, bold: false },
   ].filter(l => l.text)
 
-  let y = PAD + 22
+  let y = PAD + 30
   for (const line of lines) {
-    ctx.font = (line.bold ? 'bold ' : '') + line.size + 'px Arial, sans-serif'
+    ctx.font = (line.bold ? 'bold ' : '') + line.size + 'px Arial, Helvetica, sans-serif'
     ctx.fillStyle = '#1a1714'
-    // Word wrap
+    // Wrap text if too wide
     const words = line.text.split(' ')
-    let currentLine = ''
+    let cur = ''
     for (const word of words) {
-      const test = currentLine ? currentLine + ' ' + word : word
-      if (ctx.measureText(test).width > textMaxW && currentLine) {
-        ctx.fillText(currentLine, textX, y)
+      const test = cur ? cur + ' ' + word : word
+      if (ctx.measureText(test).width > textMaxW && cur) {
+        ctx.fillText(cur, textX, y)
         y += line.size + 4
-        currentLine = word
+        cur = word
       } else {
-        currentLine = test
+        cur = test
       }
     }
-    if (currentLine) ctx.fillText(currentLine, textX, y)
-    y += line.size + (line.bold ? 10 : 6)
+    if (cur) { ctx.fillText(cur, textX, y); y += line.size + 4 }
+    y += line.bold ? 8 : 4
   }
 
-  // Download as PNG
-  const link = document.createElement('a')
+  // Download PNG
   const safeTitle = (w.title || 'label').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)
+  const link = document.createElement('a')
   link.download = safeTitle + '_label.png'
   link.href = canvas.toDataURL('image/png')
   link.click()
