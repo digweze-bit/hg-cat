@@ -1897,9 +1897,36 @@ function PaymentEditRow({ payment, rates, onSave, onCancel }) {
 async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
   const bal = Number(inv.balance_due||0)
   function e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+  // Embed images as data URLs — required so both window.print() AND the
+  // html2canvas-based Download PDF / WhatsApp flow work reliably.
+  // Cross-origin <img src> tags work fine for print but taint the canvas
+  // used for the downloadable PDF, causing it to fail silently.
+  const itemsWithImages = await Promise.all(items.map(async it => {
+    const imgSrc = it.thumbnail_url || it.image_url || it.cover_url
+    if (!imgSrc) return it
+    try {
+      const cacheBustUrl = imgSrc + (imgSrc.includes('?') ? '&' : '?') + '_cb=' + Date.now()
+      const resp = await fetch(cacheBustUrl, { cache: 'no-store', mode: 'cors' })
+      if (!resp.ok) throw new Error('HTTP ' + resp.status)
+      const blob = await resp.blob()
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader()
+        r.onload = () => res(r.result)
+        r.onerror = rej
+        r.readAsDataURL(blob)
+      })
+      return { ...it, _imgData: dataUrl }
+    } catch(err) {
+      console.warn('Invoice image failed to embed for', it.title, imgSrc, err.message)
+      return it
+    }
+  }))
+
   const logoHtml = logoB64
     ? `<img src='${logoB64}' alt='Hourglass Gallery' style='height:28px;object-fit:contain;object-position:left center;display:block;'>`
     : `<div style="font-size:15px;font-weight:300;letter-spacing:.04em;">HOURGLASS GALLERY</div>`
+
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${e(inv.invoice_number)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -1929,10 +1956,8 @@ td{padding:13px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle;}
 </div>
 ${client?`<div style="margin-bottom:24px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:5px">Invoice to</div><div style="font-weight:600;font-size:12px">${e(client.name)}</div>${client.company?`<div style="font-size:11px;color:#6b6760">${e(client.company)}</div>`:''}${client.email?`<div style="font-size:11px;color:#6b6760">${e(client.email)}</div>`:''}${client.phone||client.phone_mobile?`<div style="font-size:11px;color:#6b6760">${e(client.phone||client.phone_mobile)}</div>`:''}</div>`:''}
 <table><tbody>
-${items.map(it=>{
-  const imgUrl = it.thumbnail_url || it.image_url || it.cover_url || ''
-  return `<tr>
-  <td class="td-img">${imgUrl?`<img src="${imgUrl}" class="art-img" alt="" crossorigin="anonymous">`:'<div class="art-placeholder"></div>'}</td>
+${itemsWithImages.map(it=>`<tr>
+  <td class="td-img">${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div class="art-placeholder"></div>'}</td>
   <td class="td-title">
     <span style="font-weight:600;font-size:10px;color:#1a1714">${e(it.title)}</span>
     ${it.artist_name?'<br><span style="font-size:11px;color:#1a1714">'+e(it.artist_name)+'</span>':''}
@@ -1941,8 +1966,7 @@ ${items.map(it=>{
     ${it.dimensions?'<br><span style="font-size:11px;color:#1a1714">'+e(it.dimensions)+' '+(it.dimension_unit==='cm'?'cm':'in')+'</span>':''}
   </td>
   <td class="td-amt">${formatAmount(it.line_total,inv.currency)}</td>
-</tr>`
-}).join('')}
+</tr>`).join('')}
 ${Number(inv.vat_amount)>0?`<tr><td></td><td style="text-align:right;color:#6b6760;font-size:11px">VAT (${inv.vat_rate}%)</td><td class="td-amt">${formatAmount(inv.vat_amount,inv.currency)}</td></tr>`:''}
 <tr class="total-row"><td></td><td style="text-align:right">Total</td><td class="td-amt">${formatAmount(inv.total,inv.currency)}</td></tr>
 ${payments.length>0?`<tr><td></td><td style="text-align:right;color:#2d6a4f;font-size:11px">Amount paid</td><td class="td-amt" style="color:#2d6a4f">${formatAmount(inv.amount_paid,inv.currency)}</td></tr>`:''}
