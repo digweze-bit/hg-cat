@@ -979,7 +979,7 @@ async function printArtworkLabel(w, artistMap) {
     }
     if (cur) { ctx.fillText(cur, textX, y); y += line.size * 2 }
     y += line.bold ? 8 : 4
-    y += line.bold ? 4 : 0
+  }
 
   // Download PNG
   const safeTitle = (w.title || 'label').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)
