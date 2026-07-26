@@ -1595,6 +1595,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   }
 
   async function downloadInvoicePDF() {
+   try {
     let logoB64 = null
     try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_SMALL_B64 || assets.LOGO_B64 } catch(_) {}
     const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
@@ -1631,6 +1632,11 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
     const filename = `${inv.invoice_number}.pdf`
     pdf.save(filename)
     return filename
+   } catch(err) {
+     console.error('PDF generation failed:', err)
+     alert('PDF generation failed: ' + err.message + '\n\nCheck the browser console for details.')
+     throw err
+   }
   }
 
   async function sendInvoiceWhatsApp() {
