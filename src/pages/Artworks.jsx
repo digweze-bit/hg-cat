@@ -458,7 +458,8 @@ export default function Artworks() {
       }
       if (modal === 'edit') {
         const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
-        if (updateErr) throw updateErr
+        const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
+        if (!updateErr) auditLog('artwork.updated', { entityType:'artwork', entityId:editId, entityLabel:payload.title, metadata:{ artist: artistMap[payload.artist_id]?.name } })
         // Update in-state immediately — don't wait for reload
         setArtworks(prev => prev.map(w => w.id === editId ? { ...w, ...payload } : w))
       } else {
@@ -470,7 +471,8 @@ export default function Artworks() {
           else hgCode = codeData
         }
         const { error: insertErr } = await supabase.from('artworks').insert({ ...payload, visible: true, hg_code: hgCode })
-        if (insertErr) throw insertErr
+        if (!insertErr) auditLog('artwork.created', { entityType:'artwork', entityId:null, entityLabel:payload.title, metadata:{ artist: artistMap[payload.artist_id]?.name } })
+        if (!insertErr) auditLog('artwork.created', { entityType:'artwork', entityId:null, entityLabel:payload.title, metadata:{ artist: artistMap[payload.artist_id]?.name } })
       }
       cacheInvalidate('artworks')
       if (modal !== 'edit') await load()  // only reload for new artworks

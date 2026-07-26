@@ -1207,6 +1207,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
         created_by: userId,
       }).select().single()
       if (invErr) throw invErr
+      auditLog('invoice.created', { entityType:'invoice', entityId:inv.id, entityLabel:invoiceNumber, metadata:{ client: clients.find(c=>c.id===form.client_id)?.name, total } })
 
       await supabase.from('invoice_items').insert(items.map((it,i) => ({
         invoice_id: inv.id,
@@ -1531,6 +1532,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
         notes: payForm.notes,
         recorded_by: userId,
       })
+      auditLog('payment.added', { entityType:'payment', entityLabel:inv.invoice_number, metadata:{ amount:amt, currency:payForm.currency, method:payForm.method } })
       onSave()
       onClose()
     } catch (err) {
