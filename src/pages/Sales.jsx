@@ -1495,6 +1495,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
 function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit }) {
   const [payments, setPayments] = useState([])
   const [items, setItems] = useState([])
+  const [itemsLoaded, setItemsLoaded] = useState(false)
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
   const [editingPayment, setEditingPayment] = useState(null)
   const [collectingItem, setCollectingItem] = useState(null)
@@ -1511,6 +1512,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
       ])
       setPayments(p || [])
       setItems((it || []).map(item => ({ ...item, image_url: item.image_url || item.artworks?.image_url || null, thumbnail_url: item.thumbnail_url || item.artworks?.thumbnail_url || null })))
+      setItemsLoaded(true)
     }
     load()
   }, [inv.id])
@@ -1583,7 +1585,8 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   }
 
   async function printInvoice() {
-    // Open window IMMEDIATELY (synchronously, in direct response to the click).
+    if (!itemsLoaded) { alert('Invoice data is still loading, please wait a moment and try again.'); w.close(); return }
+    if (items.length === 0) { alert('No line items found on this invoice.'); w.close(); return }
     // If we await anything before window.open(), browsers may treat the delayed
     // open() as a non-user-initiated popup and show a blank/background tab.
     const w = window.open('', '_blank', 'width=900,height=700')
