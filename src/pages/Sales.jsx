@@ -1563,7 +1563,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
     setSaving(true)
     try {
       await supabase.from('payments').delete().eq('id', paymentId)
-      await supabase.from('payments').delete().eq('id', paymentId)`n      auditLog('payment.deleted', { entityType:'payment', entityId:paymentId, entityLabel:inv.invoice_number })
+      auditLog('payment.deleted', { entityType:'payment', entityId:paymentId, entityLabel:inv.invoice_number })
     } catch (err) {
       alert('Failed to delete payment: ' + err.message)
     } finally { setSaving(false) }
