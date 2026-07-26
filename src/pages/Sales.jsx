@@ -1701,7 +1701,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                         <span onClick={() => it.delivered && setCollectingItem(it.id)}
                           style={{ color: it.delivered ? 'var(--green,#27ae60)' : '#b8862a', fontWeight:500, fontSize:12, cursor: it.delivered ? 'pointer' : 'default' }}>
                           {it.delivered
-                            ? `Collected${it.delivered_at ? ' - ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : ''}${it.collected_by ? ' by ' + it.collected_by : ''}`
+                          ? ('Collected' + (it.delivered_at ? ' - ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : '') + (it.collected_by ? ' by ' + it.collected_by : ''))
                             : 'Pending collection'}
                         </span>
                         {it.delivered && <button onClick={() => setCollectingItem(it.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:11, textDecoration:'underline' }}>edit</button>}
