@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
+import { auditLog } from '../lib/audit'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
@@ -1562,7 +1563,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
     setSaving(true)
     try {
       await supabase.from('payments').delete().eq('id', paymentId)
-      onSave()
+      await supabase.from('payments').delete().eq('id', paymentId)`n      auditLog('payment.deleted', { entityType:'payment', entityId:paymentId, entityLabel:inv.invoice_number })
     } catch (err) {
       alert('Failed to delete payment: ' + err.message)
     } finally { setSaving(false) }
@@ -1663,7 +1664,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                 onClick={async () => {
                   if (!confirm(inv.amount_paid > 0 ? 'This invoice has recorded payments. Permanently delete anyway? This cannot be undone.' : 'Permanently delete this invoice? This cannot be undone.')) return
                   await supabase.from('invoices').delete().eq('id', inv.id)
-                  onSave(); onClose()
+                  await supabase.from('invoices').delete().eq('id', inv.id)`n                  auditLog('invoice.deleted', { entityType:'invoice', entityId:inv.id, entityLabel:inv.invoice_number })
                 }}>Delete</button>
             )}
             <button className="btn btn-ghost btn-icon" onClick={onClose}>{'\u2715'}</button>

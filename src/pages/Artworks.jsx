@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { auditLog } from '../lib/audit'
 import QRCode from 'qrcode'
 import { useNavigate } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
@@ -484,7 +485,9 @@ export default function Artworks() {
 
   async function handleDelete(id) {
     if (!confirm('Delete this artwork?')) return
+    const toDelete = artworks.find(w => w.id === id)
     await supabase.from('artworks').delete().eq('id', id)
+    auditLog('artwork.deleted', { entityType:'artwork', entityId:id, entityLabel: toDelete?.title, metadata:{ artist: artistMap[toDelete?.artist_id]?.name } })
     setArtworks(prev => prev.filter(w => w.id !== id))
   }
 
