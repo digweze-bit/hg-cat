@@ -458,8 +458,8 @@ export default function Artworks() {
       }
       if (modal === 'edit') {
         const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
-        const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
-        if (!updateErr) auditLog('artwork.updated', { entityType:'artwork', entityId:editId, entityLabel:payload.title, metadata:{ artist: artistMap[payload.artist_id]?.name } })
+          const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
+          if (!updateErr) auditLog('artwork.updated', { entityType:'artwork', entityId:editId, entityLabel:payload.title, metadata:{ artist: artistMap[payload.artist_id]?.name } })
         // Update in-state immediately — don't wait for reload
         setArtworks(prev => prev.map(w => w.id === editId ? { ...w, ...payload } : w))
       } else {
