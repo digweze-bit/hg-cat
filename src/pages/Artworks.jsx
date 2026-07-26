@@ -653,7 +653,7 @@ export default function Artworks() {
                     <div style={{ display:'flex', gap:5 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => openEdit(w)}>Edit</button>
                       <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => handleDelete(w.id)}>Del</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => printArtworkLabel(w, artistMap)}>Label</button>
+                      <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); e.preventDefault(); alert('clicked'); printArtworkLabel(w, artistMap) }}>Label</button>
                     </div>
                   </td>
                 </tr>
