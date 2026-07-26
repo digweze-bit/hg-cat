@@ -912,13 +912,18 @@ async function printArtworkLabel(w, artistMap) {
   const W = 4 * DPI   // 800px
   const H = 2 * DPI   // 400px
   const PAD = 28
-  const BORDER = 3
+  const BORDER = 2
+
+  // Font stack: Optima on Mac, Gill Sans on Windows, fallback to Trebuchet
+  const FONT = 'Optima, "Gill Sans", "Gill Sans MT", Trebuchet MS, sans-serif'
 
   const url = window.location.origin + '/artwork/' + w.id
 
-  // QR code: 60% of height
-  const qrSize = Math.round(H * 0.6)  // 240px
-  const qrTop = (H - qrSize) / 2      // vertically centered
+  // QR: 58% of height, vertically centered
+  const qrSize = Math.round(H * 0.58)
+  const qrLeft = PAD
+  const qrTop = Math.round((H - qrSize) / 2)
+
   const qrDataUrl = await QRCode.toDataURL(url, {
     width: qrSize,
     margin: 1,
@@ -930,62 +935,56 @@ async function printArtworkLabel(w, artistMap) {
   canvas.height = H
   const ctx = canvas.getContext('2d')
 
-  // Background
+  // White background
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, W, H)
 
-  // Border
-  ctx.strokeStyle = '#000000'
-  ctx.lineWidth = BORDER
-  ctx.strokeRect(BORDER / 2, BORDER / 2, W - BORDER, H - BORDER)
-
-  // Vertical divider line (subtle)
-  const dividerX = PAD + qrSize + PAD
-  ctx.strokeStyle = '#e0dbd4'
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  ctx.moveTo(dividerX - PAD / 2, PAD * 1.5)
-  ctx.lineTo(dividerX - PAD / 2, H - PAD * 1.5)
-  ctx.stroke()
+  // Black border — drawn LAST so it's always visible
+  // (draw content first, border on top)
 
   // Draw QR code
   await new Promise(res => {
     const qrImg = new Image()
     qrImg.onload = () => {
-      ctx.drawImage(qrImg, PAD, qrTop, qrSize, qrSize)
+      ctx.drawImage(qrImg, qrLeft, qrTop, qrSize, qrSize)
       res()
     }
     qrImg.src = qrDataUrl
   })
 
-  // Text setup
-  const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
-  const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
+  // Text area
+  const textX = qrLeft + qrSize + PAD * 1.5
+  const textMaxW = W - textX - PAD
+
   const TITLE_SIZE = 28
   const DETAIL_SIZE = 24
-  const LINE_GAP = DETAIL_SIZE * 2  // double spacing
+  const LINE_GAP = Math.round(DETAIL_SIZE * 1.8)
+
+  const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
+  const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
 
   const textLines = [
-    { text: w.title || '', size: TITLE_SIZE, font: 'bold ' + TITLE_SIZE + 'px Georgia, serif' },
-    { text: artistName, size: DETAIL_SIZE, font: DETAIL_SIZE + 'px Georgia, serif' },
-    { text: w.year || '', size: DETAIL_SIZE, font: DETAIL_SIZE + 'px Georgia, serif' },
-    { text: w.medium || '', size: DETAIL_SIZE, font: DETAIL_SIZE + 'px Georgia, serif' },
-    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: DETAIL_SIZE, font: DETAIL_SIZE + 'px Georgia, serif' },
+    { text: w.title || '', size: TITLE_SIZE, weight: '500' },
+    { text: artistName, size: DETAIL_SIZE, weight: '300' },
+    { text: w.year || '', size: DETAIL_SIZE, weight: '300' },
+    { text: w.medium || '', size: DETAIL_SIZE, weight: '300' },
+    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: DETAIL_SIZE, weight: '300' },
   ].filter(l => l.text)
 
-  // Calculate total text block height for vertical centering
-  const totalTextH = textLines.reduce((sum, l, i) => {
-    return sum + l.size + (i < textLines.length - 1 ? LINE_GAP : 0)
-  }, 0)
-  const textX = dividerX
-  const textMaxW = W - textX - PAD
-  let y = (H - totalTextH) / 2 + TITLE_SIZE  // start so block is vertically centered
+  // Calculate total text height for vertical centering relative to QR
+  const totalTextH = textLines.reduce((acc, l, i) =>
+    acc + l.size + (i < textLines.length - 1 ? LINE_GAP : 0), 0)
+
+  // Center text block relative to QR code vertical extent
+  let y = qrTop + Math.round((qrSize - totalTextH) / 2) + TITLE_SIZE
 
   ctx.fillStyle = '#1a1714'
+
   for (let i = 0; i < textLines.length; i++) {
     const line = textLines[i]
-    ctx.font = line.font
-    // Word wrap if needed
+    ctx.font = line.weight + ' ' + line.size + 'px ' + FONT
+    ctx.letterSpacing = line.weight === '300' ? '1px' : '0px'
+
     const words = line.text.split(' ')
     let cur = ''
     for (const word of words) {
@@ -999,8 +998,13 @@ async function printArtworkLabel(w, artistMap) {
       }
     }
     if (cur) ctx.fillText(cur, textX, y)
-    y += i < textLines.length - 1 ? LINE_GAP : 0
+    if (i < textLines.length - 1) y += LINE_GAP
   }
+
+  // Draw border LAST so it sits on top of everything
+  ctx.strokeStyle = '#000000'
+  ctx.lineWidth = BORDER
+  ctx.strokeRect(BORDER / 2, BORDER / 2, W - BORDER, H - BORDER)
 
   // Download PNG
   const safeTitle = (w.title || 'label').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)
