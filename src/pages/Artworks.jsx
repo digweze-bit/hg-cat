@@ -953,11 +953,11 @@ async function printArtworkLabel(w, artistMap) {
   const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
 
   const lines = [
-    { text: w.title || '', size: 26, bold: true },
-    { text: artistName, size: 22, bold: false },
-    { text: w.year || '', size: 20, bold: false },
-    { text: w.medium || '', size: 20, bold: false },
-    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: 20, bold: false },
+    { text: w.title || '', size: 28, bold: true },
+    { text: artistName, size: 28, bold: false },
+    { text: w.year || '', size: 28, bold: false },
+    { text: w.medium || '', size: 28, bold: false },
+    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: 28, bold: false },
   ].filter(l => l.text)
 
   let y = PAD + 30
@@ -971,15 +971,15 @@ async function printArtworkLabel(w, artistMap) {
       const test = cur ? cur + ' ' + word : word
       if (ctx.measureText(test).width > textMaxW && cur) {
         ctx.fillText(cur, textX, y)
-        y += line.size + 4
+        y += line.size * 2
         cur = word
       } else {
         cur = test
       }
     }
-    if (cur) { ctx.fillText(cur, textX, y); y += line.size + 4 }
+    if (cur) { ctx.fillText(cur, textX, y); y += line.size * 2 }
     y += line.bold ? 8 : 4
-  }
+    y += line.bold ? 4 : 0
 
   // Download PNG
   const safeTitle = (w.title || 'label').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)
