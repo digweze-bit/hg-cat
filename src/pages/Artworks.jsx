@@ -911,6 +911,7 @@ async function printArtworkLabel(w, artistMap) {
   const qrDataUrl = await QRCode.toDataURL(url, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
   function e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
   const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
+  console.log('LABEL DEBUG:', JSON.stringify({title:w.title,artist:artistName,year:w.year,medium:w.medium,dim:w.dimensions}))
   const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
   const details = [
     w.title ? '<b>' + e(w.title) + '</b>' : '',
