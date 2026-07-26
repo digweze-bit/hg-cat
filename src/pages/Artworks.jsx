@@ -907,15 +907,18 @@ export default function Artworks() {
 }
 
 async function printArtworkLabel(w, artistMap) {
-  // 4x2 inches at 200 DPI
+  // 4x2 inches at 200 DPI = 800 x 400 px
   const DPI = 200
   const W = 4 * DPI   // 800px
   const H = 2 * DPI   // 400px
-  const PAD = 24
+  const PAD = 28
   const BORDER = 3
 
   const url = window.location.origin + '/artwork/' + w.id
-  const qrSize = H - PAD * 2  // 352px — fills most of the height
+
+  // QR code: 60% of height
+  const qrSize = Math.round(H * 0.6)  // 240px
+  const qrTop = (H - qrSize) / 2      // vertically centered
   const qrDataUrl = await QRCode.toDataURL(url, {
     width: qrSize,
     margin: 1,
@@ -936,49 +939,67 @@ async function printArtworkLabel(w, artistMap) {
   ctx.lineWidth = BORDER
   ctx.strokeRect(BORDER / 2, BORDER / 2, W - BORDER, H - BORDER)
 
-  // QR code
+  // Vertical divider line (subtle)
+  const dividerX = PAD + qrSize + PAD
+  ctx.strokeStyle = '#e0dbd4'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(dividerX - PAD / 2, PAD * 1.5)
+  ctx.lineTo(dividerX - PAD / 2, H - PAD * 1.5)
+  ctx.stroke()
+
+  // Draw QR code
   await new Promise(res => {
     const qrImg = new Image()
     qrImg.onload = () => {
-      ctx.drawImage(qrImg, PAD, PAD, qrSize, qrSize)
+      ctx.drawImage(qrImg, PAD, qrTop, qrSize, qrSize)
       res()
     }
     qrImg.src = qrDataUrl
   })
 
-  // Text layout
-  const textX = PAD + qrSize + PAD
-  const textMaxW = W - textX - PAD
+  // Text setup
   const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
   const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
+  const TITLE_SIZE = 28
+  const DETAIL_SIZE = 24
+  const LINE_GAP = DETAIL_SIZE * 2  // double spacing
 
-  const lines = [
-    { text: w.title || '', size: 28, bold: true },
-    { text: artistName, size: 28, bold: false },
-    { text: w.year || '', size: 28, bold: false },
-    { text: w.medium || '', size: 28, bold: false },
-    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: 28, bold: false },
+  const textLines = [
+    { text: w.title || '', size: TITLE_SIZE, font: 'bold ' + TITLE_SIZE + 'px Georgia, serif' },
+    { text: artistName, size: DETAIL_SIZE, font: DETAIL_SIZE + 'px Georgia, serif' },
+    { text: w.year || '', size: DETAIL_SIZE, font: DETAIL_SIZE + 'px Georgia, serif' },
+    { text: w.medium || '', size: DETAIL_SIZE, font: DETAIL_SIZE + 'px Georgia, serif' },
+    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: DETAIL_SIZE, font: DETAIL_SIZE + 'px Georgia, serif' },
   ].filter(l => l.text)
 
-  let y = PAD + 30
-  for (const line of lines) {
-    ctx.font = (line.bold ? 'bold ' : '') + line.size + 'px Arial, Helvetica, sans-serif'
-    ctx.fillStyle = '#1a1714'
-    // Wrap text if too wide
+  // Calculate total text block height for vertical centering
+  const totalTextH = textLines.reduce((sum, l, i) => {
+    return sum + l.size + (i < textLines.length - 1 ? LINE_GAP : 0)
+  }, 0)
+  const textX = dividerX
+  const textMaxW = W - textX - PAD
+  let y = (H - totalTextH) / 2 + TITLE_SIZE  // start so block is vertically centered
+
+  ctx.fillStyle = '#1a1714'
+  for (let i = 0; i < textLines.length; i++) {
+    const line = textLines[i]
+    ctx.font = line.font
+    // Word wrap if needed
     const words = line.text.split(' ')
     let cur = ''
     for (const word of words) {
       const test = cur ? cur + ' ' + word : word
       if (ctx.measureText(test).width > textMaxW && cur) {
         ctx.fillText(cur, textX, y)
-        y += line.size * 2
+        y += line.size + 4
         cur = word
       } else {
         cur = test
       }
     }
-    if (cur) { ctx.fillText(cur, textX, y); y += line.size * 2 }
-    y += line.bold ? 8 : 4
+    if (cur) ctx.fillText(cur, textX, y)
+    y += i < textLines.length - 1 ? LINE_GAP : 0
   }
 
   // Download PNG
@@ -1082,3 +1103,4 @@ async function resizeImage(file, maxPx = 1200) {
     img.src = URL.createObjectURL(file)
   })
 }
+
