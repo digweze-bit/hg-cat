@@ -976,7 +976,7 @@ async function printArtworkLabel(w, artistMap) {
     acc + l.size + (i < textLines.length - 1 ? LINE_GAP : 0), 0)
 
   // Center text block relative to QR code vertical extent
-  let y = qrTop + Math.round((qrSize - totalTextH) / 2) + TITLE_SIZE
+  let y = qrTop + Math.round((qrSize - totalTextH) / 2) + textLines[0].size
 
   ctx.fillStyle = '#1a1714'
 
