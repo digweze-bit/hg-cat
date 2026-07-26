@@ -973,7 +973,7 @@ async function printArtworkLabel(w, artistMap) {
 
   // Calculate total text height for vertical centering relative to QR
   const totalTextH = textLines.reduce((acc, l, i) =>
-    acc + l.size + (i < textLines.length - 1 ? LINE_GAP : 0), 0)
+    acc + (i < textLines.length - 1 ? LINE_GAP : l.size), 0)
 
   // Center text block relative to QR code vertical extent
   const textBlockCenter = qrTop + qrSize / 2
