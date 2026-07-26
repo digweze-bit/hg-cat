@@ -1489,6 +1489,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
 function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit }) {
   const [payments, setPayments] = useState([])
   const [items, setItems] = useState([])
+  const [itemsLoaded, setItemsLoaded] = useState(false)
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
   const [editingPayment, setEditingPayment] = useState(null)
   const [collectingItem, setCollectingItem] = useState(null)
@@ -1501,10 +1502,11 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
     async function load() {
       const [{ data: p }, { data: it }] = await Promise.all([
         supabase.from('payments').select('*').eq('invoice_id', inv.id).order('paid_at'),
-        supabase.from('invoice_items').select('*, artworks(image_url)').eq('invoice_id', inv.id).order('sort_order'),
+        supabase.from('invoice_items').select('*, artworks(image_url, thumbnail_url)').eq('invoice_id', inv.id).order('sort_order'),
       ])
       setPayments(p || [])
-      setItems((it || []).map(item => ({ ...item, image_url: item.image_url || item.artworks?.image_url || null })))
+      setItems((it || []).map(item => ({ ...item, image_url: item.image_url || item.artworks?.image_url || null, thumbnail_url: item.thumbnail_url || item.artworks?.thumbnail_url || null })))
+      setItemsLoaded(true)
       setItemsLoaded(true)
     }
     load()
