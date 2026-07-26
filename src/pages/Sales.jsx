@@ -21,6 +21,7 @@ export default function Sales() {
   const [rates, setRates] = useState({})
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
+  const [detailKey, setDetailKey] = useState(0)
   const [activeInvoice, setActiveInvoice] = useState(null)
   const [editingInvoice, setEditingInvoice] = useState(null) // invoice being viewed/edited
 
@@ -150,7 +151,7 @@ export default function Sales() {
         <InvoiceDetail
           key={detailKey}
           key={detailKey}
-          clients={clients}
+          invoice={activeInvoice}
           rates={rates}
           userId={user?.id}
           onClose={() => { setModal(null); setActiveInvoice(null) }}
