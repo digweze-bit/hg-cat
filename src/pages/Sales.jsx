@@ -1563,6 +1563,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
     setSaving(true)
     try {
       await supabase.from('payments').delete().eq('id', paymentId)
+      await supabase.from('payments').delete().eq('id', paymentId)
       auditLog('payment.deleted', { entityType:'payment', entityId:paymentId, entityLabel:inv.invoice_number })
     } catch (err) {
       alert('Failed to delete payment: ' + err.message)
@@ -1664,7 +1665,8 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                 onClick={async () => {
                   if (!confirm(inv.amount_paid > 0 ? 'This invoice has recorded payments. Permanently delete anyway? This cannot be undone.' : 'Permanently delete this invoice? This cannot be undone.')) return
                   await supabase.from('invoices').delete().eq('id', inv.id)
-                  await supabase.from('invoices').delete().eq('id', inv.id)`n                  auditLog('invoice.deleted', { entityType:'invoice', entityId:inv.id, entityLabel:inv.invoice_number })
+                  await supabase.from('invoices').delete().eq('id', inv.id)
+                  auditLog('invoice.deleted', { entityType:'invoice', entityId:inv.id, entityLabel:inv.invoice_number })
                 }}>Delete</button>
             )}
             <button className="btn btn-ghost btn-icon" onClick={onClose}>{'\u2715'}</button>
@@ -1701,7 +1703,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                         <span onClick={() => it.delivered && setCollectingItem(it.id)}
                           style={{ color: it.delivered ? 'var(--green,#27ae60)' : '#b8862a', fontWeight:500, fontSize:12, cursor: it.delivered ? 'pointer' : 'default' }}>
                           {it.delivered
-                          ? ('Collected' + (it.delivered_at ? ' - ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : '') + (it.collected_by ? ' by ' + it.collected_by : ''))
+                            ? `Collected${it.delivered_at ? ' - ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : ''}${it.collected_by ? ' by ' + it.collected_by : ''}`
                             : 'Pending collection'}
                         </span>
                         {it.delivered && <button onClick={() => setCollectingItem(it.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:11, textDecoration:'underline' }}>edit</button>}
