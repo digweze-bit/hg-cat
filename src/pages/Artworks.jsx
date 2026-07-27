@@ -363,7 +363,13 @@ export default function Artworks() {
   const sorted = useMemo(() => {
     let list = [...filtered]
     if (sortBy === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
-    else if (sortBy === 'recent') list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    if (sortBy === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
+    else if (sortBy === 'artist_az') list.sort((a, b) => {
+      const nameA = artistMap[a.artist_id]?.name || 'zzz'
+      const nameB = artistMap[b.artist_id]?.name || 'zzz'
+      const nameCmp = nameA.localeCompare(nameB)
+      return nameCmp !== 0 ? nameCmp : (a.title || '').localeCompare(b.title || '')
+    })
     else if (sortBy === 'price_desc') list.sort((a, b) => parsePrice(b.price) - parsePrice(a.price))
     else if (sortBy === 'price_asc') list.sort((a, b) => parsePrice(a.price) - parsePrice(b.price))
     else if (sortBy === 'location') list.sort((a, b) => (a.location || 'zzz').localeCompare(b.location || 'zzz'))
@@ -566,6 +572,7 @@ export default function Artworks() {
             ['price_desc','Price ↓'],
             ['price_asc','Price ↑'],
             ['location','Location'],
+            ['artist_az','Artist A\u2013Z'],
           ].map(([key, label]) => (
             <button key={key} onClick={() => { setSortBy(key); setPage(0) }}
               style={{ padding:'6px 12px', fontSize:11, cursor:'pointer', fontFamily:'var(--font-sans)', border:'none', borderRight:'1px solid var(--line)', background: sortBy===key ? 'var(--ink)' : 'var(--white)', color: sortBy===key ? 'var(--white)' : 'var(--muted)', whiteSpace:'nowrap', transition:'all 150ms' }}>
