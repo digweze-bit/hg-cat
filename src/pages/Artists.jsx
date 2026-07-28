@@ -41,10 +41,10 @@ export default function Artists() {
     if (rpcErr) console.error('counts RPC error:', rpcErr)
     setCounts(c)
   }
-      c[w.artist_id].total++
-    })
-    setCounts(c)
-  }
+
+
+
+
 
   useEffect(() => { load() }, [])
 
