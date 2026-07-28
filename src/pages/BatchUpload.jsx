@@ -1,17 +1,17 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import Papa from 'papaparse'
 import { supabase } from '../lib/supabase'
 
 const TEMPLATE_HEADERS = [
-  'title', 'artist_name', 'year', 'medium', 'dimensions', 'dimension_unit',
+  'artist_name', 'title', 'medium', 'dimensions', 'dimension_unit', 'year',
   'category', 'series', 'price', 'retail_price', 'location', 'availability',
   'ownership', 'consignor_name', 'commission_rate', 'is_framed', 'frame_cost',
-  'image_url', 'writeup', 'tags', 'notes'
+  'image_url', 'writeup', 'notes'
 ]
 
 function downloadTemplate() {
   const csv = TEMPLATE_HEADERS.join(',') + '\n' +
-    'Sample Title,Artist Full Name,2023,Oil on Canvas,50 x 60,in,Painting,,500000,650000,Main Gallery,Available,gallery,,,false,,,,,'
+    'Ablade Glover,Lorry Station 2,Oil on Canvas,48 by 60,in,2007,Painting,,,,Main Gallery,Available,gallery,,,false,,,'
   const blob = new Blob([csv], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
