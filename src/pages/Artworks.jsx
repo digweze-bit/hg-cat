@@ -779,7 +779,7 @@ export default function Artworks() {
                       </div>
                     </label>
                     <label style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', padding:'9px 12px', border:`1px solid ${form.ownership==='artist_owned'?'var(--green,#2d6a4f)':'var(--line)'}`, borderRadius:3, background: form.ownership==='artist_owned'?'#edf7f0':'var(--white)' }}>
-                      <input type="radio" name="ownership" value="artist_owned" checked={form.ownership==='artist_owned'} onChange={()=>setForm(f=>({...f,ownership:'artist_owned'}))} style={{ width:'auto', accentColor:'var(--green,#2d6a4f)' }} />
+                      <input type="radio" name="ownership" value="artist_owned" checked={form.ownership==='artist_owned'} onChange={()=>setForm(f=>({...f,ownership:'artist_owned',consignor_name:artistMap[f.artist_id]?.name||f.consignor_name||''}))} style={{ width:'auto', accentColor:'var(--green,#2d6a4f)' }} />
                       <div>
                         <div style={{ fontSize:12, fontWeight:500, color: form.ownership==='artist_owned'?'var(--green,#2d6a4f)':'var(--ink)' }}>Artist owned</div>
                         <div style={{ fontSize:10, color: form.ownership==='artist_owned'?'#2d6a4f':'var(--muted)' }}>Consigned directly by artist</div>
@@ -798,8 +798,8 @@ export default function Artworks() {
                     <>
                       <div className="form-row">
                         <div className="form-group">
-                          <label className="form-label">Consignor name</label>
-                          <input className="form-input" value={form.consignor_name||''} onChange={e=>setForm(f=>({...f,consignor_name:e.target.value}))} placeholder="Owner's name" />
+                          <label className="form-label">{form.ownership==='artist_owned' ? 'Artist name' : 'Consignor name'}</label>
+                          <input className="form-input" value={form.consignor_name||''} onChange={e=>setForm(f=>({...f,consignor_name:e.target.value}))} placeholder={form.ownership==='artist_owned' ? 'Auto-filled from artist' : "Owner's name"} />
                         </div>
                         <div className="form-group">
                           <label className="form-label">Consignor contact</label>
