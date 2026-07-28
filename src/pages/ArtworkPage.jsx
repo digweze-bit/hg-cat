@@ -169,7 +169,7 @@ export default function ArtworkPage() {
                   ['Edition', artwork.edition_info],
                   ['Series', artwork.series],
                   ['Framed', artwork.is_framed ? `Yes${artwork.frame_cost ? ` (frame: ₦${Number(artwork.frame_cost).toLocaleString()})` : ''}` : null],
-                  ['Location', artwork.location],
+
                 ].filter(([,v]) => v).map(([label, value]) => (
                   <div key={label} style={{ display:'flex', gap:0 }}>
                     <div style={{ fontSize:10, fontWeight:600, letterSpacing:'.08em', textTransform:'uppercase', color:'#9a9490', width:100, flexShrink:0, paddingTop:1 }}>{label}</div>
@@ -181,7 +181,7 @@ export default function ArtworkPage() {
               {/* Price — right after details */}
               {(artwork.price || artwork.retail_price) && (
                 <div style={{ paddingTop:16, borderTop:'1px solid #e8e3db' }}>
-                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:20, fontWeight:600, color:'#1a1714' }}>
+                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:17, fontWeight:600, color:'#1a1714' }}>
                     {artwork.price || `₦${Number(artwork.retail_price).toLocaleString()}`}
                   </div>
                 </div>
