@@ -26,7 +26,7 @@ export default function Catalogue() {
         const found = a.find(x => x.id === urlArtistId)
         if (found) setActiveArtist(found)
       }
-      supabase.rpc('get_artwork_counts').then(({data:rows, error:rpcErr}) => { if(rpcErr) console.error('RPC error:',rpcErr); if(rows){const c={};rows.forEach(r=>{c[r.artist_id]=Number(r.count)});setWorkCounts(c);console.log('Counts loaded:',Object.keys(c).length)} })
+      supabase.rpc('get_artwork_counts').then(({data:rows, error:rpcErr}) => { alert('RPC done: ' + (rows?.length || 0) + ' rows, err: ' + (rpcErr?.message||'none')); if(rpcErr) console.error('RPC error:',rpcErr); if(rows){const c={};rows.forEach(r=>{c[r.artist_id]=Number(r.count)});setWorkCounts(c)} })
       setLoading(false)
     }
     load()
