@@ -558,6 +558,7 @@ export default function Artworks() {
           <option value="">All ownership</option>
           <option value="gallery">Gallery owned</option>
           <option value="consignment">Consignment</option>
+          <option value="artist_owned">Artist owned</option>
         </select>
         <select className="form-select" style={{ width:140 }} value={filters.visible} onChange={e=>sf('visible',e.target.value)}>
           <option value="">All visibility</option>
