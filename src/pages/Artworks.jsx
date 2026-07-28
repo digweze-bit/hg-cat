@@ -969,15 +969,15 @@ async function printArtworkLabel(w, artistMap) {
   const textX = qrLeft + qrSize + PAD * 1.5
   const textMaxW = W - textX - PAD
 
-  const TITLE_SIZE = 28
-  const DETAIL_SIZE = 24
+  const TITLE_SIZE = 30
+  const DETAIL_SIZE = 26
   const LINE_GAP = Math.round(DETAIL_SIZE * 1.8)
 
   const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
   const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
 
   const textLines = [
-    { text: w.title || '', size: TITLE_SIZE, weight: '500' },
+    { text: w.title || '', size: TITLE_SIZE, weight: '700' },
     { text: artistName, size: DETAIL_SIZE, weight: '300' },
     { text: w.year || '', size: DETAIL_SIZE, weight: '300' },
     { text: w.medium || '', size: DETAIL_SIZE, weight: '300' },
