@@ -87,6 +87,7 @@ export default defineConfig({
         navigateFallbackDenylist: [
           /^\/auth\//,
           /^\/rest\/v1\/auth/,
+          /^https:\/\/gmukkxnxyvmywgrbkwnr\.supabase\.co\/rest\/v1\/rpc\/.*/,
           /^https:\/\/.*\.supabase\.co\/auth\//,
         ],
 
