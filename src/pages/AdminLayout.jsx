@@ -7,6 +7,7 @@ const NAV = [
   { path: '/admin', label: 'Dashboard', icon: '\u25A4' },
   { path: '/admin/artists', label: 'Artists', icon: '\u25CE' },
   { path: '/admin/artworks', label: 'Artworks', icon: '\u25FB' },
+  { path: '/admin/batch-upload', label: 'Batch upload', icon: '\u25A4' },
   { section: 'Archive' },
   { path: '/admin/archive', label: 'Live Archive', icon: '\u25C8' },
   { section: 'Commerce' },
