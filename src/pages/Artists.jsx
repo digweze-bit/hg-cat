@@ -27,20 +27,20 @@ export default function Artists() {
     setArtists(a)
     setLoading(false)
 
-    // Then fetch counts in background \u2014 only 2 tiny queries
-    const [avail, sold] = await Promise.all([
-      supabase.from('artworks').select('artist_id').eq('availability', 'Available'),
-      supabase.from('artworks').select('artist_id').eq('availability', 'Sold'),
-    ])
+    const { data: rpcRows, error: rpcErr } = await supabase.rpc('get_artwork_counts')
+    const soldData = await supabase.from('artworks').select('artist_id').eq('availability', 'Sold').limit(5000)
     const c = {}
-    ;(avail.data || []).forEach(w => {
-      if (!c[w.artist_id]) c[w.artist_id] = { total:0, available:0, sold:0 }
-      c[w.artist_id].available++
-      c[w.artist_id].total++
+    ;(rpcRows || []).forEach(r => {
+      c[r.artist_id] = { total: Number(r.count), available: Number(r.count), sold: 0 }
     })
-    ;(sold.data || []).forEach(w => {
+    ;(soldData.data || []).forEach(w => {
       if (!c[w.artist_id]) c[w.artist_id] = { total:0, available:0, sold:0 }
       c[w.artist_id].sold++
+      c[w.artist_id].total++
+    })
+    if (rpcErr) console.error('counts RPC error:', rpcErr)
+    setCounts(c)
+  }
       c[w.artist_id].total++
     })
     setCounts(c)
