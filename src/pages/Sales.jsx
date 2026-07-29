@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
+import TagInput, { CLIENT_TAG_SUGGESTIONS } from '../components/TagInput'
 import { auditLog } from '../lib/audit'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
@@ -562,7 +563,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
   }
 
   function openEdit(c) {
-    setForm({ ...c, phone_mobile: c.phone_mobile||c.phone||'', phone_work: c.phone_work||'', street: c.street||c.address||'', suburb: c.suburb||'', state: c.state||'', postcode: c.postcode||'' })
+    setForm({ ...c, phone_mobile: c.phone_mobile||c.phone||'', phone_work: c.phone_work||'', street: c.street||c.address||'', suburb: c.suburb||'', state: c.state||'', postcode: c.postcode||'', tags: c.tags||[] })
     setModal('edit')
   }
 
@@ -580,6 +581,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
         suburb: form.suburb||null, city: form.city||null,
         state: form.state||null, postcode: form.postcode||null,
         country: form.country||null, notes: form.notes||null,
+        tags: form.tags||[],
         updated_at: new Date().toISOString(),
       }
       if (modal === 'edit' && selected) {
@@ -933,7 +935,8 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
                 </div>
               </div>
               <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></div>
-            </div>
+              <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></div>
+              <div className="form-group"><label className="form-label">Tags</label><TagInput tags={form.tags||[]} onChange={t=>setForm(f=>({...f,tags:t}))} suggestions={CLIENT_TAG_SUGGESTIONS} placeholder="e.g. modernist, sculpture..." /></div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Saving\u2026':'Save client'}</button>
@@ -1006,6 +1009,7 @@ function ClientModal({ onClose, onSave }) {
         postcode: form.postcode || null,
         country: form.country || null,
         notes: form.notes || null,
+        tags: form.tags||[],
       }
       const { error } = await supabase.from('clients').insert(payload)
       if (error) throw error
@@ -1031,6 +1035,7 @@ function ClientModal({ onClose, onSave }) {
           </div>
           <div className="form-group"><label className="form-label">Country</label><input className="form-input" value={form.country} onChange={e=>setForm(f=>({...f,country:e.target.value}))} /></div>
           <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" rows={2} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></div>
+          <div className="form-group"><label className="form-label">Tags</label><TagInput tags={form.tags||[]} onChange={t=>setForm(f=>({...f,tags:t}))} suggestions={CLIENT_TAG_SUGGESTIONS} placeholder="e.g. modernist, sculpture..." /></div>
         </div>
         <div className="modal-footer">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>

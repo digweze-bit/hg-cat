@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import TagInput, { ARTWORK_TAG_SUGGESTIONS } from '../components/TagInput'
 import { auditLog } from '../lib/audit'
 import QRCode from 'qrcode'
 import { useNavigate } from 'react-router-dom'
@@ -10,7 +11,7 @@ const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
+const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
 
 
 function convertDimensions(str, fromUnit, toUnit) {
@@ -457,6 +458,7 @@ export default function Artworks() {
         frame_cost:        form.is_framed && form.frame_cost ? Number(form.frame_cost) : null,
         consignment_price: form.ownership === 'consignment' && form.consignment_price ? Number(form.consignment_price) : null,
         consignor_name:    form.ownership === 'consignment' ? form.consignor_name || null : null,
+        tags:              form.tags || [],
         commission_rate:   form.ownership === 'consignment' ? Number(form.commission_rate) || 40 : null,
         tessera_id:        form.tessera_id || null,
         hg_code:           form.hg_code || null,
@@ -508,6 +510,7 @@ export default function Artworks() {
       ownership: artwork.ownership || 'gallery',
       consignment_price: artwork.consignment_price || '',
       consignor_name: artwork.consignor_name || '',
+      tags: artwork.tags || [],
       consignor_contact: artwork.consignor_contact || '',
       commission_rate: artwork.commission_rate || 40,
       is_framed: artwork.is_framed || false,
