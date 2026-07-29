@@ -453,15 +453,34 @@ async function generateClientReport(client, invoices, logoB64, opts = {}, invoic
       </div>`
   }).join('')
 
+  // Embed item images as data URLs for print window (cross-origin images need this)
+  async function embedImg(url) {
+    if (!url) return ''
+    try {
+      const resp = await fetch(url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now(), { cache: 'no-store', mode: 'cors' })
+      if (!resp.ok) return ''
+      const blob = await resp.blob()
+      return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob) })
+    } catch { return '' }
+  }
+
+  // Pre-embed all item images if attaching invoices
+  if (attachInvoices && invoiceItems.length > 0) {
+    await Promise.all(invoiceItems.map(async it => {
+      const src = it.thumbnail_url || it.image_url || it.cover_url
+      if (src) it._imgData = await embedImg(src)
+    }))
+  }
+
   // Invoice copies if requested
   let invoiceCopies = ''
   if (attachInvoices && filtered.length > 0) {
     invoiceCopies = filtered.map(inv => {
       const items = invoiceItems.filter(it => it.invoice_id === inv.id)
       const itemRows = items.map(it => {
-        const imgSrc = it.thumbnail_url || it.image_url || it.cover_url || ''
+        const imgData = it._imgData || ''
         return `<tr>
-          <td style='padding:8px 6px;width:52px;vertical-align:middle'>${imgSrc ? `<img src="${imgSrc}" style="width:44px;height:44px;object-fit:cover;border-radius:2px;display:block">` : '<div style="width:44px;height:44px;background:#f0ece7;border-radius:2px"></div>'}</td>
+          <td style='padding:8px 6px;width:52px;vertical-align:middle'>${imgData ? `<img src="${imgData}" style="width:44px;height:44px;object-fit:cover;border-radius:2px;display:block">` : '<div style="width:44px;height:44px;background:#f0ece7;border-radius:2px"></div>'}</td>
           <td style='padding:8px 6px;vertical-align:middle'><strong>${e(it.title)}</strong>${it.artist_name ? '<br><span style="color:#6b6760;font-size:11px">'+e(it.artist_name)+'</span>' : ''}${it.year ? '<br><span style="color:#aaa;font-size:11px">'+e(it.year)+'</span>' : ''}${it.medium ? '<br><span style="color:#aaa;font-size:11px">'+e(it.medium)+'</span>' : ''}</td>
           <td style='text-align:right;padding:8px 6px;vertical-align:middle'>${fmt(it.line_total, inv.currency)}</td>
         </tr>`
