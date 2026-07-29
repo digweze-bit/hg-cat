@@ -398,6 +398,9 @@ async function generateClientReport(client, invoices, logoB64, opts = {}, invoic
   if (dateTo) filtered = filtered.filter(i => i.issue_date <= dateTo)
   if (!showAll) filtered = filtered.filter(i => Number(i.balance_due) > 0)
 
+  // Sort oldest first
+  filtered = [...filtered].sort((a,b) => (a.issue_date||'').localeCompare(b.issue_date||''))
+
   // Group by currency
   const byCurrency = {}
   filtered.forEach(inv => {
@@ -455,11 +458,14 @@ async function generateClientReport(client, invoices, logoB64, opts = {}, invoic
   if (attachInvoices && filtered.length > 0) {
     invoiceCopies = filtered.map(inv => {
       const items = invoiceItems.filter(it => it.invoice_id === inv.id)
-      const itemRows = items.map(it => `
-        <tr>
-          <td style='padding:8px 6px'><strong>${e(it.title)}</strong>${it.artist_name ? '<br><span style="color:#6b6760;font-size:11px">'+e(it.artist_name)+'</span>' : ''}</td>
-          <td style='text-align:right;padding:8px 6px'>${fmt(it.line_total, inv.currency)}</td>
-        </tr>`).join('')
+      const itemRows = items.map(it => {
+        const imgSrc = it.thumbnail_url || it.image_url || it.cover_url || ''
+        return `<tr>
+          <td style='padding:8px 6px;width:52px;vertical-align:middle'>${imgSrc ? `<img src="${imgSrc}" style="width:44px;height:44px;object-fit:cover;border-radius:2px;display:block">` : '<div style="width:44px;height:44px;background:#f0ece7;border-radius:2px"></div>'}</td>
+          <td style='padding:8px 6px;vertical-align:middle'><strong>${e(it.title)}</strong>${it.artist_name ? '<br><span style="color:#6b6760;font-size:11px">'+e(it.artist_name)+'</span>' : ''}${it.year ? '<br><span style="color:#aaa;font-size:11px">'+e(it.year)+'</span>' : ''}${it.medium ? '<br><span style="color:#aaa;font-size:11px">'+e(it.medium)+'</span>' : ''}</td>
+          <td style='text-align:right;padding:8px 6px;vertical-align:middle'>${fmt(it.line_total, inv.currency)}</td>
+        </tr>`
+      }).join('')
       return `
         <div style='page-break-before:always;padding-top:36px'>
           <div style='font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:4px'>Invoice copy</div>
@@ -469,6 +475,7 @@ async function generateClientReport(client, invoices, logoB64, opts = {}, invoic
           </div>
           <table style='width:100%;border-collapse:collapse;font-size:12px'>
             <thead><tr style='border-bottom:1px solid #e8e3db'>
+              <th style='padding:6px;width:52px'></th>
               <th style='text-align:left;padding:6px'>Item</th>
               <th style='text-align:right;padding:6px'>Amount</th>
             </tr></thead>
