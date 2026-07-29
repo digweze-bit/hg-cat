@@ -935,8 +935,8 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
                 </div>
               </div>
               <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></div>
-              <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></div>
               <div className="form-group"><label className="form-label">Tags</label><TagInput tags={form.tags||[]} onChange={t=>setForm(f=>({...f,tags:t}))} suggestions={CLIENT_TAG_SUGGESTIONS} placeholder="e.g. modernist, sculpture..." /></div>
+            </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(false)}>Cancel</button>
               <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Saving\u2026':'Save client'}</button>
