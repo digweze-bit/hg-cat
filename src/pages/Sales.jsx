@@ -552,8 +552,8 @@ ${invoiceCopies}
 function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
   const [selected, setSelected] = useState(null)  // client being viewed/edited
   const [showReport, setShowReport] = useState(false)
-  const [reportOpts, setReportOpts] = useState({ dateFrom:'', dateTo:'', showAll:true })
   const [reportOpts, setReportOpts] = useState({ dateFrom:'', dateTo:'', showAll:true, attachInvoices:false })
+
   const [modal, setModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
