@@ -767,10 +767,10 @@ export default function Artworks() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <div className="form-group">
-                      <label className="form-label">Tags</label>
-                      <TagInput tags={Array.isArray(form.tags)?form.tags:(form.tags?form.tags.split(',').map(t=>t.trim()).filter(Boolean):[])} onChange={t=>setForm(f=>({...f,tags:t}))} suggestions={ARTWORK_TAG_SUGGESTIONS} placeholder="e.g. modernist, sculpture..." />
-                  </div>
+                  <label className="form-label">Tags</label>
+                  <TagInput tags={Array.isArray(form.tags)?form.tags:(form.tags?form.tags.split(',').map(t=>t.trim()).filter(Boolean):[])} onChange={t=>setForm(f=>({...f,tags:t}))} suggestions={ARTWORK_TAG_SUGGESTIONS} placeholder="e.g. modernist, sculpture..." />
+                </div>
+
                 {/* Ownership */}
                 <div style={{ background:'var(--parchment)', borderRadius:3, padding:'12px 14px', display:'flex', flexDirection:'column', gap:11 }}>
                   <div style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:2 }}>Ownership</div>
