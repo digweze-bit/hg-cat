@@ -1,306 +1,277 @@
-﻿import { useState } from 'react'
-import Papa from 'papaparse'
+import { useState, useCallback, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
-const TEMPLATE_HEADERS = [
-  'artist_name', 'title', 'medium', 'dimensions', 'dimension_unit', 'year',
-  'category', 'series', 'price', 'retail_price', 'location', 'availability',
-  'ownership', 'consignor_name', 'commission_rate', 'is_framed', 'frame_cost',
-  'image_url', 'writeup', 'notes'
-]
+// Parse filename into artwork metadata
+// Expected: "ArtistName, Title, Medium, Dimensions, Year.jpg"
+// or: "timestamp_ArtistName, Title, Medium, Dimensions, Year.jpg"
+function parseFilename(filename) {
+  // Remove extension
+  let name = filename.replace(/\.[^.]+$/, '')
+  // Remove leading timestamp (digits + underscore)
+  name = name.replace(/^\d+_/, '')
+  // Replace underscores with spaces
+  name = name.replace(/_/g, ' ')
+  // Split by comma
+  const parts = name.split(',').map(p => p.trim()).filter(Boolean)
 
-function downloadTemplate() {
-  const csv = TEMPLATE_HEADERS.join(',') + '\n' +
-    'Ablade Glover,Lorry Station 2,Oil on Canvas,48 by 60,in,2007,Painting,,,,Main Gallery,Available,gallery,,,false,,,'
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'artwork_upload_template.csv'
-  a.click()
-  URL.revokeObjectURL(url)
+  const result = {
+    artist_name: '',
+    title: '',
+    medium: '',
+    dimensions: '',
+    dimension_unit: 'in',
+    year: '',
+    raw: name,
+  }
+
+  if (parts.length >= 1) result.artist_name = parts[0]
+  if (parts.length >= 2) result.title = parts[1]
+  if (parts.length >= 3) result.medium = parts[2]
+  if (parts.length >= 4) {
+    // Dimensions — detect unit
+    const dim = parts[3].trim()
+    if (dim.toLowerCase().includes('cm')) {
+      result.dimensions = dim.replace(/cm/i, '').trim()
+      result.dimension_unit = 'cm'
+    } else {
+      result.dimensions = dim.replace(/inches?/i, '').trim()
+      result.dimension_unit = 'in'
+    }
+  }
+  if (parts.length >= 5) {
+    // Year — extract 4-digit number
+    const yearMatch = parts[4].match(/\d{4}/)
+    if (yearMatch) result.year = yearMatch[0]
+  }
+
+  return result
 }
 
 export default function BatchUpload() {
-  const [rows, setRows] = useState([])
+  const [files, setFiles] = useState([]) // { file, preview, meta, status, error, artwork_id }
   const [artists, setArtists] = useState([])
-  const [unmatchedArtists, setUnmatchedArtists] = useState([])
-  const [artistDecisions, setArtistDecisions] = useState({}) // name -> 'create' | 'skip' | artistId
-  const [step, setStep] = useState('upload') // upload | review | importing | done
+  const [artistMap, setArtistMap] = useState({}) // name.lower -> id
+  const [step, setStep] = useState('drop') // drop | review | uploading | done
+  const [dragging, setDragging] = useState(false)
   const [progress, setProgress] = useState({ done: 0, total: 0, failed: 0 })
-  const [log, setLog] = useState([])
-  const [fileName, setFileName] = useState('')
+  const [location, setLocation] = useState('Main Gallery')
 
-  function addLog(msg) { setLog(prev => [msg, ...prev].slice(0, 300)) }
-
-  async function handleFile(e) {
-    const file = e.target.files[0]
-    if (!file) return
-    setFileName(file.name)
-
-    const { data: existingArtists } = await supabase.from('artists').select('id, name')
-    setArtists(existingArtists || [])
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const parsed = results.data.map((r, i) => ({
-          ...r,
-          _rowNum: i + 2, // +2 for header row + 1-index
-          _errors: validateRow(r),
-        }))
-        setRows(parsed)
-
-        const artistMap = new Map((existingArtists || []).map(a => [a.name.toLowerCase().trim(), a]))
-        const unmatched = [...new Set(
-          parsed
-            .map(r => r.artist_name?.trim())
-            .filter(name => name && !artistMap.has(name.toLowerCase()))
-        )]
-        setUnmatchedArtists(unmatched)
-        const initialDecisions = {}
-        unmatched.forEach(name => { initialDecisions[name] = 'pending' })
-        setArtistDecisions(initialDecisions)
-
-        setStep('review')
-      },
-      error: (err) => alert('CSV parse error: ' + err.message)
+  useEffect(() => {
+    supabase.from('artists').select('id,name').order('name').then(({ data }) => {
+      setArtists(data || [])
+      const m = {}
+      ;(data || []).forEach(a => { m[a.name.toLowerCase()] = a.id })
+      setArtistMap(m)
     })
+  }, [])
+
+  const handleFiles = useCallback((newFiles) => {
+    const imageFiles = Array.from(newFiles).filter(f => f.type.startsWith('image/'))
+    const parsed = imageFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+      meta: parseFilename(file.name),
+      status: 'pending',
+      error: null,
+      artwork_id: null,
+    }))
+    setFiles(prev => [...prev, ...parsed])
+    setStep('review')
+  }, [])
+
+  function onDrop(e) {
+    e.preventDefault()
+    setDragging(false)
+    handleFiles(e.dataTransfer.files)
   }
 
-  function validateRow(r) {
-    const errors = []
-    if (!r.title?.trim()) errors.push('Missing title')
-    if (!r.artist_name?.trim()) errors.push('Missing artist name')
-    if (r.ownership === 'consignment' && !r.consignor_name?.trim()) errors.push('Consignment needs consignor_name')
-    return errors
+  function updateMeta(idx, field, value) {
+    setFiles(prev => prev.map((f, i) => i === idx ? { ...f, meta: { ...f.meta, [field]: value } } : f))
   }
 
-  const artistMap = new Map(artists.map(a => [a.name.toLowerCase().trim(), a]))
-  const allDecided = unmatchedArtists.every(name => artistDecisions[name] !== 'pending')
-  const validRows = rows.filter(r => r._errors.length === 0)
-  const errorRows = rows.filter(r => r._errors.length > 0)
+  function removeFile(idx) {
+    setFiles(prev => prev.filter((_, i) => i !== idx))
+  }
 
-  async function runImport() {
-    setStep('importing')
-    setLog([])
-    setProgress({ done: 0, total: validRows.length, failed: 0 })
+  async function upload() {
+    setStep('uploading')
+    setProgress({ done: 0, total: files.length, failed: 0 })
+    let done = 0, failed = 0
 
-    // First, create any artists marked "create"
-    const newArtistIds = {}
-    for (const name of unmatchedArtists) {
-      if (artistDecisions[name] === 'create') {
-        const { data, error } = await supabase.from('artists').insert({ name: name.trim() }).select('id').single()
-        if (!error && data) {
-          newArtistIds[name.toLowerCase().trim()] = data.id
-          addLog(`Created artist: ${name}`)
-        } else {
-          addLog(`FAILED to create artist ${name}: ${error?.message}`)
-        }
-      }
-    }
-
-    for (let i = 0; i < validRows.length; i++) {
-      const r = validRows[i]
-      const artistNameLower = r.artist_name?.trim().toLowerCase()
-      let artistId = artistMap.get(artistNameLower)?.id || newArtistIds[artistNameLower]
-
-      if (!artistId && artistDecisions[r.artist_name?.trim()] === 'skip') {
-        setProgress(p => ({ ...p, failed: p.failed + 1 }))
-        addLog(`✗ Skipped "${r.title}" — artist "${r.artist_name}" not created`)
-        continue
-      }
-      if (!artistId) {
-        setProgress(p => ({ ...p, failed: p.failed + 1 }))
-        addLog(`✗ FAILED "${r.title}" — no artist match`)
-        continue
-      }
-
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i]
       try {
-        const { data: codeData } = await supabase.rpc('next_hg_code')
-        const { error } = await supabase.from('artworks').insert({
-          title: r.title?.trim(),
-          artist_id: artistId,
-          year: r.year || null,
-          medium: r.medium || null,
-          dimensions: r.dimensions || null,
-          dimension_unit: r.dimension_unit || 'in',
-          category: r.category || null,
-          series: r.series || null,
-          price: r.price || null,
-          retail_price: r.retail_price ? Number(r.retail_price) : null,
-          location: r.location || null,
-          availability: r.availability || 'Available',
-          ownership: r.ownership || 'gallery',
-          consignor_name: r.ownership === 'consignment' ? r.consignor_name || null : null,
-          commission_rate: r.ownership === 'consignment' ? Number(r.commission_rate) || 40 : null,
-          is_framed: r.is_framed === 'true' || r.is_framed === 'TRUE' || r.is_framed === '1',
-          frame_cost: r.frame_cost ? Number(r.frame_cost) : null,
-          image_url: r.image_url || null,
-          writeup: r.writeup || null,
-          tags: r.tags || null,
-          notes: r.notes || null,
-          hg_code: codeData || null,
-          visible: true,
-        })
-        if (error) throw error
-        setProgress(p => ({ ...p, done: p.done + 1 }))
-        addLog(`✓ ${r.title}`)
-      } catch (err) {
-        setProgress(p => ({ ...p, failed: p.failed + 1 }))
-        addLog(`✗ FAILED "${r.title}": ${err.message}`)
-      }
-      await new Promise(res => setTimeout(res, 80))
-    }
+        const meta = f.meta
 
-    addLog('Import complete.')
+        // 1. Find or create artist
+        let artistId = artistMap[meta.artist_name.toLowerCase()]
+        if (!artistId) {
+          const { data: newArtist, error: artistErr } = await supabase
+            .from('artists').insert({ name: meta.artist_name }).select().single()
+          if (artistErr) throw new Error('Could not create artist: ' + artistErr.message)
+          artistId = newArtist.id
+          setArtistMap(prev => ({ ...prev, [meta.artist_name.toLowerCase()]: artistId }))
+        }
+
+        // 2. Upload image to Supabase Storage
+        const ext = f.file.name.split('.').pop()
+        const ts = Date.now()
+        const safeName = (meta.artist_name + '_' + meta.title).replace(/[^a-zA-Z0-9]/g, '_').slice(0, 60)
+        const path = `works/${ts}_${safeName}.${ext}`
+
+        const { error: uploadErr } = await supabase.storage
+          .from('artwork-images').upload(path, f.file, { contentType: f.file.type, upsert: false })
+        if (uploadErr) throw new Error('Upload failed: ' + uploadErr.message)
+
+        const { data: { publicUrl } } = supabase.storage.from('artwork-images').getPublicUrl(path)
+
+        // 3. Create artwork record
+        const { data: artwork, error: artErr } = await supabase.from('artworks').insert({
+          title: meta.title,
+          artist_id: artistId,
+          medium: meta.medium,
+          dimensions: meta.dimensions,
+          dimension_unit: meta.dimension_unit,
+          year: meta.year,
+          image_url: publicUrl,
+          availability: 'Available',
+          ownership: 'gallery',
+          location: location,
+          visible: true,
+        }).select().single()
+        if (artErr) throw new Error('Could not save artwork: ' + artErr.message)
+
+        setFiles(prev => prev.map((ff, ii) => ii === i ? { ...ff, status: 'done', artwork_id: artwork.id } : ff))
+        done++
+      } catch (err) {
+        setFiles(prev => prev.map((ff, ii) => ii === i ? { ...ff, status: 'error', error: err.message } : ff))
+        failed++
+      }
+      setProgress({ done: done + failed, total: files.length, failed })
+    }
     setStep('done')
   }
 
-  function reset() {
-    setRows([]); setUnmatchedArtists([]); setArtistDecisions({}); setStep('upload'); setLog([]); setFileName('')
-  }
-
   return (
-    <div style={{ maxWidth: 900 }}>
+    <div>
       <div className="page-header">
-        <div className="page-title">Batch Upload Artworks</div>
-        <div className="page-subtitle">Import multiple artworks at once via CSV</div>
+        <div className="page-title">Batch image upload</div>
+        <div className="page-subtitle">Drag images with filenames like: Artist Name, Title, Medium, Dimensions, Year.jpg</div>
       </div>
 
-      {step === 'upload' && (
-        <div className="card" style={{ padding: '20px 22px' }}>
-          <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.7 }}>
-            Download the CSV template, fill in your artwork details, then upload it here. Each row becomes one artwork.
-            Artist names are matched against your existing Artists list — if a name doesn't match, you'll be asked whether to create a new artist or skip those rows.
+      {step === 'drop' && (
+        <div
+          onDragOver={e => { e.preventDefault(); setDragging(true) }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          style={{
+            border: `2px dashed ${dragging ? 'var(--ink)' : 'var(--line)'}`,
+            borderRadius: 8, padding: '64px 32px', textAlign: 'center',
+            background: dragging ? 'var(--parchment)' : 'var(--white)',
+            cursor: 'pointer', transition: 'all 200ms',
+          }}
+          onClick={() => document.getElementById('batch-file-input').click()}
+        >
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🖼</div>
+          <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Drop artwork images here</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>or click to select files</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)', maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>
+            Name your files: <strong>Ablade Glover, Lorry Station 2, Oil on Canvas, 48 by 60 Inches, 2007.jpg</strong><br/>
+            Fields: Artist, Title, Medium, Dimensions, Year
           </div>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
-            <button className="btn btn-outline" onClick={downloadTemplate}>Download CSV template</button>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Upload CSV file</label>
-            <input type="file" accept=".csv" onChange={handleFile} />
-          </div>
+          <input id="batch-file-input" type="file" multiple accept="image/*" style={{ display: 'none' }}
+            onChange={e => handleFiles(e.target.files)} />
         </div>
       )}
 
-      {step === 'review' && (
-        <div>
-          <div className="card" style={{ padding: '16px 18px', marginBottom: 16 }}>
-            <div style={{ fontSize: 13, marginBottom: 4 }}><strong>{fileName}</strong></div>
-            <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-              {rows.length} rows found — {validRows.length} ready to import, {errorRows.length} with errors
+      {(step === 'review' || step === 'uploading' || step === 'done') && (
+        <>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{files.length} image{files.length !== 1 ? 's' : ''} ready</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 'auto' }}>
+              <label style={{ fontSize: 12 }}>Default location:</label>
+              <input className="form-input" style={{ width: 160 }} value={location} onChange={e => setLocation(e.target.value)} />
             </div>
+            {step === 'review' && (
+              <>
+                <button className="btn btn-outline btn-sm" onClick={() => { setFiles([]); setStep('drop') }}>Clear all</button>
+                <button className="btn btn-outline btn-sm" onClick={() => document.getElementById('batch-file-input2').click()}>Add more</button>
+                <button className="btn btn-primary" onClick={upload} disabled={files.length === 0}>
+                  Upload {files.length} artwork{files.length !== 1 ? 's' : ''}
+                </button>
+                <input id="batch-file-input2" type="file" multiple accept="image/*" style={{ display: 'none' }}
+                  onChange={e => handleFiles(e.target.files)} />
+              </>
+            )}
+            {step === 'uploading' && (
+              <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+                Uploading {progress.done} / {progress.total}…
+              </div>
+            )}
+            {step === 'done' && (
+              <div style={{ fontSize: 13, color: progress.failed > 0 ? 'var(--red,#c0392b)' : 'var(--green,#27ae60)' }}>
+                {progress.total - progress.failed} uploaded{progress.failed > 0 ? `, ${progress.failed} failed` : ' successfully'}
+              </div>
+            )}
           </div>
 
-          {unmatchedArtists.length > 0 && (
-            <div className="card" style={{ padding: '16px 18px', marginBottom: 16 }}>
-              <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 10 }}>
-                Unmatched artists ({unmatchedArtists.length}) — decide for each
-              </div>
-              {unmatchedArtists.map(name => (
-                <div key={name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--line-soft)' }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{name}</div>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button
-                      className={`btn btn-sm ${artistDecisions[name] === 'create' ? 'btn-primary' : 'btn-outline'}`}
-                      onClick={() => setArtistDecisions(d => ({ ...d, [name]: 'create' }))}>
-                      Create new artist
-                    </button>
-                    <button
-                      className={`btn btn-sm ${artistDecisions[name] === 'skip' ? 'btn-primary' : 'btn-outline'}`}
-                      onClick={() => setArtistDecisions(d => ({ ...d, [name]: 'skip' }))}>
-                      Skip these rows
-                    </button>
-                  </div>
-                </div>
-              ))}
+          {step === 'uploading' && (
+            <div style={{ height: 6, background: 'var(--line)', borderRadius: 3, marginBottom: 16, overflow: 'hidden' }}>
+              <div style={{ height: '100%', background: 'var(--ink)', borderRadius: 3, width: `${(progress.done / progress.total) * 100}%`, transition: 'width 300ms' }} />
             </div>
           )}
 
-          {errorRows.length > 0 && (
-            <div className="card" style={{ padding: '16px 18px', marginBottom: 16 }}>
-              <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--red,#c0392b)', marginBottom: 10 }}>
-                Rows with errors ({errorRows.length}) — will not be imported
-              </div>
-              <div className="table-wrap">
-                <table>
-                  <thead><tr><th>Row</th><th>Title</th><th>Errors</th></tr></thead>
-                  <tbody>
-                    {errorRows.map(r => (
-                      <tr key={r._rowNum}>
-                        <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r._rowNum}</td>
-                        <td style={{ fontSize: 13 }}>{r.title || '—'}</td>
-                        <td style={{ fontSize: 12, color: 'var(--red,#c0392b)' }}>{r._errors.join(', ')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          <div className="card" style={{ padding: '16px 18px', marginBottom: 16 }}>
-            <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 10 }}>
-              Preview ({Math.min(validRows.length, 10)} of {validRows.length} ready rows)
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Title</th><th>Artist</th><th>Year</th><th>Medium</th><th>Price</th></tr></thead>
-                <tbody>
-                  {validRows.slice(0, 10).map(r => (
-                    <tr key={r._rowNum}>
-                      <td style={{ fontWeight: 500, fontSize: 13 }}>{r.title}</td>
-                      <td style={{ fontSize: 13 }}>{r.artist_name}</td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.year}</td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.medium}</td>
-                      <td style={{ fontSize: 12, color: 'var(--muted)' }}>{r.retail_price ? `₦${Number(r.retail_price).toLocaleString()}` : r.price || '—'}</td>
-                    </tr>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {files.map((f, i) => (
+              <div key={i} style={{
+                display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 12, alignItems: 'start',
+                padding: '12px 14px', background: 'var(--white)', border: '1px solid var(--line)', borderRadius: 6,
+                borderLeft: `4px solid ${f.status === 'done' ? 'var(--green,#27ae60)' : f.status === 'error' ? 'var(--red,#c0392b)' : 'var(--line)'}`,
+              }}>
+                <img src={f.preview} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 4 }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                  {[
+                    ['Artist', 'artist_name'],
+                    ['Title', 'title'],
+                    ['Medium', 'medium'],
+                    ['Dimensions', 'dimensions'],
+                    ['Year', 'year'],
+                    ['Unit', 'dimension_unit'],
+                  ].map(([label, field]) => (
+                    <div key={field}>
+                      <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.07em', color: 'var(--muted)', marginBottom: 2 }}>{label}</div>
+                      {field === 'dimension_unit' ? (
+                        <select className="form-select" style={{ fontSize: 12, padding: '3px 6px' }}
+                          value={f.meta[field]} onChange={e => updateMeta(i, field, e.target.value)}>
+                          <option value="in">in</option>
+                          <option value="cm">cm</option>
+                        </select>
+                      ) : (
+                        <input className="form-input" style={{ fontSize: 12, padding: '3px 6px' }}
+                          value={f.meta[field]} onChange={e => updateMeta(i, field, e.target.value)} />
+                      )}
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-outline" onClick={reset}>Cancel</button>
-            <button className="btn btn-primary" onClick={runImport} disabled={!allDecided || validRows.length === 0}>
-              Import {validRows.length} artwork{validRows.length !== 1 ? 's' : ''}
-            </button>
-          </div>
-          {!allDecided && <div style={{ fontSize: 12, color: 'var(--amber,#b8862a)', marginTop: 8 }}>Decide on all unmatched artists before importing.</div>}
-        </div>
-      )}
-
-      {(step === 'importing' || step === 'done') && (
-        <div>
-          <div className="card" style={{ padding: '16px 18px', marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
-              <span>{progress.done + progress.failed} / {progress.total}</span>
-              <span style={{ color: 'var(--green,#27ae60)' }}>{progress.done} imported</span>
-              {progress.failed > 0 && <span style={{ color: 'var(--red,#c0392b)' }}>{progress.failed} failed</span>}
-            </div>
-            <div style={{ background: 'var(--line-soft)', borderRadius: 2, height: 8, overflow: 'hidden' }}>
-              <div style={{
-                width: `${progress.total ? ((progress.done + progress.failed) / progress.total) * 100 : 0}%`,
-                height: '100%', background: 'var(--green,#27ae60)', borderRadius: 2, transition: 'width 200ms'
-              }} />
-            </div>
-          </div>
-
-          {step === 'done' && (
-            <button className="btn btn-primary" onClick={reset} style={{ marginBottom: 16 }}>Upload another file</button>
-          )}
-
-          <div className="card" style={{ padding: '12px 14px', maxHeight: 400, overflowY: 'auto' }}>
-            {log.map((l, i) => (
-              <div key={i} style={{ fontSize: 11, fontFamily: 'monospace', color: l.startsWith('✗') ? 'var(--red,#c0392b)' : 'var(--muted)', padding: '2px 0' }}>
-                {l}
+                  {f.error && <div style={{ gridColumn: '1/-1', fontSize: 11, color: 'var(--red,#c0392b)', marginTop: 4 }}>&#9888; {f.error}</div>}
+                  {f.status === 'done' && <div style={{ gridColumn: '1/-1', fontSize: 11, color: 'var(--green,#27ae60)', marginTop: 4 }}>&#10003; Uploaded successfully</div>}
+                </div>
+                {step === 'review' && (
+                  <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 18, padding: '0 4px' }}>&times;</button>
+                )}
+                {step === 'uploading' && f.status === 'pending' && (
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>Waiting…</div>
+                )}
               </div>
             ))}
           </div>
-        </div>
+
+          {step === 'done' && (
+            <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+              <button className="btn btn-outline" onClick={() => { setFiles([]); setStep('drop') }}>Upload more</button>
+              <a href="/admin/artworks" className="btn btn-primary">Go to Artworks</a>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
