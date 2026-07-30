@@ -126,7 +126,7 @@ export default function Sales() {
 
       {/* Modals */}
       {modal === 'client' && (
-        <ClientModal onClose={() => setModal(null)} onSave={load} />
+        <ClientModal onClose={() => setModal(null)} onSave={load} existingClients={clients} />
       )}
       {modal === 'invoice' && !editingInvoice && (
         <InvoiceModal
@@ -1055,9 +1055,10 @@ function PaymentList({ invoices, rates }) {
 }
 
 // \u2500\u2500 CLIENT MODAL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function ClientModal({ onClose, onSave }) {
+function ClientModal({ onClose, onSave, existingClients = [] }) {
   const [form, setForm] = useState({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
   const [saving, setSaving] = useState(false)
+  const [dupWarning, setDupWarning] = useState([])
   async function save() {
     if (!form.name) return alert('Name required')
     setSaving(true)
@@ -1098,7 +1099,30 @@ function ClientModal({ onClose, onSave }) {
         <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={onClose}>{'\u2715'}</button></div>
         <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div className="form-row">
-            <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} /></div>
+            <div className="form-group">
+            <label className="form-label">Name *</label>
+            <input className="form-input" value={form.name} onChange={e => {
+              const v = e.target.value
+              setForm(f=>({...f, name: v}))
+              if (v.length > 2) {
+                const q = v.toLowerCase()
+                setDupWarning(existingClients.filter(c =>
+                  c.name.toLowerCase().includes(q) || q.includes(c.name.toLowerCase().split(' ')[0])
+                ).slice(0, 3))
+              } else { setDupWarning([]) }
+            }} />
+            {dupWarning.length > 0 && (
+              <div style={{ marginTop:6, padding:'8px 10px', background:'#fef9ec', border:'1px solid #f0c040', borderRadius:4 }}>
+                <div style={{ fontSize:11, fontWeight:600, color:'#92600a', marginBottom:4 }}>&#9888; Possible duplicate</div>
+                {dupWarning.map(c => (
+                  <div key={c.id} style={{ fontSize:11, color:'#6b6760', padding:'2px 0' }}>
+                    {c.name}{c.phone ? ' · ' + c.phone : ''}{c.email ? ' · ' + c.email : ''}
+                  </div>
+                ))}
+                <div style={{ fontSize:10, color:'var(--muted)', marginTop:3 }}>Check this client does not already exist before saving.</div>
+              </div>
+            )}
+          </div>
             <div className="form-group"><label className="form-label">Email</label><input className="form-input" type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))} /></div>
           </div>
           <div className="form-row">
