@@ -451,14 +451,14 @@ export default function Artworks() {
         provenance:        form.provenance || null,
         notes:             form.notes || null,
         exhibition_history:form.exhibition_history || null,
-        tags:              form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        tags:              Array.isArray(form.tags) ? form.tags : (form.tags ? form.tags.split(',').map(t=>t.trim()).filter(Boolean) : []),
         series:            form.series || null,
         sort_order:        parseInt(form.sort_order) || 0,
         is_framed:         form.is_framed || false,
         frame_cost:        form.is_framed && form.frame_cost ? Number(form.frame_cost) : null,
         consignment_price: form.ownership === 'consignment' && form.consignment_price ? Number(form.consignment_price) : null,
         consignor_name:    form.ownership === 'consignment' ? form.consignor_name || null : null,
-        tags:              form.tags || [],
+
         commission_rate:   form.ownership === 'consignment' ? Number(form.commission_rate) || 40 : null,
         tessera_id:        form.tessera_id || null,
         hg_code:           form.hg_code || null,
@@ -767,10 +767,10 @@ export default function Artworks() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Tags (comma-separated)</label>
-                  <input className="form-input" value={form.tags||''} onChange={e=>setForm(f=>({...f,tags:e.target.value}))} placeholder="portrait, oil, abstract" />
-                </div>
-
+                  <div className="form-group">
+                      <label className="form-label">Tags</label>
+                      <TagInput tags={Array.isArray(form.tags)?form.tags:(form.tags?form.tags.split(',').map(t=>t.trim()).filter(Boolean):[])} onChange={t=>setForm(f=>({...f,tags:t}))} suggestions={ARTWORK_TAG_SUGGESTIONS} placeholder="e.g. modernist, sculpture..." />
+                  </div>
                 {/* Ownership */}
                 <div style={{ background:'var(--parchment)', borderRadius:3, padding:'12px 14px', display:'flex', flexDirection:'column', gap:11 }}>
                   <div style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:2 }}>Ownership</div>
