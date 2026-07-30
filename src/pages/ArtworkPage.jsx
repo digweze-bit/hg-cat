@@ -200,7 +200,7 @@ export default function ArtworkPage() {
                       style={{ width:48, height:48, borderRadius:'50%', objectFit:'cover', float:'left', marginRight:14, marginBottom:4 }}/>
                   )}
                   <div style={{ fontSize:13, color:'#3d3a36', lineHeight:1.75 }}>{artist.bio}</div>
-                  <div style={{ fontSize:13, color:'#3d3a36', lineHeight:1.75 }}>{artist.bio.split(/\n\n+/).map((p,i) => <p key={i} style={{ marginBottom:'1em' }}>{p}</p>)}</div>
+                  <div style={{ fontSize:13, color:'#3d3a36', lineHeight:1.75 }}>{artist.bio.split('\n\n').map((p,i) => <p key={i} style={{ marginBottom:'1em' }}>{p.trim()}</p>)}</div>
                 </>
               )}
               {artwork.writeup && (
@@ -208,7 +208,7 @@ export default function ArtworkPage() {
                   {artist?.bio && <div style={{ borderTop:'1px solid #e8e3db', margin:'20px 0' }} />}
                   <div style={{ fontSize:10, fontWeight:600, letterSpacing:'.1em', textTransform:'uppercase', color:'#9a9490', marginBottom:10 }}>About this work</div>
                   <div style={{ fontSize:13, color:'#3d3a36', lineHeight:1.75, whiteSpace:'pre-wrap' }}>{artwork.writeup}</div>
-                  <div style={{ fontSize:13, color:'#3d3a36', lineHeight:1.75 }}>{artwork.writeup.split(/\n\n+/).map((p,i) => <p key={i} style={{ marginBottom:'1em' }}>{p}</p>)}</div>
+                  <div style={{ fontSize:13, color:'#3d3a36', lineHeight:1.75 }}>{artwork.writeup.split('\n\n').map((p,i) => <p key={i} style={{ marginBottom:'1em' }}>{p.trim()}</p>)}</div>
               )}
             </div>
           )}
