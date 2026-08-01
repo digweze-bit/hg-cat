@@ -15,6 +15,7 @@ const NAV = [
   { path: '/admin/safekeeping', label: 'Safekeeping', icon: '\u25C8' },
   { path: '/admin/crm', label: 'CRM', icon: '\u25C7' },
   { path: '/admin/audit-log', label: 'Activity log', icon: '\u25A6' },
+  { path: '/admin/archive', label: 'Archive', icon: '\u25A3' },
   { path: '/admin/search', label: 'Search', icon: '\u2315' },
   { path: '/admin/consignors', label: 'Consignors', icon: '\u25D0' },
   { path: '/admin/books', label: 'Books', icon: '\u25A3' },
