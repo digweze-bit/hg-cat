@@ -19,7 +19,7 @@ const Safekeeping  = lazy(() => import('./pages/Safekeeping'))
 const CRM = lazy(() => import('./pages/CRM'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const Search = lazy(() => import('./pages/Search'))
-const Archive = lazy(() => import('./pages/Archive'))
+
 const BackfillThumbnails = lazy(() => import('./pages/BackfillThumbnails'))
 const BatchUpload = lazy(() => import('./pages/BatchUpload'))
 const Consignors   = lazy(() => import('./pages/Consignors'))
