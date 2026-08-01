@@ -74,13 +74,13 @@ export default function App() {
               <Route path="artists" element={<Artists />} />
               <Route path="artworks" element={<Artworks />} />
               <Route path="archive" element={<Archive />} />
-              <Route path="archive/:artistId" element={<Archive />} />
+
               <Route path="sales" element={<Sales />} />
               <Route path="safekeeping" element={<Safekeeping />} />
               <Route path="crm" element={<CRM />} />
               <Route path="audit-log" element={<AuditLog />} />
               <Route path="search" element={<Search />} />
-              <Route path="research" element={<Archive />} />
+
               <Route path="backfill-thumbnails" element={<BackfillThumbnails />} />
               <Route path="batch-upload" element={<BatchUpload />} />
               <Route path="consignors" element={<Consignors />} />
