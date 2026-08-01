@@ -45,6 +45,7 @@ export default function Archive() {
   const [artistSearch, setArtistSearch] = useState('')
   const [viewMode, setViewMode] = useState('artist') // 'artist' | 'subject'
   const [subjects, setSubjects] = useState([])
+  const [archiveArtistIds, setArchiveArtistIds] = useState([])
   const [activeSubject, setActiveSubject] = useState(null)
   const [subjectSearch, setSubjectSearch] = useState('')
   const [synthText, setSynthText] = useState('')
@@ -63,6 +64,15 @@ export default function Archive() {
     })
   }
   useEffect(() => { loadSubjects() }, [])
+
+  // ── Load which artists actually have archive material
+  function loadArchiveArtistIds() {
+    supabase.from('archive_entries').select('artist_id').not('artist_id', 'is', null).then(({ data }) => {
+      const uniq = [...new Set((data || []).map(d => d.artist_id).filter(Boolean))]
+      setArchiveArtistIds(uniq)
+    })
+  }
+  useEffect(() => { loadArchiveArtistIds() }, [])
 
   // ── Load artworks, entries, provenance when artist changes
   useEffect(() => {
@@ -102,7 +112,7 @@ export default function Archive() {
 
   // ── Derived
   const activeArtist    = artists.find(a => a.id === activeArtistId)
-  const filteredArtists = artists.filter(a => !artistSearch || a.name.toLowerCase().includes(artistSearch.toLowerCase()))
+  const filteredArtists = artists.filter(a => archiveArtistIds.includes(a.id) && (!artistSearch || a.name.toLowerCase().includes(artistSearch.toLowerCase())))
   const filteredEntries = filter === 'all' ? entries : entries.filter(e => e.type === filter)
   const typeCounts      = useMemo(() => {
     const c = {}; entries.forEach(e => { c[e.type] = (c[e.type]||0)+1 }); return c
@@ -142,6 +152,24 @@ export default function Archive() {
     const name = window.prompt('New subject name (e.g. "Zaria Rebels", "Natural Synthesis"):')
     if (!name || !name.trim()) return
     selectSubject(name.trim())
+    openAddEntry()
+  }
+
+  async function newArtist() {
+    const name = window.prompt('Artist name:')
+    if (!name || !name.trim()) return
+    const trimmed = name.trim()
+    // Check if this artist already exists (case-insensitive) to avoid duplicates
+    const existing = artists.find(a => a.name.toLowerCase() === trimmed.toLowerCase())
+    if (existing) {
+      selectArtist(existing.id)
+      openAddEntry()
+      return
+    }
+    const { data, error } = await supabase.from('artists').insert({ name: trimmed }).select().single()
+    if (error) { alert('Could not create artist: ' + error.message); return }
+    setArtists(prev => [...prev, data].sort((a,b) => a.name.localeCompare(b.name)))
+    selectArtist(data.id)
     openAddEntry()
   }
 
@@ -198,6 +226,7 @@ export default function Archive() {
         const { data } = await supabase.from('archive_entries').insert(payload).select().single()
         setEntries(prev => [data, ...prev])
         if (viewMode === 'subject') loadSubjects()
+        if (viewMode === 'artist') loadArchiveArtistIds()
       }
       setModal(null); toast('Saved')
     } catch(err) { alert('Save failed: ' + err.message) }
@@ -361,13 +390,16 @@ ${itemsBlock}`
             ))}
           </div>
           {viewMode === 'artist' ? (
-            <input
-              className="form-input"
-              style={{ fontSize:12 }}
-              placeholder="Search artists…"
-              value={artistSearch}
-              onChange={e => setArtistSearch(e.target.value)}
-            />
+            <div style={{ display:'flex', gap:6 }}>
+              <input
+                className="form-input"
+                style={{ fontSize:12, flex:1 }}
+                placeholder="Search artists…"
+                value={artistSearch}
+                onChange={e => setArtistSearch(e.target.value)}
+              />
+              <button className="btn btn-outline btn-sm" style={{ padding:'4px 8px', fontSize:16, lineHeight:1 }} onClick={newArtist} title="New artist">+</button>
+            </div>
           ) : (
             <div style={{ display:'flex', gap:6 }}>
               <input
@@ -402,6 +434,9 @@ ${itemsBlock}`
           ))}
           {viewMode === 'subject' && subjects.length === 0 && (
             <div style={{ padding:'16px 14px', fontSize:12, color:'var(--muted)' }}>No subjects yet — click + to create one</div>
+          )}
+          {viewMode === 'artist' && filteredArtists.length === 0 && (
+            <div style={{ padding:'16px 14px', fontSize:12, color:'var(--muted)' }}>No artists in the archive yet — click + to add one</div>
           )}
         </div>
         {/* Create Provenance Document button */}
