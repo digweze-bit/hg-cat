@@ -80,7 +80,7 @@ export default function App() {
               <Route path="crm" element={<CRM />} />
               <Route path="audit-log" element={<AuditLog />} />
               <Route path="search" element={<Search />} />
-              <Route path="archive" element={<Archive />} />
+              <Route path="research" element={<Archive />} />
               <Route path="backfill-thumbnails" element={<BackfillThumbnails />} />
               <Route path="batch-upload" element={<BatchUpload />} />
               <Route path="consignors" element={<Consignors />} />
