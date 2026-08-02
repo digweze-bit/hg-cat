@@ -1,84 +1,78 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState, useEffect, useRef } from 'react'
+import { supabase, fetchAll } from '../lib/supabase'
 
-function escH(s) {
-  if (!s) return ''
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 export default function CatalogueBuilder() {
-  const [artworks, setArtworks]     = useState([])   // all artworks (for search)
-  const [artists, setArtists]       = useState([])   // all artists (for bios)
-  const [selected, setSelected]     = useState([])   // ordered selection
-  const [search, setSearch]         = useState('')
-  const [loading, setLoading]       = useState(true)
+  const [artworks, setArtworks] = useState([])
+  const [artists, setArtists] = useState([])
+  const [selected, setSelected] = useState([])
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [dragOver, setDragOver]     = useState(null)
 
   // Options
-  const [format, setFormat]         = useState('single')  // 'single' | 'double'
-  const [showPrice, setShowPrice]   = useState(false)
-  const [showBio, setShowBio]       = useState(false)
-  const [bios, setBios]             = useState({})        // artist name -> bio override
+  const [layout, setLayout] = useState('single') // 'single' | 'double' | 'quad'
+  const [showPrice, setShowPrice] = useState(false)
+  const [showBio, setShowBio] = useState(false)
+  const [bioPlacement, setBioPlacement] = useState('end') // 'end' | 'inline'
+  const [showNotes, setShowNotes] = useState(false)
+  const [showLogo, setShowLogo] = useState(true)
+  const [notes, setNotes] = useState({}) // artwork id -> custom note
+  const [bios, setBios] = useState({})
+  const [LOGO_B64, setLogoB64] = useState(null)
 
-  const [LOGO_B64, setLogoB64]      = useState(null)
+  const dragIdx = useRef(null)
+  const [dragOver, setDragOver] = useState(null)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const [{ data: aw }, { data: ar }] = await Promise.all([
-        supabase.from('artworks')
-          .select('id,title,artist_id,year,medium,dimensions,image_url,price,retail_price,hg_code,availability')
-          .eq('availability', 'Available')
-          .order('hg_code', { ascending: false }),
-        supabase.from('artists').select('id,name,bio').order('name'),
+      const [aw, ar] = await Promise.all([
+        fetchAll('artworks', {
+          select: 'id,title,artist_id,year,medium,dimensions,dimension_unit,image_url,thumbnail_url,price,retail_price,hg_code,availability,writeup,notes',
+          order: 'title',
+        }),
+        fetchAll('artists', { select: 'id,name,bio', order: 'name' }),
       ])
-      setArtworks(aw || [])
-      setArtists(ar || [])
-      // Pre-populate bios from artists table
+      setArtworks(aw)
+      setArtists(ar)
       const bioMap = {}
-      ;(ar || []).forEach(a => { if (a.bio) bioMap[a.name] = a.bio })
+      ar.forEach(a => { if (a.bio) bioMap[a.name] = a.bio })
       setBios(bioMap)
       setLoading(false)
     }
     load()
-
-    // Load logo
-    import('../lib/assets').then(m => setLogoB64(m.LOGO_B64 || null))
+    import('../lib/assets').then(m => setLogoB64(m.LOGO_B64 || null)).catch(() => {})
   }, [])
 
-  // Build artist map
   const artistMap = {}
   artists.forEach(a => { artistMap[a.id] = a })
 
-  // Filter artworks for search
   const filtered = search.trim()
     ? artworks.filter(w => {
         const q = search.toLowerCase()
         const artist = artistMap[w.artist_id]?.name || ''
         return w.title?.toLowerCase().includes(q) ||
-               artist.toLowerCase().includes(q) ||
-               w.hg_code?.toLowerCase().includes(q) ||
-               w.medium?.toLowerCase().includes(q)
+          artist.toLowerCase().includes(q) ||
+          w.hg_code?.toLowerCase().includes(q) ||
+          w.medium?.toLowerCase().includes(q)
       })
-    : artworks
+    : []
 
-  function toggleSelect(artwork) {
+  function toggleSelect(w) {
     setSelected(prev => {
-      if (prev.find(w => w.id === artwork.id)) {
-        return prev.filter(w => w.id !== artwork.id)
-      }
-      const artistName = artistMap[artwork.artist_id]?.name || ''
-      return [...prev, { ...artwork, artist_name: artistName }]
+      if (prev.find(s => s.id === w.id)) return prev.filter(s => s.id !== w.id)
+      return [...prev, { ...w, artist_name: artistMap[w.artist_id]?.name || '' }]
     })
   }
 
   function removeSelected(id) {
     setSelected(prev => prev.filter(w => w.id !== id))
+    setNotes(prev => { const n = { ...prev }; delete n[id]; return n })
   }
-
-  // Drag to reorder
-  const dragIdx = useRef(null)
 
   function onDragStart(i) { dragIdx.current = i }
   function onDragOver(e, i) { e.preventDefault(); setDragOver(i) }
@@ -92,259 +86,252 @@ export default function CatalogueBuilder() {
     setDragOver(null)
   }
 
-  async function generate(previewOnly = false) {
-    if (selected.length === 0) { alert('Select at least one artwork'); return }
+  // ── Generate catalogue ──
+  async function generate() {
+    if (selected.length === 0) return alert('Select at least one artwork')
     setGenerating(true)
 
-    // Convert images to base64
     async function toB64(url) {
       if (!url) return null
       try {
-        const r = await fetch(url)
+        const r = await fetch(url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now(), { cache: 'no-store' })
         const blob = await r.blob()
-        return await new Promise((res, rej) => {
-          const reader = new FileReader()
-          reader.onload = () => res(reader.result)
-          reader.onerror = rej
-          reader.readAsDataURL(blob)
-        })
+        return await new Promise((res, rej) => { const reader = new FileReader(); reader.onload = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(blob) })
       } catch { return null }
     }
 
     const imgMap = {}
-    await Promise.all(selected.map(async w => {
-      imgMap[w.id] = await toB64(w.image_url)
-    }))
+    await Promise.all(selected.map(async w => { imgMap[w.id] = await toB64(w.image_url) }))
 
-    function caption(w) {
-      const details = [w.medium, w.dimensions, w.year ? String(w.year) : null].filter(Boolean).join(' \u00B7 ')
+    const dimUnit = (w) => w.dimension_unit === 'cm' ? 'cm' : 'in'
+
+    function artworkCard(w, size) {
+      const img = imgMap[w.id]
+      const details = [w.medium, w.dimensions ? w.dimensions + ' ' + dimUnit(w) : null, w.year ? String(w.year) : null].filter(Boolean).join(' \u00b7 ')
       const price = showPrice && (w.price || w.retail_price)
-        ? (w.price || ('NGN ' + Number(w.retail_price).toLocaleString()))
+        ? (w.price || ('\u20a6' + Number(w.retail_price).toLocaleString()))
         : null
-      return `<div class="caption">
-        <div class="t">${escH(w.title || 'Untitled')}</div>
-        <div class="a">${escH(w.artist_name || '')}</div>
-        ${details ? `<div class="d">${escH(details)}</div>` : ''}
-        ${price ? `<div class="p">${escH(price)}</div>` : ''}
+      const bio = showBio && bioPlacement === 'inline' ? bios[w.artist_name] : null
+      const note = showNotes && notes[w.id] ? notes[w.id] : null
+
+      const imgH = size === 'full' ? '75vh' : size === 'half' ? '38vh' : '22vh'
+      const titleSize = size === 'full' ? '15px' : size === 'half' ? '13px' : '11px'
+      const detailSize = size === 'full' ? '12px' : size === 'half' ? '11px' : '10px'
+
+      return `<div class="card card-${size}">
+        ${img ? `<div class="img-wrap"><img src="${img}" alt="" /></div>` : '<div class="img-placeholder"></div>'}
+        <div class="meta">
+          <div class="title" style="font-size:${titleSize}">${esc(w.title || 'Untitled')}</div>
+          <div class="artist" style="font-size:${detailSize}">${esc(w.artist_name)}</div>
+          ${details ? `<div class="details" style="font-size:${detailSize}">${esc(details)}</div>` : ''}
+          ${price ? `<div class="price" style="font-size:${detailSize}">${esc(price)}</div>` : ''}
+          ${note ? `<div class="note" style="font-size:${detailSize}">${esc(note)}</div>` : ''}
+          ${bio ? `<div class="bio" style="font-size:${detailSize}">${bio.split('\n\n').map(p => '<p>' + esc(p) + '</p>').join('')}</div>` : ''}
+        </div>
       </div>`
     }
 
-    let pages = ''
+    // Build pages
+    let pages = []
 
-    // Cover page — always first
-    pages += `<div class="page cover">
-      ${LOGO_B64 ? `<img src="${LOGO_B64}" class="cover-logo">` : `<div class="cover-text">HOURGLASS GALLERY</div>`}
-    </div>`
+    // Logo page
+    if (showLogo && LOGO_B64) {
+      pages.push(`<div class="page logo-page"><img src="${LOGO_B64}" class="logo" alt="Hourglass Gallery" /></div>`)
+    }
 
     // Artwork pages
-    if (format === 'single') {
+    if (layout === 'single') {
       selected.forEach(w => {
-        const img = imgMap[w.id]
-        pages += `<div class="page art-page">
-          <div class="img-wrap">
-            ${img ? `<img src="${img}" class="art-img">` : `<div class="img-ph"></div>`}
-          </div>
-          ${caption(w)}
-        </div>`
+        pages.push(`<div class="page single">${artworkCard(w, 'full')}</div>`)
       })
-    } else {
+    } else if (layout === 'double') {
       for (let i = 0; i < selected.length; i += 2) {
-        const w1 = selected[i], w2 = selected[i + 1]
-        pages += `<div class="page art-page two-up">
-          <div class="col">
-            <div class="img-wrap two">
-              ${imgMap[w1.id] ? `<img src="${imgMap[w1.id]}" class="art-img">` : `<div class="img-ph"></div>`}
-            </div>
-            ${caption(w1)}
-          </div>
-          <div class="col">
-            ${w2 ? `<div class="img-wrap two">
-              ${imgMap[w2.id] ? `<img src="${imgMap[w2.id]}" class="art-img">` : `<div class="img-ph"></div>`}
-            </div>${caption(w2)}` : ''}
-          </div>
-        </div>`
+        const cards = [artworkCard(selected[i], 'half')]
+        if (selected[i + 1]) cards.push(artworkCard(selected[i + 1], 'half'))
+        pages.push(`<div class="page double">${cards.join('')}</div>`)
+      }
+    } else {
+      for (let i = 0; i < selected.length; i += 4) {
+        const cards = selected.slice(i, i + 4).map(w => artworkCard(w, 'quarter'))
+        pages.push(`<div class="page quad">${cards.join('')}</div>`)
       }
     }
 
-    // Bio pages
-    if (showBio) {
-      const seen = new Set()
-      selected.forEach(w => {
-        if (!w.artist_name || seen.has(w.artist_name)) return
-        seen.add(w.artist_name)
-        const bio = bios[w.artist_name]
-        if (!bio) return
-        pages += `<div class="page bio-page">
-          <div class="bio-name">${escH(w.artist_name)}</div>
-          <div class="bio-text">${escH(bio)}</div>
+    // Bio pages at end
+    if (showBio && bioPlacement === 'end') {
+      const usedArtists = [...new Set(selected.map(w => w.artist_name))].filter(Boolean).sort()
+      const bioPages = usedArtists.filter(name => bios[name]).map(name =>
+        `<div class="page bio-page">
+          <div class="bio-name">${esc(name)}</div>
+          <div class="bio-text">${bios[name].split('\n\n').map(p => '<p>' + esc(p) + '</p>').join('')}</div>
         </div>`
-      })
+      )
+      pages.push(...bioPages)
     }
 
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Hourglass Gallery</title>
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalogue</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&display=swap');
-body{font-family:'Cormorant Garamond',Georgia,serif;color:#1a1714;background:#fff;}
-.page{width:100%;min-height:100vh;page-break-after:always;padding:36px 48px 32px;display:flex;flex-direction:column;}
-.cover{align-items:center;justify-content:center;}
-.cover-logo{height:52px;object-fit:contain;opacity:.85;}
-.cover-text{font-size:18px;font-weight:300;letter-spacing:.2em;}
-.art-page{justify-content:space-between;}
-.img-wrap{display:flex;align-items:center;justify-content:center;flex:1;padding:8px 0 18px;}
-.img-wrap.two{flex:none;height:38vh;padding:0 0 12px;}
-.art-img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
-.img-ph{width:100%;height:100%;background:#f5f2ee;}
-.two-up{flex-direction:row;gap:36px;}
-.col{flex:1;display:flex;flex-direction:column;}
-.caption{border-top:1px solid #e8e3db;padding-top:11px;}
-.t{font-size:14px;font-weight:600;letter-spacing:.01em;margin-bottom:2px;}
-.a{font-size:13px;font-weight:300;color:#444;margin-bottom:3px;}
-.d{font-size:11px;font-weight:300;color:#aaa;letter-spacing:.03em;margin-bottom:2px;}
-.p{font-size:12px;font-weight:400;color:#1a1714;margin-top:3px;}
-.bio-page{justify-content:center;padding-top:80px;}
-.bio-name{font-size:22px;font-weight:300;letter-spacing:.03em;margin-bottom:24px;}
-.bio-text{font-size:13px;font-weight:300;line-height:2;color:#444;max-width:480px;}
-@media print{.page{min-height:100vh;}@page{margin:0;size:A4 portrait;}}
-</style></head><body>${pages}</body></html>`
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, Helvetica, sans-serif; background: #fff; color: #1a1714; }
 
+.page { width: 100vw; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px 20px; }
+.page.double { flex-direction: column; gap: 16px; }
+.page.quad { flex-wrap: wrap; flex-direction: row; gap: 12px; justify-content: center; align-content: center; }
+
+.logo-page { justify-content: center; align-items: center; }
+.logo-page .logo { max-width: 200px; max-height: 120px; object-fit: contain; }
+
+.card { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.card-full { max-width: 100%; }
+.card-half { max-width: 100%; }
+.card-quarter { max-width: 48%; flex: 0 0 48%; }
+
+.img-wrap { width: 100%; display: flex; justify-content: center; margin-bottom: 14px; }
+.img-wrap img { max-width: 100%; max-height: 75vh; object-fit: contain; display: block; }
+.card-half .img-wrap img { max-height: 38vh; }
+.card-quarter .img-wrap img { max-height: 22vh; }
+.img-placeholder { width: 100%; height: 200px; background: #f0ece7; border-radius: 2px; margin-bottom: 14px; }
+
+.meta { text-align: center; max-width: 480px; }
+.title { font-weight: 600; letter-spacing: .02em; margin-bottom: 2px; }
+.artist { color: #6b6760; margin-bottom: 2px; }
+.details { color: #9a9490; margin-bottom: 2px; }
+.price { color: #92600a; font-weight: 500; margin-top: 4px; }
+.note { color: #3d3a36; font-style: italic; margin-top: 6px; line-height: 1.6; }
+.bio { margin-top: 10px; text-align: left; color: #3d3a36; line-height: 1.7; }
+.bio p { margin-bottom: 0.8em; }
+
+.bio-page { align-items: flex-start; padding: 40px 32px; max-width: 600px; margin: 0 auto; }
+.bio-name { font-size: 18px; font-weight: 600; margin-bottom: 14px; letter-spacing: .02em; }
+.bio-text { font-size: 13px; line-height: 1.8; color: #3d3a36; }
+.bio-text p { margin-bottom: 1em; }
+
+@media (max-width: 600px) {
+  .page { padding: 16px 12px; }
+  .card-quarter { max-width: 48%; }
+  .meta { max-width: 100%; }
+  .bio-page { padding: 24px 16px; }
+}
+
+@media print {
+  .page { page-break-after: always; height: 100vh; }
+  .page:last-child { page-break-after: auto; }
+  @page { margin: 0; }
+}
+</style></head><body>
+${pages.join('\n')}
+</body></html>`
+
+    const w = window.open('', '_blank')
+    if (!w) { alert('Please allow popups to generate catalogues'); setGenerating(false); return }
+    w.document.open()
+    w.document.write(html)
+    w.document.close()
+    w.focus()
     setGenerating(false)
-    const win = window.open('', '_blank', 'width=900,height=750')
-    if (!win) { alert('Please allow popups'); return }
-    win.document.write(html)
-    win.document.close()
-    if (!previewOnly) setTimeout(() => win.print(), 3000)
   }
 
-  if (loading) return <div style={{ padding:32, color:'var(--muted)' }}>Loading...</div>
-
-  const uniqueArtistsInSelection = [...new Set(selected.map(w => w.artist_name).filter(Boolean))]
+  if (loading) return <div style={{ padding: 32, color: 'var(--muted)' }}>Loading artworks...</div>
 
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'1fr 360px', gap:24, height:'calc(100vh - 80px)', overflow:'hidden' }}>
-
-      {/* LEFT: Search & browse */}
-      <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
-        <div className="page-header" style={{ paddingBottom:16 }}>
-          <div className="page-title">Catalogue Builder</div>
-          <div className="page-subtitle">{artworks.length} available works</div>
-        </div>
-
-        <input className="form-input" style={{ marginBottom:12 }}
-          placeholder="Search by title, artist, medium, HG code..."
-          value={search} onChange={e => setSearch(e.target.value)} />
-
-        <div style={{ overflowY:'auto', flex:1 }}>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px,1fr))', gap:12 }}>
-            {filtered.slice(0, 120).map(w => {
-              const isSelected = !!selected.find(s => s.id === w.id)
-              const artistName = artistMap[w.artist_id]?.name || ''
-              return (
-                <div key={w.id}
-                  onClick={() => toggleSelect({ ...w, artist_name: artistName })}
-                  style={{ cursor:'pointer', border:`2px solid ${isSelected ? 'var(--ink)' : 'var(--line-soft)'}`,
-                    borderRadius:4, overflow:'hidden', background: isSelected ? 'var(--parchment-2,#f5f2ee)' : '#fff',
-                    transition:'border-color 150ms' }}>
-                  <div style={{ height:120, background:'#f5f2ee', overflow:'hidden' }}>
-                    {w.image_url
-                      ? <img src={w.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                      : <div style={{ width:'100%', height:'100%', background:'#ece9e4' }} />}
-                  </div>
-                  <div style={{ padding:'8px 10px' }}>
-                    <div style={{ fontSize:12, fontWeight:isSelected?700:500, lineHeight:1.3 }}>{w.title}</div>
-                    <div style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>{artistName}</div>
-                    {w.hg_code && <div style={{ fontSize:10, color:'var(--amber)', marginTop:2 }}>{w.hg_code}</div>}
-                    {isSelected && <div style={{ fontSize:10, color:'var(--ink)', marginTop:4, fontWeight:700 }}>{'\u2713'} Selected</div>}
-                  </div>
-                </div>
-              )
-            })}
-            {filtered.length > 120 && (
-              <div style={{ gridColumn:'1/-1', textAlign:'center', padding:16, color:'var(--muted)', fontSize:12 }}>
-                Showing 120 of {filtered.length} — refine your search to see more
-              </div>
-            )}
-          </div>
+    <div>
+      <div className="page-header">
+        <div className="page-title">Catalogue builder</div>
+        <div className="page-subtitle">
+          {artworks.length} artworks available &middot; {selected.length} selected
         </div>
       </div>
 
-      {/* RIGHT: Selection, options, generate */}
-      <div style={{ display:'flex', flexDirection:'column', borderLeft:'1px solid var(--line-soft)', paddingLeft:24, overflow:'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+        {/* LEFT — Search and select */}
+        <div>
+          <input
+            className="form-input"
+            style={{ marginBottom: 12, fontSize: 14 }}
+            placeholder="Search by artist, title, medium, HG code..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
 
-        {/* Selected artworks — drag to reorder */}
-        <div style={{ marginBottom:16 }}>
-          <div style={{ fontSize:12, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:10 }}>
-            Selected ({selected.length})
-          </div>
-          {selected.length === 0 && (
-            <div style={{ fontSize:12, color:'var(--muted)', padding:'12px 0' }}>Click artworks to add them</div>
-          )}
-          <div style={{ overflowY:'auto', maxHeight:220 }}>
-            {selected.map((w, i) => (
-              <div key={w.id} draggable
-                onDragStart={() => onDragStart(i)}
-                onDragOver={e => onDragOver(e, i)}
-                onDrop={() => onDrop(i)}
-                onDragEnd={() => setDragOver(null)}
-                style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px', marginBottom:4, borderRadius:3,
-                  background: dragOver === i ? 'var(--parchment-2)' : 'var(--surface-1,#f8f7f5)',
-                  border:'1px solid var(--line-soft)', cursor:'grab' }}>
-                <span style={{ color:'var(--muted)', fontSize:14, cursor:'grab' }}>{'\u2630'}</span>
-                {w.image_url && <img src={w.image_url} alt="" style={{ width:32, height:32, objectFit:'cover', borderRadius:2 }} />}
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:12, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.title}</div>
-                  <div style={{ fontSize:10, color:'var(--muted)' }}>{w.artist_name}</div>
+          {search.trim() && (
+            <div style={{ maxHeight: 400, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 4, marginBottom: 16 }}>
+              {filtered.length === 0 && (
+                <div style={{ padding: 20, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No results</div>
+              )}
+              {filtered.slice(0, 100).map(w => {
+                const isSelected = selected.some(s => s.id === w.id)
+                return (
+                  <div key={w.id}
+                    onClick={() => toggleSelect(w)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                      cursor: 'pointer', borderBottom: '1px solid var(--line-soft)',
+                      background: isSelected ? 'var(--parchment)' : 'transparent',
+                    }}>
+                    {w.thumbnail_url || w.image_url
+                      ? <img src={w.thumbnail_url || w.image_url} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 2, flexShrink: 0 }} />
+                      : <div style={{ width: 40, height: 40, background: 'var(--parchment-2)', borderRadius: 2, flexShrink: 0 }} />
+                    }
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.title}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{artistMap[w.artist_id]?.name || ''}{w.year ? ' \u00b7 ' + w.year : ''}</div>
+                    </div>
+                    <div style={{ fontSize: 18, color: isSelected ? 'var(--green,#27ae60)' : 'var(--line)', flexShrink: 0 }}>
+                      {isSelected ? '\u2713' : '\u25cb'}
+                    </div>
+                  </div>
+                )
+              })}
+              {filtered.length > 100 && (
+                <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
+                  Showing first 100 of {filtered.length} results — narrow your search
                 </div>
-                <button onClick={() => removeSelected(w.id)}
-                  style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:14, padding:2 }}>
-                  {'\u00D7'}
-                </button>
+              )}
+            </div>
+          )}
+
+          {/* Selected artworks — drag to reorder */}
+          {selected.length > 0 && (
+            <div>
+              <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 8 }}>
+                Selected ({selected.length}) — drag to reorder
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ borderTop:'1px solid var(--line-soft)', paddingTop:16, marginBottom:16 }}>
-
-          {/* Format */}
-          <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:8 }}>Format</div>
-            {[['single','One per page'],['double','Two per page']].map(([val,label]) => (
-              <label key={val} style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer', marginBottom:6 }}>
-                <input type="radio" name="fmt" value={val} checked={format===val} onChange={() => setFormat(val)} />
-                {label}
-              </label>
-            ))}
-          </div>
-
-          {/* Toggles */}
-          <div style={{ marginBottom:14 }}>
-            {[['showPrice','Show price','boolean'],['showBio','Include artist bios','boolean']].map(([key,label]) => {
-              const val = key === 'showPrice' ? showPrice : showBio
-              const setter = key === 'showPrice' ? setShowPrice : setShowBio
-              return (
-                <label key={key} style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, cursor:'pointer', marginBottom:8 }}>
-                  <input type="checkbox" checked={val} onChange={e => setter(e.target.checked)} style={{ width:15, height:15 }} />
-                  {label}
-                </label>
-              )
-            })}
-          </div>
-
-          {/* Per-artist bio */}
-          {showBio && uniqueArtistsInSelection.length > 0 && (
-            <div style={{ marginBottom:14 }}>
-              <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:8 }}>
-                Biographies
-              </div>
-              <div style={{ overflowY:'auto', maxHeight:160 }}>
-                {uniqueArtistsInSelection.map(name => (
-                  <div key={name} style={{ marginBottom:10 }}>
-                    <div style={{ fontSize:11, fontWeight:600, marginBottom:4 }}>{name}</div>
-                    <textarea className="form-textarea" rows={3} style={{ fontSize:11 }}
-                      value={bios[name] || ''}
-                      onChange={e => setBios(b => ({...b, [name]: e.target.value}))}
-                      placeholder="Bio pulled from Artists section — edit to override" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {selected.map((w, i) => (
+                  <div key={w.id}
+                    draggable
+                    onDragStart={() => onDragStart(i)}
+                    onDragOver={e => onDragOver(e, i)}
+                    onDrop={() => onDrop(i)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',
+                      border: `1px solid ${dragOver === i ? 'var(--ink)' : 'var(--line)'}`,
+                      borderRadius: 4, background: 'var(--white)', cursor: 'grab',
+                    }}>
+                    <span style={{ fontSize: 11, color: 'var(--muted)', width: 20, textAlign: 'center' }}>{i + 1}</span>
+                    {(w.thumbnail_url || w.image_url)
+                      ? <img src={w.thumbnail_url || w.image_url} alt="" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 2 }} />
+                      : <div style={{ width: 32, height: 32, background: 'var(--parchment-2)', borderRadius: 2 }} />
+                    }
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{w.title}</div>
+                      <div style={{ fontSize: 10, color: 'var(--muted)' }}>{w.artist_name}</div>
+                    </div>
+                    {showNotes && (
+                      <input
+                        className="form-input"
+                        style={{ width: 120, fontSize: 10, padding: '2px 6px' }}
+                        placeholder="Note..."
+                        value={notes[w.id] || ''}
+                        onClick={e => e.stopPropagation()}
+                        onChange={e => setNotes(prev => ({ ...prev, [w.id]: e.target.value }))}
+                      />
+                    )}
+                    <button
+                      onClick={() => removeSelected(w.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 16, padding: '0 4px' }}
+                    >&times;</button>
                   </div>
                 ))}
               </div>
@@ -352,17 +339,88 @@ body{font-family:'Cormorant Garamond',Georgia,serif;color:#1a1714;background:#ff
           )}
         </div>
 
-        {/* Generate buttons */}
-        <div style={{ marginTop:'auto', display:'flex', flexDirection:'column', gap:10 }}>
-          <button className="btn btn-outline" onClick={() => generate(true)} disabled={generating || selected.length === 0}>
-            {generating ? 'Generating...' : 'Preview'}
-          </button>
-          <button className="btn btn-primary" onClick={() => generate(false)} disabled={generating || selected.length === 0}>
-            {generating ? 'Generating...' : 'Generate & Print'}
-          </button>
-          {selected.length > 0 && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setSelected([])}>Clear selection</button>
-          )}
+        {/* RIGHT — Options panel */}
+        <div>
+          <div className="card" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--muted)', marginBottom: 2 }}>Catalogue options</div>
+
+            {/* Layout */}
+            <div>
+              <label className="form-label">Layout</label>
+              <div style={{ display: 'flex', gap: 0, border: '1px solid var(--line)', borderRadius: 3, overflow: 'hidden' }}>
+                {[['single', '1 per page'], ['double', '2 per page'], ['quad', '4 per page']].map(([key, label]) => (
+                  <button key={key}
+                    onClick={() => setLayout(key)}
+                    style={{
+                      flex: 1, padding: '7px 8px', fontSize: 11, cursor: 'pointer', border: 'none',
+                      borderRight: '1px solid var(--line)',
+                      background: layout === key ? 'var(--ink)' : 'var(--white)',
+                      color: layout === key ? '#fff' : 'var(--muted)',
+                    }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Logo page */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+              <input type="checkbox" checked={showLogo} onChange={e => setShowLogo(e.target.checked)} />
+              Logo page (first page)
+            </label>
+
+            {/* Show price */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+              <input type="checkbox" checked={showPrice} onChange={e => setShowPrice(e.target.checked)} />
+              Show prices
+            </label>
+
+            {/* Show notes */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+              <input type="checkbox" checked={showNotes} onChange={e => setShowNotes(e.target.checked)} />
+              Add notes per artwork
+            </label>
+
+            {/* Bio options */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+              <input type="checkbox" checked={showBio} onChange={e => setShowBio(e.target.checked)} />
+              Include artist bios
+            </label>
+            {showBio && (
+              <div style={{ paddingLeft: 24 }}>
+                <div style={{ display: 'flex', gap: 0, border: '1px solid var(--line)', borderRadius: 3, overflow: 'hidden' }}>
+                  {[['end', 'At end'], ['inline', 'Below artwork']].map(([key, label]) => (
+                    <button key={key}
+                      onClick={() => setBioPlacement(key)}
+                      style={{
+                        flex: 1, padding: '6px 8px', fontSize: 11, cursor: 'pointer', border: 'none',
+                        borderRight: '1px solid var(--line)',
+                        background: bioPlacement === key ? 'var(--ink)' : 'var(--white)',
+                        color: bioPlacement === key ? '#fff' : 'var(--muted)',
+                      }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Generate button */}
+            <button
+              className="btn btn-primary"
+              style={{ marginTop: 8, width: '100%' }}
+              onClick={generate}
+              disabled={generating || selected.length === 0}
+            >
+              {generating ? 'Generating...' : `Create catalogue (${selected.length} work${selected.length !== 1 ? 's' : ''})`}
+            </button>
+
+            {selected.length === 0 && (
+              <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center' }}>
+                Search and select artworks to build your catalogue
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
