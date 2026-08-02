@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { useParams, useNavigate } from 'react-router-dom'
 
@@ -135,7 +135,7 @@ export default function Archive() {
     setFilter('all')
     setDrawer(null)
     setModal(null)
-    navigate(`/admin/archive/${id}`, { replace: true })
+
   }
 
   function selectSubject(name) {
@@ -145,7 +145,7 @@ export default function Archive() {
     setFilter('all')
     setDrawer(null)
     setModal(null)
-    navigate(`/admin/archive`, { replace: true })
+
   }
 
   function newSubject() {
