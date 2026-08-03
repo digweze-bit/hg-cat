@@ -26,6 +26,7 @@ export default function Sales() {
   const [detailKey, setDetailKey] = useState(0)
   const [activeInvoice, setActiveInvoice] = useState(null)
   const [editingInvoice, setEditingInvoice] = useState(null) // invoice being viewed/edited
+  const [editingClient, setEditingClient] = useState(null) // client being edited from detail panel
 
   async function load() {
     // Load core data and exchange rates in parallel \u2014 rates won't block the page
@@ -127,6 +128,14 @@ export default function Sales() {
       {/* Modals */}
       {modal === 'client' && (
         <ClientModal onClose={() => setModal(null)} onSave={load} existingClients={clients} />
+      )}
+      {editingClient && (
+        <ClientModal
+          onClose={() => setEditingClient(null)}
+          onSave={() => { load(); setEditingClient(null) }}
+          existingClients={clients}
+          editClient={editingClient}
+        />
       )}
       {modal === 'invoice' && !editingInvoice && (
         <InvoiceModal
@@ -655,7 +664,13 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
         if (error) throw error
         setSelected({ ...selected, ...payload })
       } else {
-        const { error } = await supabase.from('clients').insert(payload)
+        if (editClient) {
+      const { error } = await supabase.from('clients').update(payload).eq('id', editClient.id)
+      if (error) throw error
+    } else {
+      const { error } = await supabase.from('clients').insert(payload)
+      if (error) throw error
+    }
         if (error) throw error
       }
       cacheInvalidate('clients')
@@ -716,7 +731,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
               {selected.company && <div style={{ fontSize:13, color:'var(--muted)' }}>{selected.company}{selected.job_title ? ` \u00B7 ${selected.job_title}` : ''}</div>}
             </div>
             <div style={{ display:'flex', gap:8 }}>
-              <button className="btn btn-outline btn-sm" onClick={() => openEdit(selected)}>Edit</button>
+              <button className="btn btn-outline btn-sm" onClick={() => setEditingClient(selected)}>Edit</button>
               <button className="btn btn-outline btn-sm" onClick={() => setShowReport(r => !r)}>Account report</button>
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
@@ -1055,8 +1070,8 @@ function PaymentList({ invoices, rates }) {
 }
 
 // \u2500\u2500 CLIENT MODAL \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function ClientModal({ onClose, onSave, existingClients = [] }) {
-  const [form, setForm] = useState({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
+function ClientModal({ onClose, onSave, existingClients = [], editClient = null }) {
+  const [form, setForm] = useState(() => editClient ? { ...editClient, phone_mobile: editClient.phone_mobile||editClient.phone||'', phone_work: editClient.phone_work||'', street: editClient.street||editClient.address||'', suburb: editClient.suburb||'', state: editClient.state||'', postcode: editClient.postcode||'', country: editClient.country||'Nigeria', tags: editClient.tags||[] } : { name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'', tags:[] })
   const [saving, setSaving] = useState(false)
   const [dupWarning, setDupWarning] = useState([])
   async function save() {
@@ -1096,7 +1111,7 @@ function ClientModal({ onClose, onSave, existingClients = [] }) {
   return (
     <div className="modal-overlay">
       <div className="modal modal-md">
-        <div className="modal-header"><div className="modal-title">Add client</div><button className="btn btn-ghost btn-icon" onClick={onClose}>{'\u2715'}</button></div>
+        <div className="modal-header"><div className="modal-title">{editClient ? 'Edit client' : 'Add client'}</div><button className="btn btn-ghost btn-icon" onClick={onClose}>{'\u2715'}</button></div>
         <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div className="form-row">
             <div className="form-group">
