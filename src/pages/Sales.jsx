@@ -931,7 +931,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
         </div>
       )}
       {modal && (
-        <div className="modal-overlay" style={{ zIndex:100 }}>
+        <div style={{ position:'fixed', inset:0, background:'rgba(26,23,20,.55)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:16, overflowY:'auto' }}>
           <div className="modal modal-md">
             <div className="modal-header"><div className="modal-title">{modal === 'edit' ? 'Edit client' : 'Add client'}</div><button className="btn btn-ghost btn-icon" onClick={() => setModal(false)}>{'\u2715'}</button></div>
             <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
