@@ -129,7 +129,7 @@ export default function Sales() {
       {modal === 'client' && (
         <ClientModal onClose={() => setModal(null)} onSave={load} existingClients={clients} />
       )}
-      {editingClient && (
+      {editingClient && (() => { console.log('EDIT CLIENT RENDERING:', editingClient.name); return true })() && (
         <ClientModal
           onClose={() => setEditingClient(null)}
           onSave={() => { load(); setEditingClient(null) }}
