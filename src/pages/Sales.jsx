@@ -1942,11 +1942,23 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
               </div>
             </div>
 
-            {inv.notes && (
-              <div style={{ background:'var(--parchment)', padding:'12px 14px', borderRadius:3, fontSize:12, color:'var(--muted)' }}>
-                {inv.notes}
-              </div>
-            )}
+            {/* Editable notes */}
+            <div style={{ background:'var(--parchment)', padding:'12px 14px', borderRadius:3, fontSize:12 }}>
+              <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:6 }}>Notes</div>
+              <textarea className="form-textarea" rows={2} style={{ fontSize:12 }}
+                defaultValue={inv.notes||''}
+                onBlur={async e => {
+                  if (e.target.value !== (inv.notes||'')) {
+                    await supabase.from('invoices').update({ notes: e.target.value, updated_at: new Date().toISOString() }).eq('id', inv.id)
+                    onSave()
+                  }
+                }}
+                placeholder="Add notes to this invoice..." />
+            </div>
+
+
+
+
           </div>
         </div>
       </div>
