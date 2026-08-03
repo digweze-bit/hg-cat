@@ -119,6 +119,7 @@ export default function Sales() {
           invoices={invoices}
           onRefresh={load}
           onRefreshClients={refreshClients}
+          onEditClient={c => setEditingClient(c)}
         />
       )}
       {tab === 'Payments' && (
@@ -128,7 +129,7 @@ export default function Sales() {
       {/* Modals */}
       {modal === 'client' && (
         <ClientModal onClose={() => setModal(null)} onSave={load} existingClients={clients} />
-      )}
+      {editingClient && (
       {editingClient && (() => { console.log('EDIT CLIENT RENDERING:', editingClient.name); return true })() && (
         <ClientModal
           onClose={() => setEditingClient(null)}
@@ -558,7 +559,7 @@ ${invoiceCopies}
 }
 
 
-function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
+function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClient }) {
   const [selected, setSelected] = useState(null)  // client being viewed/edited
   const [showReport, setShowReport] = useState(false)
   const [reportOpts, setReportOpts] = useState({ dateFrom:'', dateTo:'', showAll:true, attachInvoices:false })
@@ -715,7 +716,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients }) {
               </div>
               <span style={{ fontSize:11, color:'var(--muted)', flexShrink:0, marginLeft:8 }}>
                 {clientInvoiceCount[c.id]||0} inv
-              </span>
+              <button className="btn btn-outline btn-sm" onClick={() => onEditClient(selected)}>Edit</button>
             </div>
           ))}
           {filtered.length === 0 && <div style={{ padding:32, textAlign:'center', color:'var(--muted)', fontSize:13 }}>No clients found</div>}
