@@ -716,7 +716,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
               </div>
               <span style={{ fontSize:11, color:'var(--muted)', flexShrink:0, marginLeft:8 }}>
                 {clientInvoiceCount[c.id]||0} inv
-              <button className="btn btn-outline btn-sm" onClick={() => onEditClient(selected)}>Edit</button>
+              </span>
             </div>
           ))}
           {filtered.length === 0 && <div style={{ padding:32, textAlign:'center', color:'var(--muted)', fontSize:13 }}>No clients found</div>}
@@ -733,7 +733,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
             </div>
             <div style={{ display:'flex', gap:8 }}>
               <button className="btn btn-outline btn-sm" onClick={() => setEditingClient(selected)}>Edit</button>
-              <button className="btn btn-outline btn-sm" onClick={() => setShowReport(r => !r)}>Account report</button>
+              <button className="btn btn-outline btn-sm" onClick={() => onEditClient(selected)}>Edit</button>
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
                   if (!confirm(`Delete ${selected.name}? This cannot be undone.`)) return
