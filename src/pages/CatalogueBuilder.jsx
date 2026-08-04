@@ -12,6 +12,8 @@ export default function CatalogueBuilder() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [step, setStep] = useState('select') // 'select' | 'review' | 'edit-details'
+  const [overrides, setOverrides] = useState({}) // id -> { title, price, bio, note }
   const [previewHtml, setPreviewHtml] = useState('')
   const [showPreview, setShowPreview] = useState(false)
   const previewRef = useRef(null)
@@ -112,6 +114,13 @@ export default function CatalogueBuilder() {
 
     const du = (w) => w.dimension_unit === 'cm' ? 'cm' : 'in'
 
+    // Apply overrides
+    const finalSelected = selected.map(w => ({
+      ...w,
+      title: overrides[w.id]?.title ?? w.title,
+      price: overrides[w.id]?.price ?? w.price,
+    }))
+
     function card(w, size) {
       const img = imgMap[w.id]
       const details = [w.medium, w.dimensions ? w.dimensions + ' ' + du(w) : null, w.year ? String(w.year) : null].filter(Boolean).join(' \u00b7 ')
@@ -142,22 +151,22 @@ export default function CatalogueBuilder() {
     }
 
     if (layout === 'single') {
-      selected.forEach(w => pages.push(`<div class="pg">${card(w,'full')}</div>`))
+      finalSelected.forEach(w => pages.push(`<div class="pg">${card(w,'full')}</div>`))
     } else if (layout === 'double') {
-      for (let i = 0; i < selected.length; i += 2) {
-        const c = [card(selected[i],'half')]
-        if (selected[i+1]) c.push(card(selected[i+1],'half'))
+      for (let i = 0; i < finalSelected.length; i += 2) {
+        const c = [card(finalSelected[i],'half')]
+        if (finalSelected[i+1]) c.push(card(finalSelected[i+1],'half'))
         pages.push(`<div class="pg dbl">${c.join('')}</div>`)
       }
     } else {
-      for (let i = 0; i < selected.length; i += 4) {
-        const c = selected.slice(i,i+4).map(w => card(w,'quarter'))
+      for (let i = 0; i < finalSelected.length; i += 4) {
+        const c = finalSelected.slice(i,i+4).map(w => card(w,'quarter'))
         pages.push(`<div class="pg quad">${c.join('')}</div>`)
       }
     }
 
     if (showBio && bioPlacement === 'end') {
-      const used = [...new Set(selected.map(w => w.artist_name))].filter(Boolean).sort()
+      const used = [...new Set(finalSelected.map(w => w.artist_name))].filter(Boolean).sort()
       used.filter(n => bios[n]).forEach(n => {
         pages.push(`<div class="pg bio-pg"><div class="bn">${esc(n)}</div><div class="bt">${bios[n].split('\n\n').map(p=>'<p>'+esc(p)+'</p>').join('')}</div></div>`)
       })
@@ -207,8 +216,15 @@ ${pages.join('\n')}
 </body></html>`
 
     setPreviewHtml(html)
-    setShowPreview(true)
+    setStep('review')
     setGenerating(false)
+  }
+
+  function getOverride(id, field) {
+    return overrides[id]?.[field] ?? null
+  }
+  function setOverride(id, field, value) {
+    setOverrides(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }))
   }
 
   if (loading) return <div style={{ padding: 32, color: 'var(--muted)' }}>Loading artworks...</div>
@@ -222,7 +238,7 @@ ${pages.join('\n')}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
+      {step === 'select' && <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20 }}>
         {/* LEFT — Search and select */}
         <div>
           {/* Search bar + controls */}
@@ -443,7 +459,7 @@ ${pages.join('\n')}
               onClick={generate}
               disabled={generating || selected.length === 0}
             >
-              {generating ? 'Generating...' : `Create catalogue (${selected.length} work${selected.length !== 1 ? 's' : ''})`}
+              {generating ? 'Generating...' : `Review catalogue (${selected.length} work${selected.length !== 1 ? 's' : ''})`}
             </button>
 
             {selected.length === 0 && (
@@ -455,15 +471,21 @@ ${pages.join('\n')}
         </div>
       </div>
 
-      {/* Preview overlay */}
-      {showPreview && (
+      </div>}
+
+      {/* Review step */}
+      {step === 'review' && (
         <div style={{ position:'fixed', inset:0, zIndex:100, background:'rgba(0,0,0,.85)', display:'flex', flexDirection:'column' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 20px', background:'#1a1714' }}>
-            <span style={{ color:'#fff', fontSize:14, fontWeight:500 }}>Catalogue preview</span>
+            <span style={{ color:'#fff', fontSize:14, fontWeight:500 }}>Review catalogue</span>
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={() => setShowPreview(false)}
+              <button onClick={() => setStep('select')}
                 style={{ padding:'6px 14px', background:'transparent', border:'1px solid #555', color:'#aaa', borderRadius:3, cursor:'pointer', fontSize:12 }}>
-                Back to editor
+                Back
+              </button>
+              <button onClick={() => setStep('edit-details')}
+                style={{ padding:'6px 14px', background:'transparent', border:'1px solid #888', color:'#fff', borderRadius:3, cursor:'pointer', fontSize:12 }}>
+                Edit details
               </button>
               <button onClick={() => {
                 const w = window.open('', '_blank')
@@ -471,7 +493,7 @@ ${pages.join('\n')}
                 w.document.open(); w.document.write(previewHtml); w.document.close(); w.focus()
               }}
                 style={{ padding:'6px 14px', background:'#E05C2A', border:'none', color:'#fff', borderRadius:3, cursor:'pointer', fontSize:12, fontWeight:500 }}>
-                Open & Download PDF
+                Create PDF
               </button>
             </div>
           </div>
@@ -479,6 +501,64 @@ ${pages.join('\n')}
             <iframe ref={previewRef} srcDoc={previewHtml}
               style={{ width:'100%', maxWidth:480, height:'100%', border:'none', background:'#f5f3f0' }}
               title="Catalogue preview" />
+          </div>
+        </div>
+      )}
+
+      {/* Edit details step */}
+      {step === 'edit-details' && (
+        <div style={{ position:'fixed', inset:0, zIndex:100, background:'var(--white)', display:'flex', flexDirection:'column' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 20px', background:'#1a1714' }}>
+            <span style={{ color:'#fff', fontSize:14, fontWeight:500 }}>Edit catalogue details</span>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => { generate(); }}
+                style={{ padding:'6px 14px', background:'#E05C2A', border:'none', color:'#fff', borderRadius:3, cursor:'pointer', fontSize:12, fontWeight:500 }}>
+                Update preview
+              </button>
+            </div>
+          </div>
+          <div style={{ flex:1, overflow:'auto', padding:'20px 24px' }}>
+            <div style={{ maxWidth:700, margin:'0 auto', display:'flex', flexDirection:'column', gap:16 }}>
+              {selected.map((w, i) => (
+                <div key={w.id} style={{ display:'grid', gridTemplateColumns:'80px 1fr', gap:16, padding:'14px 16px', border:'1px solid var(--line)', borderRadius:6 }}>
+                  {(w.thumbnail_url || w.image_url)
+                    ? <img src={w.thumbnail_url || w.image_url} alt="" style={{ width:80, height:80, objectFit:'cover', borderRadius:4 }} />
+                    : <div style={{ width:80, height:80, background:'var(--parchment-2)', borderRadius:4 }} />
+                  }
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:'var(--muted)' }}>{i+1}. {w.artist_name}</div>
+                    <div className="form-row" style={{ gap:8 }}>
+                      <div className="form-group" style={{ flex:2 }}>
+                        <label className="form-label" style={{ fontSize:10 }}>Title</label>
+                        <input className="form-input" style={{ fontSize:12, padding:'4px 8px' }}
+                          value={overrides[w.id]?.title ?? w.title}
+                          onChange={e => setOverride(w.id, 'title', e.target.value)} />
+                      </div>
+                      <div className="form-group" style={{ flex:1 }}>
+                        <label className="form-label" style={{ fontSize:10 }}>Price</label>
+                        <input className="form-input" style={{ fontSize:12, padding:'4px 8px' }}
+                          value={overrides[w.id]?.price ?? (w.price || '')}
+                          onChange={e => setOverride(w.id, 'price', e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontSize:10 }}>Note (appears below artwork)</label>
+                      <input className="form-input" style={{ fontSize:12, padding:'4px 8px' }}
+                        value={overrides[w.id]?.note ?? (notes[w.id] || '')}
+                        onChange={e => { setOverride(w.id, 'note', e.target.value); setNotes(prev => ({...prev, [w.id]: e.target.value})) }} />
+                    </div>
+                    {showBio && (
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize:10 }}>Bio ({w.artist_name})</label>
+                        <textarea className="form-textarea" rows={2} style={{ fontSize:11 }}
+                          value={overrides[w.id]?.bio ?? (bios[w.artist_name] || '')}
+                          onChange={e => { setOverride(w.id, 'bio', e.target.value); setBios(prev => ({...prev, [w.artist_name]: e.target.value})) }} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
