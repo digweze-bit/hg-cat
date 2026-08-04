@@ -732,7 +732,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
               {selected.company && <div style={{ fontSize:13, color:'var(--muted)' }}>{selected.company}{selected.job_title ? ` \u00B7 ${selected.job_title}` : ''}</div>}
             </div>
             <div style={{ display:'flex', gap:8 }}>
-              <button className="btn btn-outline btn-sm" onClick={() => setEditingClient(selected)}>Edit</button>
+
               <button className="btn btn-outline btn-sm" onClick={() => onEditClient(selected)}>Edit</button>
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
