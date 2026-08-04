@@ -733,7 +733,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
             </div>
             <div style={{ display:'flex', gap:8 }}>
               <button className="btn btn-outline btn-sm" onClick={() => setEditingClient(selected)}>Edit</button>
-              <button className="btn btn-outline btn-sm" onClick={() => onEditClient(selected)}>Edit</button>
+
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
                   if (!confirm(`Delete ${selected.name}? This cannot be undone.`)) return
@@ -1116,9 +1116,11 @@ function ClientModal({ onClose, onSave, existingClients = [], editClient = null 
         <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div className="form-row">
             <div className="form-group">
-            <label className="form-label">Name *</label>
-            <input className="form-input" value={form.name} onChange={e => {
-              const v = e.target.value
+          <div className="form-group"><label className="form-label">City</label><input className="form-input" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))} /></div>
+          </div>
+          <div className="form-group"><label className="form-label">Street address</label><input className="form-input" value={form.street||''} onChange={e=>setForm(f=>({...f,street:e.target.value}))} /></div>
+          <div className="form-row">
+          <div className="form-group"><label className="form-label">Country</label><input className="form-input" value={form.country} onChange={e=>setForm(f=>({...f,country:e.target.value}))} /></div>
               setForm(f=>({...f, name: v}))
               if (v.length > 2) {
                 const q = v.toLowerCase()
