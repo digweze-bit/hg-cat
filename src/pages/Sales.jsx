@@ -733,7 +733,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
             </div>
             <div style={{ display:'flex', gap:8 }}>
               <button className="btn btn-outline btn-sm" onClick={() => setEditingClient(selected)}>Edit</button>
-
+              <button className="btn btn-outline btn-sm" onClick={() => onEditClient(selected)}>Edit</button>
               <button className="btn btn-ghost btn-sm" style={{ color:'var(--red,#c0392b)' }}
                 onClick={async () => {
                   if (!confirm(`Delete ${selected.name}? This cannot be undone.`)) return
