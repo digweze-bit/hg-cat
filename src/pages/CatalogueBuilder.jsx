@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 
 function esc(s) {
@@ -471,7 +471,7 @@ ${pages.join('\n')}
         </div>
       </div>
 
-      </div>}
+      }
 
       {/* Review step */}
       {step === 'review' && (
