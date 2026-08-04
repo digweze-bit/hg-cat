@@ -84,6 +84,7 @@ export default function AdminLayout() {
 
       <div className="admin-main">
         <div className="admin-topbar">
+          <button className="hamburger" onClick={() => setSidebarOpen(true)}><span /><span /><span /></button>
           <div style={{ fontSize:13, color:'var(--muted)' }}>
             {location.pathname === '/admin' ? 'Dashboard' :
              location.pathname.includes('artists') ? 'Artists' :
