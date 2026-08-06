@@ -550,7 +550,7 @@ ${itemsBlock}`
                             onClick={() => setDrawer({ type:'entry', id:e.id })}
                             style={{ breakInside:'avoid', marginBottom:10, border:'1px solid var(--line)', borderTop:`3px solid ${TYPE_COLORS[e.type]||'var(--line)'}`, borderRadius:3, background:'var(--white)', cursor:'pointer', overflow:'hidden' }}
                           >
-                            {e.image_url && (e.image_url.toLowerCase().includes('.pdf') ? <a href={e.image_url} target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', aspectRatio:'4/3', background:'#f5f2ee', color:'var(--ink)', fontSize:32, textDecoration:'none' }} onClick={ev=>ev.stopPropagation()}>{'\uD83D\uDCC4'}<span style={{ fontSize:10, marginLeft:6, textTransform:'uppercase', letterSpacing:'.06em' }}>PDF</span></a> : <img src={e.image_url} alt="" style={{ width:'100%', aspectRatio:'4/3', objectFit:'cover', display:'block' }} />)}
+                            {e.image_url && <img src={e.image_url} alt="" style={{ width:'100%', aspectRatio:'4/3', objectFit:'cover', display:'block' }} />}
                             <div style={{ padding:'8px 10px 10px' }}>
                               <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.08em', color:TYPE_COLORS[e.type]||'var(--muted)', marginBottom:2 }}>
                                 {TYPES.find(t=>t.id===e.type)?.label||e.type}{e.starred?' ★':''}
@@ -669,7 +669,7 @@ ${itemsBlock}`
                   </div>
                 </div>
                 <div style={{ flex:1, overflowY:'auto', padding:13 }}>
-                  {drawnEntry.image_url && (drawnEntry.image_url.toLowerCase().includes('.pdf') ? <div style={{ marginBottom:10 }}><iframe src={drawnEntry.image_url} style={{ width:'100%', height:400, border:'1px solid var(--line)', borderRadius:3 }} title="PDF" /><a href={drawnEntry.image_url} target="_blank" rel="noopener noreferrer" style={{ display:'block', fontSize:11, marginTop:6, color:'var(--ink)' }}>Open PDF in new tab</a></div> : <img src={drawnEntry.image_url} alt="" style={{ width:'100%', borderRadius:3, marginBottom:10, border:'1px solid var(--line)' }} />)}
+                  {drawnEntry.image_url && <img src={drawnEntry.image_url} alt="" style={{ width:'100%', borderRadius:3, marginBottom:10, border:'1px solid var(--line)' }} />}
                   <div style={{ fontSize:11, color:'var(--muted)', marginBottom:9, lineHeight:1.6 }}>
                     {drawnEntry.date && <><strong>{drawnEntry.date}</strong><br/></>}
                     {drawnEntry.source}
@@ -876,7 +876,7 @@ ${itemsBlock}`
                 <input type="file" accept="image/*,.pdf,.doc,.docx" onChange={handleFileUpload} />
                 {uploading && <div style={{ fontSize:11, color:'var(--muted)', marginTop:4 }}>Uploading…</div>}
                 {form.image_url && <img src={form.image_url} alt="" style={{ marginTop:8, maxHeight:120, borderRadius:3, border:'1px solid var(--line)' }} />}
-                {form.image_url && (form.image_url.toLowerCase().includes('.pdf') ? <div style={{ marginTop:8, padding:'10px 12px', background:'var(--parchment)', borderRadius:3, fontSize:12 }}>{'\uD83D\uDCC4'} <a href={form.image_url} target="_blank" rel="noopener noreferrer" style={{ color:'var(--ink)' }}>View uploaded PDF</a></div> : <img src={form.image_url} alt="" style={{ marginTop:8, maxHeight:120, borderRadius:3, border:'1px solid var(--line)' }} />)}
+              </div>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <input type="checkbox" id="starred" checked={!!form.starred} onChange={e=>setForm(f=>({...f,starred:e.target.checked}))} style={{ width:'auto' }} />
                 <label htmlFor="starred" style={{ fontSize:13, cursor:'pointer' }}>Mark as key reference</label>
