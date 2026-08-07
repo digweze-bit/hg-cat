@@ -164,12 +164,15 @@ export default function CRM() {
     try {
       const { data: newClient, error: cErr } = await supabase.from('clients').insert({
         name: p.name, email: p.email || null, phone: p.phone || null,
-        phone_mobile: p.phone || null, company: p.company || null, notes: p.notes || null,
+        phone_mobile: p.phone || null, company: p.company || null,
+        notes: [p.notes, p.source ? 'Source: ' + p.source : null].filter(Boolean).join('\n') || null,
+        tags: p.tags || [],
       }).select('id').single()
       if (cErr) throw cErr
 
-      await supabase.from('client_visits').update({ client_id: newClient.id, prospect_id: null }).eq('prospect_id', p.id)
-      await supabase.from('client_interests').update({ client_id: newClient.id, prospect_id: null }).eq('prospect_id', p.id)
+      // Transfer visits and interests — keep prospect_id so history is traceable
+      await supabase.from('client_visits').update({ client_id: newClient.id }).eq('prospect_id', p.id)
+      await supabase.from('client_interests').update({ client_id: newClient.id }).eq('prospect_id', p.id)
       await supabase.from('prospects').update({ status:'converted', converted_client_id: newClient.id, updated_at: new Date().toISOString() }).eq('id', p.id)
 
       await load()
