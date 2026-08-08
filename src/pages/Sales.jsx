@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
 import TagInput, { CLIENT_TAG_SUGGESTIONS } from '../components/TagInput'
 import { auditLog } from '../lib/audit'
+import { useLocation } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { CURRENCIES, formatAmount, fetchLiveRates, toNGN, getRateLabel } from '../lib/currencies'
@@ -58,7 +59,26 @@ export default function Sales() {
     setClients(c)
   }
 
+  const location = useLocation()
+
   useEffect(() => { load() }, [])
+
+  // Handle voice commands
+  useEffect(() => {
+    const vc = location.state?.voiceCommand
+    if (!vc) return
+    window.history.replaceState({}, '')
+    if (vc.type === 'invoice' && vc.client) {
+      setTab('Invoices')
+      setTimeout(() => {
+        setEditingInvoice(null)
+        setModal('invoice')
+      }, 300)
+    }
+    if (vc.type === 'new-client') {
+      setEditingClient({ name: vc.name || '', phone: vc.phone || '', company: vc.company || '' })
+    }
+  }, [location.state])
 
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
 

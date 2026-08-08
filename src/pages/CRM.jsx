@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 
 const VISIT_TYPES = ['in-person', 'call', 'email', 'whatsapp', 'event', 'other']
@@ -27,7 +28,32 @@ export default function CRM() {
 
   const today = new Date().toISOString().split('T')[0]
 
+  const location = useLocation()
+
   useEffect(() => { load() }, [])
+
+  // Handle voice commands
+  useEffect(() => {
+    const vc = location.state?.voiceCommand
+    if (!vc) return
+    window.history.replaceState({}, '')
+    if (vc.type === 'visit') {
+      const who = vc.client?.id || vc.prospect?.id || ''
+      const whoType = vc.client ? 'client' : vc.prospect ? 'prospect' : 'client'
+      setVisitForm(f => ({...f, who, whoType}))
+      setModal('visit')
+    }
+    if (vc.type === 'interest') {
+      const who = vc.client?.id || vc.prospect?.id || ''
+      const whoType = vc.client ? 'client' : vc.prospect ? 'prospect' : 'client'
+      setInterestForm(f => ({...f, who, whoType, artist_name: vc.artist?.name || '', medium: vc.medium || ''}))
+      setModal('interest')
+    }
+    if (vc.type === 'new-prospect') {
+      setProspectForm(f => ({...f, name: vc.name || '', phone: vc.phone || '', company: vc.company || ''}))
+      setModal('prospect')
+    }
+  }, [location.state])
 
   async function load() {
     const [c, p, v, i, inv, aw, ar] = await Promise.all([
