@@ -86,7 +86,7 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {recentInvoices.map(inv => (
-                  <tr key={inv.id} style={{ cursor:'pointer' }} onClick={() => navigate('/admin/sales')}>
+
                   <tr key={inv.id} style={{ cursor:'pointer' }} onClick={() => navigate('/admin/sales', { state: { openInvoiceId: inv.id } })}>
                     <td>{inv.clients?.name || '\u2014'}</td>
                     <td>{inv.currency} {Number(inv.total).toLocaleString()}</td>
