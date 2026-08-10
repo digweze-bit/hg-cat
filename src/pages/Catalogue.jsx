@@ -15,7 +15,7 @@ export default function Catalogue() {
   const [activeArtist, setActiveArtist] = useState(null)
   const [selected, setSelected] = useState(null)
   const [mediumFilter, setMediumFilter] = useState('')
-  const [artworkSort, setArtworkSort] = useState('title') // 'title' | 'year_desc' | 'year_asc' | 'recent'
+  const [artworkSort, setArtworkSort] = useState('title')
   const [availFilter, setAvailFilter]   = useState('')
   const [workCounts, setWorkCounts]       = useState({})
 
@@ -103,13 +103,6 @@ export default function Catalogue() {
     return [...new Set(artworks.filter(w => w.artist_id === activeArtist.id).map(w => w.medium).filter(Boolean))].sort()
   }, [artworks, activeArtist])
 
-  const ARTWORK_SORTS = [
-    ['title', 'A \u2013 Z'],
-    ['year_desc', 'Newest first'],
-    ['year_asc', 'Oldest first'],
-    ['recent', 'Recently added'],
-  ]
-
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#f9f8f6' }}>
       <div style={{ fontFamily:'Georgia,serif', fontSize:'1.2rem', color:'#999' }}>Loading{'...'}</div>
@@ -189,17 +182,6 @@ export default function Catalogue() {
               <option value="">All works</option>
               <option value="Available">Available</option>
               <option value="Sold">Sold</option>
-            </select>
-          </div>
-
-          {/* Sort */}
-          <div style={{ display:'flex', gap:6, marginBottom:12, flexWrap:'wrap', alignItems:'center' }}>
-            {ARTWORK_SORTS.map(([key,label]) => (
-            <select value={availFilter} onChange={e=>setAvailFilter(e.target.value)}
-              style={{ padding:'5px 10px', border:'1px solid #e8e5e0', borderRadius:3, fontSize:12, color:'#333', background:'#fff', fontFamily:'inherit' }}>
-              <option value="">All works</option>
-              <option value="Available">Available</option>
-              <option value="Sold">Sold</option>
               <option value="NFS">NFS</option>
             </select>
             {(mediumFilter || availFilter) && (
@@ -208,6 +190,19 @@ export default function Catalogue() {
                 Clear
               </button>
             )}
+          </div>
+
+          {/* Sort */}
+          <div style={{ display:'flex', gap:6, marginBottom:16, flexWrap:'wrap', alignItems:'center' }}>
+            {[['title','A \u2013 Z'],['year_desc','Newest'],['year_asc','Oldest'],['recent','Recently added']].map(([key,label]) => (
+              <button key={key} onClick={() => setArtworkSort(key)}
+                style={{ padding:'4px 12px', fontSize:11, borderRadius:14, cursor:'pointer',
+                  border: artworkSort===key ? '1px solid #1a1714' : '1px solid #e0dbd5',
+                  background: artworkSort===key ? '#1a1714' : 'transparent',
+                  color: artworkSort===key ? '#fff' : '#999', fontFamily:'inherit' }}>
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Works grid */}
