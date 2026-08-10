@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 
@@ -87,7 +87,7 @@ export default function Dashboard() {
               <tbody>
                 {recentInvoices.map(inv => (
                   <tr key={inv.id} style={{ cursor:'pointer' }} onClick={() => navigate('/admin/sales')}>
-                    <td style={{ fontFamily:'var(--font-serif)' }}>{inv.invoice_number}</td>
+                  <tr key={inv.id} style={{ cursor:'pointer' }} onClick={() => navigate('/admin/sales', { state: { openInvoiceId: inv.id } })}>
                     <td>{inv.clients?.name || '\u2014'}</td>
                     <td>{inv.currency} {Number(inv.total).toLocaleString()}</td>
                     <td><span className="badge" style={{ background: statusColors[inv.status]+'22', color: statusColors[inv.status] }}>{inv.status}</span></td>

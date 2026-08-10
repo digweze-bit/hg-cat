@@ -65,6 +65,13 @@ export default function Sales() {
 
   // Handle voice commands
   useEffect(() => {
+    const openId = location.state?.openInvoiceId
+    if (openId) {
+      window.history.replaceState({}, '')
+      setTab('Invoices')
+      setTimeout(() => { setActiveInvoice(openId); setModal('invoice-detail') }, 300)
+      return
+    }
     const vc = location.state?.voiceCommand
     if (!vc) return
     window.history.replaceState({}, '')
