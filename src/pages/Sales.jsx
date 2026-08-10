@@ -70,7 +70,7 @@ export default function Sales() {
       window.history.replaceState({}, '')
       setTab('Invoices')
       setTimeout(() => { setActiveInvoice(openId); setModal('invoice-detail') }, 300)
-      return
+      setTimeout(() => { const inv = invoices.find(i => i.id === openId); if (inv) { setActiveInvoice(inv); setModal('invoice-detail') } }, 500)
     }
     const vc = location.state?.voiceCommand
     if (!vc) return
