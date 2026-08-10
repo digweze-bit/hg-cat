@@ -179,22 +179,22 @@ export default function Catalogue() {
             <span style={{ fontSize:13, color:'#999' }}>{artistWorks.length} work{artistWorks.length !== 1 ? 's' : ''}</span>
             {mediums.length > 1 && (
               <select value={mediumFilter} onChange={e=>setMediumFilter(e.target.value)}
-              {/* Sort */}
-              <div style={{ display:'flex', gap:6, marginBottom:12, flexWrap:'wrap', alignItems:'center' }}>
-                <span style={{ fontSize:10, color:'#999', textTransform:'uppercase', letterSpacing:'.06em' }}>Sort:</span>
-                {ARTWORK_SORTS.map(([key,label]) => (
-                  <button key={key} onClick={() => setArtworkSort(key)}
-                    style={{ padding:'3px 10px', fontSize:11, borderRadius:14, cursor:'pointer', border: artworkSort===key ? '1px solid #1a1714' : '1px solid #e0dbd5',
-                      background: artworkSort===key ? '#1a1714' : 'transparent', color: artworkSort===key ? '#fff' : '#999', fontFamily:'inherit' }}>
-                    {label}
-                  </button>
-                ))}
-              </div>
                 style={{ padding:'5px 10px', border:'1px solid #e8e5e0', borderRadius:3, fontSize:12, color:'#333', background:'#fff', fontFamily:'inherit' }}>
                 <option value="">All media</option>
                 {mediums.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             )}
+            <select value={availFilter} onChange={e=>setAvailFilter(e.target.value)}
+              style={{ padding:'5px 10px', border:'1px solid #e8e5e0', borderRadius:3, fontSize:12, color:'#333', background:'#fff', fontFamily:'inherit' }}>
+              <option value="">All works</option>
+              <option value="Available">Available</option>
+              <option value="Sold">Sold</option>
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div style={{ display:'flex', gap:6, marginBottom:12, flexWrap:'wrap', alignItems:'center' }}>
+            {ARTWORK_SORTS.map(([key,label]) => (
             <select value={availFilter} onChange={e=>setAvailFilter(e.target.value)}
               style={{ padding:'5px 10px', border:'1px solid #e8e5e0', borderRadius:3, fontSize:12, color:'#333', background:'#fff', fontFamily:'inherit' }}>
               <option value="">All works</option>
