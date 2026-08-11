@@ -18,6 +18,7 @@ const Sales        = lazy(() => import('./pages/Sales'))
 const Safekeeping  = lazy(() => import('./pages/Safekeeping'))
 const CRM = lazy(() => import('./pages/CRM'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
+const Settings = lazy(() => import('./pages/Settings'))
 const Search = lazy(() => import('./pages/Search'))
 
 const BackfillThumbnails = lazy(() => import('./pages/BackfillThumbnails'))
@@ -79,6 +80,7 @@ export default function App() {
               <Route path="safekeeping" element={<Safekeeping />} />
               <Route path="crm" element={<CRM />} />
               <Route path="audit-log" element={<AuditLog />} />
+              <Route path="settings" element={<Settings />} />
               <Route path="search" element={<Search />} />
 
               <Route path="backfill-thumbnails" element={<BackfillThumbnails />} />
