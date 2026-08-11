@@ -201,7 +201,6 @@ export default function Sales() {
           clients={clients}
           rates={rates}
           userId={user?.id}
-          bankAccounts={bankAccounts}
           onClose={() => { setModal(null); setActiveInvoice(null) }}
           onSave={async () => { await load(); setDetailKey(k => k + 1) }}
           onEdit={(inv) => { setModal(null); setActiveInvoice(null); setEditingInvoice(inv) }}
@@ -1677,14 +1676,10 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
 
 // \u2500\u2500 INVOICE DETAIL (view, add payment, print) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit }) {
-
+  const [payments, setPayments] = useState([])
   const [items, setItems] = useState([])
   const [itemsLoaded, setItemsLoaded] = useState(false)
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
-  const defaultBank = bankAccounts.find(b => b.is_default) || bankAccounts[0]
-  const [selectedBankId, setSelectedBankId] = useState(inv.bank_account_id || defaultBank?.id || '')
-  const selectedBank = bankAccounts.find(b => b.id === selectedBankId) || defaultBank
-  async function changeBankAccount(id) { setSelectedBankId(id); await supabase.from('invoices').update({ bank_account_id: id }).eq('id', inv.id) }
   const [editingPayment, setEditingPayment] = useState(null)
   const [collectingItem, setCollectingItem] = useState(null)
   const [addingPay, setAddingPay] = useState(false)
@@ -2034,26 +2029,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
             </div>
 
             {/* Editable notes */}
-            {/* Payment account */}
-            {selectedBank && (
-              <div style={{ background:'var(--parchment)', padding:'12px 14px', borderRadius:3, marginBottom:12 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-                  <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)' }}>Payment account</div>
-                  <select className="form-select" style={{ width:'auto', fontSize:11, padding:'2px 8px' }}
-                    value={selectedBankId} onChange={e => changeBankAccount(e.target.value)}>
-                    {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.account_name} ({b.currency})</option>)}
-                  </select>
-                </div>
-                <div style={{ fontSize:13, fontWeight:500 }}>{selectedBank.account_name}</div>
-                <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>{selectedBank.bank_name}</div>
-                <div style={{ fontSize:12, marginTop:2 }}>Account: {selectedBank.account_number}</div>
-                {selectedBank.sort_code && <div style={{ fontSize:12 }}>Sort code: {selectedBank.sort_code}</div>}
-                {selectedBank.routing_number && <div style={{ fontSize:12 }}>Routing: {selectedBank.routing_number}</div>}
-                {selectedBank.swift_bic && <div style={{ fontSize:12 }}>SWIFT/BIC: {selectedBank.swift_bic}</div>}
-              </div>
-            )}
-
-            {/* Editable notes */}
+            <div style={{ background:'var(--parchment)', padding:'12px 14px', borderRadius:3, fontSize:12 }}>
               <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:6 }}>Notes</div>
               <textarea className="form-textarea" rows={2} style={{ fontSize:12 }}
                 defaultValue={inv.notes||''}
