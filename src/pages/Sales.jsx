@@ -26,6 +26,7 @@ export default function Sales() {
   const [modal, setModal] = useState(null)
   const [detailKey, setDetailKey] = useState(0)
   const [activeInvoice, setActiveInvoice] = useState(null)
+  const [pendingInvoiceId, setPendingInvoiceId] = useState(null)
   const [editingInvoice, setEditingInvoice] = useState(null) // invoice being viewed/edited
   const [editingClient, setEditingClient] = useState(null) // client being edited from detail panel
 
@@ -69,8 +70,8 @@ export default function Sales() {
     if (openId) {
       window.history.replaceState({}, '')
       setTab('Invoices')
-      setTimeout(() => { setActiveInvoice(openId); setModal('invoice-detail') }, 300)
-      setTimeout(() => { const inv = invoices.find(i => i.id === openId); if (inv) { setActiveInvoice(inv); setModal('invoice-detail') } }, 500)
+      setPendingInvoiceId(openId)
+      return
     }
     const vc = location.state?.voiceCommand
     if (!vc) return
@@ -88,6 +89,13 @@ export default function Sales() {
   }, [location.state])
 
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
+
+  // Open pending invoice from dashboard click once invoices are loaded
+  useEffect(() => {
+    if (!pendingInvoiceId || invoices.length === 0) return
+    const inv = invoices.find(i => i.id === pendingInvoiceId)
+    if (inv) { setActiveInvoice(inv); setModal('invoice-detail'); setPendingInvoiceId(null) }
+  }, [pendingInvoiceId, invoices])
 
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading sales data{'\u2026'}</div>
 
