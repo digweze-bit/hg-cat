@@ -1676,7 +1676,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
 }
 
 // \u2500\u2500 INVOICE DETAIL (view, add payment, print) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit }) {
+
 function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit, bankAccounts = [] }) {
   const [items, setItems] = useState([])
   const [itemsLoaded, setItemsLoaded] = useState(false)
