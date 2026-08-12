@@ -53,7 +53,7 @@ export default function Sales() {
     ])
     setClients(c); setInvoices(inv); setBooks(bks); setRates(r)
     // Artworks loaded lazily when invoice modal opens
-    supabase.from('bank_accounts').select('*').order('is_default',{ascending:false}).order('account_name').then(({data})=>setBankAccounts(data||[]))
+    supabase.from('bank_accounts').select('*').order('is_default',{ascending:false}).order('account_name').then(({data,error})=>{ console.log('Bank accounts loaded:', data?.length, error); setBankAccounts(data||[]) })
     setLoading(false)
   }
 
