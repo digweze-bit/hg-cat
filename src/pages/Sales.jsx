@@ -201,6 +201,7 @@ export default function Sales() {
           clients={clients}
           rates={rates}
           userId={user?.id}
+          bankAccounts={bankAccounts}
           onClose={() => { setModal(null); setActiveInvoice(null) }}
           onSave={async () => { await load(); setDetailKey(k => k + 1) }}
           onEdit={(inv) => { setModal(null); setActiveInvoice(null); setEditingInvoice(inv) }}
@@ -1676,7 +1677,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
 
 // \u2500\u2500 INVOICE DETAIL (view, add payment, print) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit }) {
-  const [payments, setPayments] = useState([])
+function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit, bankAccounts = [] }) {
   const [items, setItems] = useState([])
   const [itemsLoaded, setItemsLoaded] = useState(false)
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
