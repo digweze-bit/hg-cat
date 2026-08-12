@@ -1235,6 +1235,9 @@ function ClientModal({ onClose, onSave, existingClients = [], editClient = null 
 // \u2500\u2500 INVOICE MODAL (create new) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, bankAccounts = [], onClose, onSave, editInvoice=null }) {
   const isEdit = !!editInvoice
+  const [bankAccts, setBankAccts] = useState([])
+  useEffect(() => { supabase.from('bank_accounts').select('*').order('is_default',{ascending:false}).order('account_name').then(({data})=>setBankAccts(data||[])) }, [])
+  useEffect(() => { if (bankAccts.length > 0 && !form.bank_account_id) { const def = bankAccts.find(b=>b.is_default); if (def) setForm(f=>({...f, bank_account_id: def.id})) } }, [bankAccts])
   const [form, setForm] = useState(editInvoice ? {
     client_id:      editInvoice.client_id || '',
     currency:       editInvoice.currency || 'NGN',
@@ -1245,13 +1248,13 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, bank
     due_date:       editInvoice.due_date || '',
     notes:          editInvoice.notes || '',
     terms:          editInvoice.terms || '',
-    bank_account_id: editInvoice.bank_account_id || (bankAccounts.find(b=>b.is_default)?.id) || '',
+    bank_account_id: editInvoice?.bank_account_id || '',
     keep_currency:  editInvoice.keep_currency ?? (editInvoice.currency !== 'NGN'),
     fixed_rate:     editInvoice.exchange_rate || null,
   } : {
     client_id:'', currency:'NGN', discount_type:'none', discount_value:0,
     vat_rate:0, issue_date: new Date().toISOString().split('T')[0],
-    due_date:'', notes:'', terms:'', bank_account_id: (bankAccounts.find(b=>b.is_default)?.id) || '', keep_currency:false, fixed_rate:null,
+    due_date:'', notes:'', terms:'', bank_account_id: '', keep_currency:false, fixed_rate:null,
   })
   const [items, setItems] = useState([]) // { artwork_id, title, artist_name, year, medium, dimensions, unit_price, quantity:1, discount:0 }
   const [artworkSearch, setArtworkSearch] = useState('')
@@ -1646,7 +1649,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, bank
               <label className="form-label">Payment account</label>
               <select className="form-select" value={form.bank_account_id||''} onChange={e=>setForm(f=>({...f,bank_account_id:e.target.value}))}>
                 <option value="">No bank details</option>
-                {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.account_name} - {b.bank_name} ({b.currency})</option>)}
+                {bankAccts.map(b => <option key={b.id} value={b.id}>{b.account_name} - {b.bank_name} ({b.currency})</option>)}
               </select>
             </div>
               <label className="form-label">Notes</label>
@@ -1694,9 +1697,12 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   const [items, setItems] = useState([])
   const [itemsLoaded, setItemsLoaded] = useState(false)
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
-  const defaultBank = bankAccounts.find(b => b.is_default) || bankAccounts[0]
-  const [selectedBankId, setSelectedBankId] = useState(inv.bank_account_id || defaultBank?.id || '')
-  const selectedBank = bankAccounts.find(b => b.id === selectedBankId) || defaultBank
+  const [bankAccounts2, setBankAccounts2] = useState([])
+  useEffect(() => { supabase.from('bank_accounts').select('*').order('is_default',{ascending:false}).order('account_name').then(({data})=>setBankAccounts2(data||[])) }, [])
+  useEffect(() => { if (bankAccounts2.length > 0 && !selectedBankId) { const def = bankAccounts2.find(b=>b.is_default); if (def) setSelectedBankId(def.id) } }, [bankAccounts2])
+  const defaultBank = bankAccounts2.find(b => b.is_default) || bankAccounts2[0]
+  const [selectedBankId, setSelectedBankId] = useState(inv.bank_account_id || '')
+  const selectedBank = bankAccounts2.find(b => b.id === selectedBankId) || (selectedBankId ? null : defaultBank)
   async function changeBankAccount(id) {
     setSelectedBankId(id)
     await supabase.from('invoices').update({ bank_account_id: id || null }).eq('id', inv.id)
@@ -2056,7 +2062,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
                 <select className="form-select" style={{ width:'auto', fontSize:11, padding:'2px 8px' }}
                   value={selectedBankId} onChange={e => changeBankAccount(e.target.value)}>
                   <option value="">No bank details</option>
-                  {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.account_name} ({b.currency})</option>)}
+                  {bankAccounts2.map(b => <option key={b.id} value={b.id}>{b.account_name} ({b.currency})</option>)}
                 </select>
               </div>
               {selectedBank ? (
