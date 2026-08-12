@@ -181,6 +181,7 @@ export default function Sales() {
           artistMap={artistMap}
           rates={rates}
           userId={user?.id}
+          bankAccounts={bankAccounts}
           onClose={() => setModal(null)}
           onSave={load}
         />
@@ -189,6 +190,7 @@ export default function Sales() {
         <InvoiceModal
           clients={clients} artworks={artworks} artistMap={artistMap}
           books={books} rates={rates} userId={user?.id}
+          bankAccounts={bankAccounts}
           editInvoice={editingInvoice}
           onClose={() => setEditingInvoice(null)}
           onSave={() => { load(); setEditingInvoice(null) }}
