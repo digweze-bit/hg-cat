@@ -27,7 +27,8 @@ export default function Sales() {
   const [detailKey, setDetailKey] = useState(0)
   const [activeInvoice, setActiveInvoice] = useState(null)
   const [pendingInvoiceId, setPendingInvoiceId] = useState(null)
-  const [editingInvoice, setEditingInvoice] = useState(null) // invoice being viewed/edited
+  const [pendingInvoiceId, setPendingInvoiceId] = useState(null)
+  const [bankAccounts, setBankAccounts] = useState([])
   const [editingClient, setEditingClient] = useState(null) // client being edited from detail panel
 
   async function load() {
@@ -53,7 +54,8 @@ export default function Sales() {
     setClients(c); setInvoices(inv); setBooks(bks); setRates(r)
     // Artworks loaded lazily when invoice modal opens
     setLoading(false)
-  }
+    supabase.from('bank_accounts').select('*').order('is_default',{ascending:false}).order('account_name').then(({data})=>setBankAccounts(data||[]))
+    setLoading(false)
 
   async function refreshClients() {
     const c = await fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name', cache:false })
