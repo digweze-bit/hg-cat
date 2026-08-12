@@ -37,7 +37,7 @@ export default function Catalogue() {
   useEffect(() => {
     if (!activeArtist) return
     fetchAll('artworks', {
-      select:'id,title,artist_id,year,medium,dimensions,availability,image_url,price,sort_order,edition_info,created_at',
+      select:'id,title,artist_id,year,medium,dimensions,availability,image_url,price,sort_order',
       filters: [['visible','eq',true],['artist_id','eq',activeArtist.id]],
       order: 'sort_order'
     }).then(w => setArtworks(prev => {
