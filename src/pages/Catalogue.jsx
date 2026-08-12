@@ -344,8 +344,8 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
         onClick={e => e.stopPropagation()}>
         <div style={{ width:'45%', flexShrink:0, background:'#f0ece4' }}>
           <img src={w.image_url || PLACEHOLDER} alt={w.title}
-            style={{ width:'100%', height:'100%', objectFit:'contain', objectPosition: w.image_position || 'center', display:'block' }}
-        <div style={{ fontSize:12, color:'#999', marginTop:6 }}>{[w.year, w.medium, w.dimensions, w.edition_info].filter(Boolean).join(' \u00B7 ')}</div>
+            style={{ width:'100%', height:'100%', objectFit:'contain', objectPosition: w.image_position || 'center', display:'block' }} />
+        </div>
         </div>
         <div style={{ flex:1, padding:'28px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16, fontFamily:'-apple-system,sans-serif' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
@@ -356,7 +356,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
             <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1, padding:4 }}>{'\u2715'}</button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            {[['Year',w.year],['Medium',w.medium],['Dimensions',w.dimensions],['Series',w.series],['Location',w.location],['Status',w.availability]].filter(([,v])=>v).map(([label,val])=>(
+            {[['Year',w.year],['Medium',w.medium],['Dimensions',w.dimensions],['Edition',w.edition_info],['Series',w.series],['Status',w.availability]].filter(([,v])=>v).map(([label,val])=>(
               <div key={label}>
                 <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'#999', marginBottom:3 }}>{label}</div>
                 <div style={{ fontSize:13, color: label==='Status' ? (val==='Available'?'#2d6a4f':val==='Sold'?'#8b1a1a':'#92600a') : '#1a1714', fontWeight: label==='Status'?500:400 }}>{val}</div>
