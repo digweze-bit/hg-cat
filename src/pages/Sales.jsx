@@ -27,8 +27,7 @@ export default function Sales() {
   const [detailKey, setDetailKey] = useState(0)
   const [activeInvoice, setActiveInvoice] = useState(null)
   const [pendingInvoiceId, setPendingInvoiceId] = useState(null)
-
-  const [bankAccounts, setBankAccounts] = useState([])
+  const [editingInvoice, setEditingInvoice] = useState(null) // invoice being viewed/edited
   const [editingClient, setEditingClient] = useState(null) // client being edited from detail panel
 
   async function load() {
@@ -54,8 +53,7 @@ export default function Sales() {
     setClients(c); setInvoices(inv); setBooks(bks); setRates(r)
     // Artworks loaded lazily when invoice modal opens
     setLoading(false)
-    supabase.from('bank_accounts').select('*').order('is_default',{ascending:false}).order('account_name').then(({data})=>setBankAccounts(data||[]))
-    setLoading(false)
+  }
 
   async function refreshClients() {
     const c = await fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name', cache:false })
@@ -203,7 +201,6 @@ export default function Sales() {
           clients={clients}
           rates={rates}
           userId={user?.id}
-          bankAccounts={bankAccounts}
           onClose={() => { setModal(null); setActiveInvoice(null) }}
           onSave={async () => { await load(); setDetailKey(k => k + 1) }}
           onEdit={(inv) => { setModal(null); setActiveInvoice(null); setEditingInvoice(inv) }}
@@ -1678,19 +1675,11 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
 }
 
 // \u2500\u2500 INVOICE DETAIL (view, add payment, print) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-
-function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit, bankAccounts = [] }) {
+function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, onEdit }) {
+  const [payments, setPayments] = useState([])
   const [items, setItems] = useState([])
   const [itemsLoaded, setItemsLoaded] = useState(false)
   const [payForm, setPayForm] = useState({ amount:'', currency: inv.currency, method:'transfer', paid_at: new Date().toISOString().split('T')[0], reference:'', notes:'' })
-  const defaultBank = bankAccounts.find(b => b.is_default) || bankAccounts[0]
-  const [selectedBankId, setSelectedBankId] = useState(inv.bank_account_id || defaultBank?.id || '')
-  const selectedBank = bankAccounts.find(b => b.id === selectedBankId) || defaultBank
-  async function changeBankAccount(id) {
-    setSelectedBankId(id)
-    if (id) await supabase.from('invoices').update({ bank_account_id: id }).eq('id', inv.id)
-    else await supabase.from('invoices').update({ bank_account_id: null }).eq('id', inv.id)
-  }
   const [editingPayment, setEditingPayment] = useState(null)
   const [collectingItem, setCollectingItem] = useState(null)
   const [addingPay, setAddingPay] = useState(false)
@@ -1789,7 +1778,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
     w.document.close()
     let logoB64 = null
     try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_SMALL_B64 || assets.LOGO_B64 } catch(_) {}
-    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64, selectedBank)
+    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
     w.document.open()
     w.document.write(html)
     w.document.close()
@@ -1800,7 +1789,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   async function downloadInvoicePDF() {
     let logoB64 = null
     try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_SMALL_B64 || assets.LOGO_B64 } catch(_) {}
-    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64, selectedBank)
+    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
     // Render into hidden iframe, then capture with html2canvas
     const iframe = document.createElement('iframe')
     iframe.style.position = 'fixed'
@@ -2039,32 +2028,6 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
               </div>
             </div>
 
-            {/* Payment account */}
-            <div style={{ background:'var(--parchment)', padding:'12px 14px', borderRadius:3, marginBottom:12 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-                <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)' }}>Payment account</div>
-                <div style={{ display:'flex', gap:6 }}>
-                  <select className="form-select" style={{ width:'auto', fontSize:11, padding:'2px 8px' }}
-                    value={selectedBankId} onChange={e => changeBankAccount(e.target.value)}>
-                    <option value="">No bank details</option>
-                    {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.account_name} ({b.currency})</option>)}
-                  </select>
-                </div>
-              </div>
-              {selectedBank ? (
-                <div>
-                  <div style={{ fontSize:13, fontWeight:500 }}>{selectedBank.account_name}</div>
-                  <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>{selectedBank.bank_name}</div>
-                  <div style={{ fontSize:12, marginTop:2 }}>Account: {selectedBank.account_number}</div>
-                  {selectedBank.sort_code && <div style={{ fontSize:12 }}>Sort code: {selectedBank.sort_code}</div>}
-                  {selectedBank.routing_number && <div style={{ fontSize:12 }}>Routing: {selectedBank.routing_number}</div>}
-                  {selectedBank.swift_bic && <div style={{ fontSize:12 }}>SWIFT/BIC: {selectedBank.swift_bic}</div>}
-                </div>
-              ) : (
-                <div style={{ fontSize:12, color:'var(--muted)', fontStyle:'italic' }}>No bank details will appear on this invoice</div>
-              )}
-            </div>
-
             {/* Editable notes */}
             <div style={{ background:'var(--parchment)', padding:'12px 14px', borderRadius:3, fontSize:12 }}>
               <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', marginBottom:6 }}>Notes</div>
@@ -2136,7 +2099,7 @@ function PaymentEditRow({ payment, rates, onSave, onCancel }) {
   )
 }
 
-async function buildInvoiceHTML(inv, client, items, payments, logoB64, bankAccount) {
+async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
   const bal = Number(inv.balance_due||0)
   function e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
   // Fetch images as data URLs — required for html2canvas (Download PDF/WhatsApp path)
@@ -2207,7 +2170,7 @@ ${bal>0?`<tr><td></td><td style="text-align:right;font-weight:600">Balance due</
 ${inv.notes?`<div style="margin-top:18px;font-size:11px;color:#6b6760;padding:10px 12px;background:#f8f7f5;border-radius:3px;">${e(inv.notes)}</div>`:''}
 ${payments.length>0?`<div style="margin-top:24px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #ece8e1;font-size:11px"><span style="color:#6b6760">${e(p.method)}${p.reference?' &middot; '+e(p.reference):''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
 ${(() => {
-  const bank = bankAccount || null
+  const bank = bankAccounts.find(b => b.id === selectedBankId) || bankAccounts.find(b => b.is_default) || bankAccounts[0]
   if (!bank) return ''
   let h = '<div style="margin-top:24px;padding:14px 16px;background:#faf8f5;border:1px solid #e8e3db;border-radius:3px">'
   h += '<div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#999;margin-bottom:6px">Payment Account</div>'
