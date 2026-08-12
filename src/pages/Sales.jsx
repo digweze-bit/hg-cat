@@ -1233,7 +1233,7 @@ function ClientModal({ onClose, onSave, existingClients = [], editClient = null 
 }
 
 // \u2500\u2500 INVOICE MODAL (create new) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onClose, onSave, editInvoice=null }) {
+function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, bankAccounts = [], onClose, onSave, editInvoice=null }) {
   const isEdit = !!editInvoice
   const [form, setForm] = useState(editInvoice ? {
     client_id:      editInvoice.client_id || '',
@@ -1245,12 +1245,13 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
     due_date:       editInvoice.due_date || '',
     notes:          editInvoice.notes || '',
     terms:          editInvoice.terms || '',
+    bank_account_id: editInvoice.bank_account_id || (bankAccounts.find(b=>b.is_default)?.id) || '',
     keep_currency:  editInvoice.keep_currency ?? (editInvoice.currency !== 'NGN'),
     fixed_rate:     editInvoice.exchange_rate || null,
   } : {
     client_id:'', currency:'NGN', discount_type:'none', discount_value:0,
     vat_rate:0, issue_date: new Date().toISOString().split('T')[0],
-    due_date:'', notes:'', terms:'', keep_currency:false, fixed_rate:null,
+    due_date:'', notes:'', terms:'', bank_account_id: (bankAccounts.find(b=>b.is_default)?.id) || '', keep_currency:false, fixed_rate:null,
   })
   const [items, setItems] = useState([]) // { artwork_id, title, artist_name, year, medium, dimensions, unit_price, quantity:1, discount:0 }
   const [artworkSearch, setArtworkSearch] = useState('')
@@ -1353,6 +1354,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
           balance_due: Math.max(0, total - Number(editInvoice.amount_paid||0)),
           issue_date: form.issue_date, due_date: form.due_date || null,
           notes: form.notes, terms: form.terms,
+          bank_account_id: form.bank_account_id || null,
         }).eq('id', editInvoice.id)
         if (updErr) throw updErr
         await supabase.from('invoice_items').delete().eq('invoice_id', editInvoice.id)
@@ -1394,6 +1396,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
         due_date: form.due_date || null,
         notes: form.notes,
         terms: form.terms,
+        bank_account_id: form.bank_account_id || null,
         status: 'draft',
         created_by: userId,
       }).select().single()
@@ -1639,6 +1642,13 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, onCl
               <input className="form-input" type="number" value={form.vat_rate} onChange={e=>setForm(f=>({...f,vat_rate:e.target.value}))} placeholder="0 = no VAT · 7.5 = Nigerian VAT" />
             </div>
             <div className="form-group">
+            <div className="form-group">
+              <label className="form-label">Payment account</label>
+              <select className="form-select" value={form.bank_account_id||''} onChange={e=>setForm(f=>({...f,bank_account_id:e.target.value}))}>
+                <option value="">No bank details</option>
+                {bankAccounts.map(b => <option key={b.id} value={b.id}>{b.account_name} - {b.bank_name} ({b.currency})</option>)}
+              </select>
+            </div>
               <label className="form-label">Notes</label>
               <textarea className="form-textarea" rows={2} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} />
             </div>
