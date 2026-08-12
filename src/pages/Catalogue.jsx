@@ -38,7 +38,7 @@ export default function Catalogue() {
     if (!activeArtist) return
     fetchAll('artworks', {
       select:'id,title,artist_id,year,medium,dimensions,availability,image_url,price,sort_order',
-      filters: [['visible','eq',true],['artist_id','eq',activeArtist.id]],
+      select:'id,title,artist_id,year,medium,dimensions,availability,image_url,price,sort_order,edition_info,created_at,image_position',
       order: 'sort_order'
     }).then(w => setArtworks(prev => {
       // Merge \u2014 keep other artists' works, replace this artist's
@@ -329,7 +329,7 @@ function ArtworkCard({ artwork: w, onClick }) {
       </div>
       <div style={{ padding:'10px 12px 12px' }}>
         <div style={{ fontFamily:'Georgia,serif', fontSize:'0.9rem', lineHeight:1.3, color:'#1a1714', marginBottom:3 }}>{w.title}</div>
-        <div style={{ fontSize:11, color:'#999' }}>{[w.year, w.medium].filter(Boolean).join(' \u00B7 ')}</div>
+        <div style={{ fontSize:11, color:'#999' }}>{[w.year, w.medium, w.edition_info].filter(Boolean).join(' \u00B7 ')}</div>
         {w.dimensions && <div style={{ fontSize:11, color:'#bbb', marginTop:1 }}>{w.dimensions}</div>}
       </div>
     </div>
@@ -345,7 +345,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
         <div style={{ width:'45%', flexShrink:0, background:'#f0ece4' }}>
           <img src={w.image_url || PLACEHOLDER} alt={w.title}
             style={{ width:'100%', height:'100%', objectFit:'contain', objectPosition: w.image_position || 'center', display:'block' }}
-            onError={e => { e.target.src = PLACEHOLDER }} />
+        <div style={{ fontSize:12, color:'#999', marginTop:6 }}>{[w.year, w.medium, w.dimensions, w.edition_info].filter(Boolean).join(' \u00B7 ')}</div>
         </div>
         <div style={{ flex:1, padding:'28px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16, fontFamily:'-apple-system,sans-serif' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
