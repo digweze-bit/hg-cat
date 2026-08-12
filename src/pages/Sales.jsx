@@ -1786,7 +1786,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
     w.document.close()
     let logoB64 = null
     try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_SMALL_B64 || assets.LOGO_B64 } catch(_) {}
-    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
+    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64, selectedBank)
     w.document.open()
     w.document.write(html)
     w.document.close()
@@ -1797,7 +1797,7 @@ function InvoiceDetail({ invoice: inv, clients, rates, userId, onClose, onSave, 
   async function downloadInvoicePDF() {
     let logoB64 = null
     try { const assets = await import('../lib/assets'); logoB64 = assets.LOGO_SMALL_B64 || assets.LOGO_B64 } catch(_) {}
-    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64)
+    const html = await buildInvoiceHTML(inv, client, items, payments, logoB64, selectedBank)
     // Render into hidden iframe, then capture with html2canvas
     const iframe = document.createElement('iframe')
     iframe.style.position = 'fixed'
@@ -2133,7 +2133,7 @@ function PaymentEditRow({ payment, rates, onSave, onCancel }) {
   )
 }
 
-async function buildInvoiceHTML(inv, client, items, payments, logoB64) {
+async function buildInvoiceHTML(inv, client, items, payments, logoB64, bankAccount) {
   const bal = Number(inv.balance_due||0)
   function e(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
   // Fetch images as data URLs — required for html2canvas (Download PDF/WhatsApp path)
@@ -2204,7 +2204,7 @@ ${bal>0?`<tr><td></td><td style="text-align:right;font-weight:600">Balance due</
 ${inv.notes?`<div style="margin-top:18px;font-size:11px;color:#6b6760;padding:10px 12px;background:#f8f7f5;border-radius:3px;">${e(inv.notes)}</div>`:''}
 ${payments.length>0?`<div style="margin-top:24px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #ece8e1;font-size:11px"><span style="color:#6b6760">${e(p.method)}${p.reference?' &middot; '+e(p.reference):''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
 ${(() => {
-  const bank = bankAccounts.find(b => b.id === selectedBankId) || bankAccounts.find(b => b.is_default) || bankAccounts[0]
+  const bank = bankAccount || null
   if (!bank) return ''
   let h = '<div style="margin-top:24px;padding:14px 16px;background:#faf8f5;border:1px solid #e8e3db;border-radius:3px">'
   h += '<div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#999;margin-bottom:6px">Payment Account</div>'
