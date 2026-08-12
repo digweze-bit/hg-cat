@@ -27,7 +27,7 @@ export default function Sales() {
   const [detailKey, setDetailKey] = useState(0)
   const [activeInvoice, setActiveInvoice] = useState(null)
   const [pendingInvoiceId, setPendingInvoiceId] = useState(null)
-  const [pendingInvoiceId, setPendingInvoiceId] = useState(null)
+
   const [bankAccounts, setBankAccounts] = useState([])
   const [editingClient, setEditingClient] = useState(null) // client being edited from detail panel
 
