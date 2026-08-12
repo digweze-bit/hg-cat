@@ -27,6 +27,7 @@ export default function Sales() {
   const [detailKey, setDetailKey] = useState(0)
   const [activeInvoice, setActiveInvoice] = useState(null)
   const [pendingInvoiceId, setPendingInvoiceId] = useState(null)
+  const [bankAccounts, setBankAccounts] = useState([])
   const [editingInvoice, setEditingInvoice] = useState(null) // invoice being viewed/edited
   const [editingClient, setEditingClient] = useState(null) // client being edited from detail panel
 
@@ -52,6 +53,7 @@ export default function Sales() {
     ])
     setClients(c); setInvoices(inv); setBooks(bks); setRates(r)
     // Artworks loaded lazily when invoice modal opens
+    supabase.from('bank_accounts').select('*').order('is_default',{ascending:false}).order('account_name').then(({data})=>setBankAccounts(data||[]))
     setLoading(false)
   }
 
