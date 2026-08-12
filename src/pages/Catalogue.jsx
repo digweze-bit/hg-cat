@@ -37,7 +37,7 @@ export default function Catalogue() {
   useEffect(() => {
     if (!activeArtist) return
     fetchAll('artworks', {
-      select:'id,title,artist_id,year,medium,dimensions,availability,image_url,price,sort_order',
+      select:'id,title,artist_id,year,medium,dimensions,availability,image_url,price,sort_order,series,created_at,image_position',
       filters: [['visible','eq',true],['artist_id','eq',activeArtist.id]],
       order: 'sort_order'
     }).then(w => setArtworks(prev => {
@@ -329,7 +329,7 @@ function ArtworkCard({ artwork: w, onClick }) {
       </div>
       <div style={{ padding:'10px 12px 12px' }}>
         <div style={{ fontFamily:'Georgia,serif', fontSize:'0.9rem', lineHeight:1.3, color:'#1a1714', marginBottom:3 }}>{w.title}</div>
-        <div style={{ fontSize:11, color:'#999' }}>{[w.year, w.medium, w.edition_info].filter(Boolean).join(' \u00B7 ')}</div>
+        <div style={{ fontSize:11, color:'#999' }}>{[w.year, w.medium, w.series].filter(Boolean).join(' \u00B7 ')}</div>
         {w.dimensions && <div style={{ fontSize:11, color:'#bbb', marginTop:1 }}>{w.dimensions}</div>}
       </div>
     </div>
@@ -356,7 +356,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
             <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1, padding:4 }}>{'\u2715'}</button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            {[['Year',w.year],['Medium',w.medium],['Dimensions',w.dimensions],['Edition',w.edition_info],['Series',w.series],['Location',w.location],['Status',w.availability]].filter(([,v])=>v).map(([label,val])=>(
+            {[['Year',w.year],['Medium',w.medium],['Dimensions',w.dimensions],['Edition',w.series],['Series',w.series],['Location',w.location],['Status',w.availability]].filter(([,v])=>v).map(([label,val])=>(
               <div key={label}>
                 <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'#999', marginBottom:3 }}>{label}</div>
                 <div style={{ fontSize:13, color: label==='Status' ? (val==='Available'?'#2d6a4f':val==='Sold'?'#8b1a1a':'#92600a') : '#1a1714', fontWeight: label==='Status'?500:400 }}>{val}</div>
@@ -385,3 +385,4 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
     </div>
   )
 }
+
