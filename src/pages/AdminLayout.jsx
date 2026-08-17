@@ -25,6 +25,7 @@ const NAV = [
   { path: '/admin/reports', label: 'Reports', icon: '\u25E7' },
   { path: '/admin/certificates', label: 'Certificates', icon: '\u25C7' },
   { section: 'Admin' },
+  { path: '/admin/hr', label: 'Job Check', icon: '\uD83D\uDCCB' },
   { path: '/admin/settings', label: 'Settings', icon: '\u2699' },
   { path: '/admin/users', label: 'Staff users', icon: '\u25C9' },
 ]
