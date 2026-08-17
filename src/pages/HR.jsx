@@ -112,6 +112,35 @@ export default function HR() {
     setSaving(false)
   }
 
+  function openEditEmployee(emp) {
+    const cl = Array.isArray(emp.checklist) ? emp.checklist : JSON.parse(emp.checklist || '[]')
+    const padded = [...cl, ...Array(Math.max(0, 6 - cl.length)).fill('')]
+    setEmpForm({ name: emp.name, role: emp.role, email: emp.email || '', pin: emp.pin || '', checklist: padded, id: emp.id })
+    setModal('edit-employee')
+  }
+
+  async function updateEmployee() {
+    if (!empForm.name || !empForm.role) return alert('Name and role required')
+    const checklist = empForm.checklist.filter(c => c.trim())
+    if (checklist.length < 1) return alert('Add at least one metric')
+    setSaving(true)
+    await supabase.from('hr_employees').update({
+      name: empForm.name, role: empForm.role, email: empForm.email || null,
+      pin: empForm.pin || null, checklist: JSON.stringify(checklist),
+    }).eq('id', empForm.id)
+    await load()
+    setModal(null)
+    setSaving(false)
+  }
+
+  async function deleteEmployee(emp) {
+    if (!confirm(`Remove ${emp.name}? Their review history will also be deleted.`)) return
+    await supabase.from('hr_reviews').delete().eq('employee_id', emp.id)
+    await supabase.from('hr_employees').delete().eq('id', emp.id)
+    if (activeEmp?.id === emp.id) setActiveEmp(null)
+    await load()
+  }
+
   // Performance averages
   const perfData = useMemo(() => {
     if (!activeEmp) return []
@@ -156,7 +185,13 @@ export default function HR() {
                   background: activeEmp?.id === emp.id ? 'var(--parchment)' : 'transparent',
                 }}>
                 <div style={{ fontWeight: 500, fontSize: 14 }}>{emp.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)' }}>{emp.role}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>{emp.role}</div>
+                  <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                    <button onClick={() => openEditEmployee(emp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--muted)', padding: '2px 4px' }}>Edit</button>
+                    <button onClick={() => deleteEmployee(emp)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#c0392b', padding: '2px 4px' }}>Del</button>
+                  </div>
+                </div>
                 {latest && (
                   <div style={{ fontSize: 11, marginTop: 4 }}>
                     <span style={{ fontWeight: 600, color: latest.final_score >= 7 ? '#2d6a4f' : latest.final_score >= 5 ? '#b8862a' : '#c0392b' }}>
@@ -233,10 +268,10 @@ export default function HR() {
       </div>
 
       {/* Add employee modal */}
-      {modal === 'add-employee' && (
+      {(modal === 'add-employee' || modal === 'edit-employee') && (
         <div className="modal-overlay">
           <div className="modal modal-md">
-            <div className="modal-header"><div className="modal-title">Add employee</div><button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>&times;</button></div>
+            <div className="modal-header"><div className="modal-title">{modal === 'edit-employee' ? 'Edit employee' : 'Add employee'}</div><button className="btn btn-ghost btn-icon" onClick={() => setModal(null)}>&times;</button></div>
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div className="form-row">
                 <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={empForm.name} onChange={e => setEmpForm(f => ({ ...f, name: e.target.value }))} /></div>
@@ -260,7 +295,7 @@ export default function HR() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={saveEmployee} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+              <button className="btn btn-primary" onClick={modal === 'edit-employee' ? updateEmployee : saveEmployee} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
             </div>
           </div>
         </div>
