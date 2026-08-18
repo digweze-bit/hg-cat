@@ -640,7 +640,7 @@ export default function Artworks() {
                   <td style={{ fontSize:13, color:'var(--muted)' }}>
                     {w.ownership === 'consignment'
                       ? <span title={w.consignor_name ? `Consignor: ${w.consignor_name}` : ''}>
-                          Consignment{w.consignment_price ? ` · ₦${Number(w.consignment_price).toLocaleString()}` : ''}
+                          Consignment{w.consignment_price ? ` · ${({NGN:'₦',USD:'$',GBP:'£',EUR:'€'})[w.consignment_currency||'NGN']||'₦'}${Number(w.consignment_price).toLocaleString()}` : ''}{Number(w.commission_rate)===0 ? ' · Fixed' : (w.commission_rate ? ` · ${w.commission_rate}%` : '')}
                         </span>
                       : w.ownership === 'artist_owned' ? <span style={{ fontSize:11, color:'var(--green,#2d6a4f)' }}>Artist owned</span> : <span>Gallery</span>
                     }
