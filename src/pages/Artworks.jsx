@@ -543,7 +543,8 @@ export default function Artworks() {
       </div>
 
       {/* Filters */}
-      <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:18 }}>
+      <div style={{ display: subView === 'artworks' ? 'block' : 'none' }}>
+      {/* Filters */}
         <input className="form-input" style={{ width:220 }} placeholder="Search…" value={filters.search} onChange={e=>sf('search',e.target.value)} />
         <select className="form-select" style={{ width:180 }} value={filters.artist} onChange={e=>sf('artist',e.target.value)}>
           <option value="">All artists</option>
@@ -688,6 +689,14 @@ export default function Artworks() {
           </div>
         )}
       </div>
+
+
+
+      </div>
+      {subView === 'consignors' && <ConsignorsView artworks={artworks} artists={artists} onEdit={editArtwork} />}
+
+      {/* Consignment report */}
+      {subView === 'consignment-report' && <ConsignmentReport artworks={artworks} artists={artists} />}
 
       {/* Add/Edit Modal */}
       {modal && (
