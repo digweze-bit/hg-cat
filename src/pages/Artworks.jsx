@@ -692,11 +692,11 @@ export default function Artworks() {
 
 
 
-      </div>
+
       {subView === 'consignors' && <ConsignorsView artworks={artworks} artists={artists} onEdit={editArtwork} />}
 
       {/* Consignment report */}
-      {subView === 'consignment-report' && <ConsignmentReport artworks={artworks} artists={artists} />}
+      </div>
 
       {/* Add/Edit Modal */}
       {modal && (
