@@ -706,7 +706,7 @@ export default function Artworks() {
       </div>
 
       {/* Consignors view */}
-      {subView === 'consignors' && <ConsignorsView artworks={artworks} artists={artists} onEdit={editArtwork} />}
+      {subView === 'consignors' && <ConsignorsView artworks={artworks} artists={artists} onEdit={openEdit} />}
 
       {/* Consignment report */}
       {subView === 'consignment-report' && <ConsignmentReport artworks={artworks} artists={artists} />}
@@ -1321,4 +1321,5 @@ function ConsignmentReport({ artworks, artists }) {
     </div>
   )
 }
+
 
