@@ -1180,7 +1180,7 @@ function ConsignorsView({ artworks, artists, onEdit }) {
           {expanded === name && (
             <div style={{ borderTop:'1px solid var(--line)' }}>
               {works.map(w => (
-                <div key={w.id} onClick={() => onEdit(w)}
+                <div key={w.id} onClick={() => { alert('Opening: ' + w.title); onEdit(w) }}
                   style={{ display:'flex', gap:14, padding:'10px 18px', borderBottom:'1px solid var(--line-soft)', cursor:'pointer', alignItems:'center' }}
                   onMouseEnter={e=>e.currentTarget.style.background='var(--parchment)'}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
