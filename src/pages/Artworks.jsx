@@ -867,10 +867,10 @@ export default function Artworks() {
                           <label className="form-label">Gallery commission (%)</label>
                           <input className="form-input" type="number" min={0} max={100} value={form.commission_rate} onChange={e=>setForm(f=>({...f,commission_rate:e.target.value}))} disabled={Number(form.commission_rate)===0} />
                           {form.consignment_price && Number(form.commission_rate) > 0 ? (() => {
-                            const sym = {NGN:'\u20A6',USD:'$',GBP:'\u00A3',EUR:'\u20AC'}[form.consignment_currency||'NGN'] || '\u20A6'
+                            const sym = ({NGN:'\u20A6',USD:'$',GBP:'\u00A3',EUR:'\u20AC'})[form.consignment_currency||'NGN'] || '\u20A6'
                             return <div style={{ fontSize:10, color:'var(--muted)', marginTop:4 }}>Gallery earns {sym}{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} {'\u00B7'} Owner receives {sym}{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}</div>
                           })() : null}
-                          {Number(form.commission_rate) === 0 && <div style={{ fontSize:10, color:'var(--amber)', marginTop:4 }}>Fixed price — gallery takes no commission</div>}
+                          {Number(form.commission_rate) === 0 && <div style={{ fontSize:10, color:'var(--amber)', marginTop:4 }}>Fixed price \u2014 gallery takes no commission</div>}
                         </div>
                       </div>
                     </>
