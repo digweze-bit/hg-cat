@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 
@@ -6,6 +7,7 @@ const CONSIGNOR_TYPES = ['Artist', 'Estate', 'Collector', 'Dealer', 'Institution
 const TERM_TYPES = ['commission', 'fixed']
 
 export default function Consignors() {
+  const navigate = useNavigate()
   const [consignors, setConsignors] = useState([])
   const [artworks, setArtworks]     = useState([])
   const [artists, setArtists]       = useState([])
@@ -205,7 +207,7 @@ export default function Consignors() {
               </thead>
               <tbody>
                 {consignorArtworks.map(w => (
-                  <tr key={w.id} style={{borderBottom:'1px solid var(--line-soft)'}}>
+                  <tr key={w.id} onClick={() => navigate('/admin/artworks', { state: { editArtworkId: w.id } })} style={{borderBottom:'1px solid var(--line-soft)', cursor:'pointer'}} onMouseEnter={e=>e.currentTarget.style.background='var(--parchment)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     <td style={{padding:'8px 14px', width:44}}>
                       {w.image_url
                         ? <img src={w.image_url} alt="" style={{width:36, height:36, objectFit:'cover', borderRadius:2}}/>

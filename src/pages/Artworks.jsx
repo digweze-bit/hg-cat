@@ -2,7 +2,7 @@
 import TagInput, { ARTWORK_TAG_SUGGESTIONS } from '../components/TagInput'
 import { auditLog } from '../lib/audit'
 import QRCode from 'qrcode'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
@@ -311,6 +311,7 @@ function CurrencyToggle({ displayCurrency, setDisplayCurrency, usdRate, setUsdRa
 
 export default function Artworks() {
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [artists, setArtists] = useState([])
   const [artworks, setArtworks] = useState([])
@@ -321,6 +322,15 @@ export default function Artworks() {
   const [sortBy, setSortBy] = useState('recent') // 'recent' | 'az' | 'price_desc' | 'price_asc' | 'location'
   const [modal, setModal] = useState(null)
   const [subView, setSubView] = useState('artworks')
+
+  // Handle edit artwork from other pages (e.g. Consignors)
+  useEffect(() => {
+    const editId = location.state?.editArtworkId
+    if (!editId || artworks.length === 0) return
+    window.history.replaceState({}, '')
+    const aw = artworks.find(w => w.id === editId)
+    if (aw) openEdit(aw)
+  }, [location.state, artworks])
   const [form, setForm] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
   const [saving, setSaving] = useState(false)
