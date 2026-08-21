@@ -338,16 +338,25 @@ function ArtworkCard({ artwork: w, onClick }) {
 
 function ArtworkDetail({ artwork: w, artist, onClose }) {
   return (
+    <>
+    <style>{`
+      @media (max-width: 699px) {
+        .aw-detail-modal { flex-direction: column !important; max-height: 95vh !important; }
+        .aw-detail-img { width: 100% !important; max-height: 45vh; }
+        .aw-detail-img img { max-height: 45vh; object-fit: contain; }
+        .aw-detail-text { padding: 18px !important; }
+      }
+    `}</style>
     <div style={{ position:'fixed', inset:0, background:'rgba(26,23,20,.65)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
       onClick={onClose}>
-      <div style={{ background:'#fff', borderRadius:3, maxWidth:860, width:'100%', maxHeight:'90vh', display:'flex', overflow:'hidden', boxShadow:'0 8px 48px rgba(0,0,0,.25)' }}
+      <div className="aw-detail-modal" style={{ background:'#fff', borderRadius:3, maxWidth:860, width:'100%', maxHeight:'90vh', display:'flex', overflowY:'auto', boxShadow:'0 8px 48px rgba(0,0,0,.25)' }}
         onClick={e => e.stopPropagation()}>
-        <div style={{ width:'45%', flexShrink:0, background:'#f0ece4' }}>
+        <div className="aw-detail-img" style={{ width:'45%', flexShrink:0, background:'#f0ece4' }}>
           <img src={w.image_url || PLACEHOLDER} alt={w.title}
             style={{ width:'100%', height:'100%', objectFit:'contain', objectPosition: w.image_position || 'center', display:'block' }}
             onError={e => { e.target.src = PLACEHOLDER }} />
         </div>
-        <div style={{ flex:1, padding:'28px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16, fontFamily:'-apple-system,sans-serif' }}>
+        <div className="aw-detail-text" style={{ flex:1, padding:'28px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16, fontFamily:'-apple-system,sans-serif' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
             <div>
               <div style={{ fontFamily:'Georgia,serif', fontSize:'1.4rem', fontWeight:400, color:'#1a1714', marginBottom:4, lineHeight:1.2 }}>{w.title}</div>
@@ -383,6 +392,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
