@@ -67,13 +67,15 @@ export default function ArtworkPage() {
         .aw-title { font-size: 17px; }
 
         @media (min-width: 900px) {
-          .aw-grid { grid-template-columns: 1fr 1fr !important; gap:56px; }
+          .aw-grid { grid-template-columns: 1fr 1fr; gap:56px; }
           .aw-img { max-height: 680px; }
           .aw-title { font-size: 19px; }
         }
-        @media (max-width: 600px) {
-          .aw-img { max-height: 400px; }
+        @media (max-width: 899px) {
+          .aw-grid { grid-template-columns: 1fr !important; gap:20px !important; }
+          .aw-img { max-height: 50vh; }
           .aw-title { font-size: 15px; }
+          .artwork-page { padding: 16px 14px 40px !important; }
         }
         .aw-body { font-family:'Inter',-apple-system,sans-serif; }
       `}</style>
@@ -135,7 +137,7 @@ export default function ArtworkPage() {
             </div>
 
             {/* Details */}
-            <div style={{ paddingTop:20 }}>
+            <div style={{ paddingTop:8, overflowY:'auto' }}>
 
               {artwork.hg_code && (
                 <div style={{ fontSize:10, fontWeight:600, letterSpacing:'.1em', color:'#b8883a', marginBottom:8, textTransform:'uppercase' }}>
