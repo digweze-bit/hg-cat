@@ -62,12 +62,12 @@ export default function ArtworkPage() {
         }
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap');
 
-        .aw-grid { display:grid; grid-template-columns: 1fr !important; gap:28px; align-items:start; }
+        .aw-grid { display:grid; grid-template-columns: 1fr; gap:28px; align-items:start; }
         .aw-img { max-height: 560px; width:100%; object-fit:contain; }
         .aw-title { font-size: 17px; }
 
         @media (min-width: 900px) {
-          .aw-grid { grid-template-columns: 1fr 1fr; gap:56px; }
+          .aw-grid { grid-template-columns: 1fr 1fr !important; gap:56px; }
           .aw-img { max-height: 680px; }
           .aw-title { font-size: 19px; }
         }
