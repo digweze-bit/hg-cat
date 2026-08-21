@@ -381,7 +381,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
           {artist?.bio && (
             <div>
               <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'#999', marginBottom:8 }}>About the artist</div>
-              <p style={{ fontSize:13, lineHeight:1.75, color:'#555', margin:0 }}>{artist.bio.slice(0,350)}{artist.bio.length>350?'\u2026':''}</p>
+              <p style={{ fontSize:13, lineHeight:1.75, color:'#555', margin:0 }}>{artist.bio}</p>
             </div>
           )}
           {w.tags?.length > 0 && (
@@ -395,4 +395,5 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
     </>
   )
 }
+
 
