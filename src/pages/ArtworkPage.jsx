@@ -80,7 +80,7 @@ export default function ArtworkPage() {
         .aw-body { font-family:'Inter',-apple-system,sans-serif; }
       `}</style>
 
-      <div className="aw-body" style={{ minHeight:'100vh', background:'#faf8f5' }}>
+      <div className="aw-body" style={{ minHeight:'100vh', background:'#faf8f5', overflowY:'auto' }}>
 
         {/* Top bar */}
         <div className="no-print" style={{ borderBottom:'1px solid #e8e3db', background:'#fff', padding:'12px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
@@ -137,7 +137,7 @@ export default function ArtworkPage() {
             </div>
 
             {/* Details */}
-            <div style={{ paddingTop:8, overflowY:'auto' }}>
+            <div style={{ paddingTop:8 }}>
 
               {artwork.hg_code && (
                 <div style={{ fontSize:10, fontWeight:600, letterSpacing:'.1em', color:'#b8883a', marginBottom:8, textTransform:'uppercase' }}>
