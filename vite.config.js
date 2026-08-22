@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       workbox: {
-        cacheId: 'hgcat-v14',
+        cacheId: 'hgcat-v15',
 
         // Precache the app shell — everything needed to render the UI
         // Exclude heavy chunks that are only needed occasionally
@@ -135,5 +135,6 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
   }
 })
+
 
 

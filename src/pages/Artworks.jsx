@@ -470,7 +470,7 @@ export default function Artworks() {
         consignment_price: form.ownership === 'consignment' && form.consignment_price ? Number(form.consignment_price) : null,
         consignor_name:    form.ownership === 'consignment' ? form.consignor_name || null : null,
         consignment_currency: form.ownership === 'consignment' ? form.consignment_currency || 'NGN' : null,
-        commission_rate:   form.ownership === 'consignment' ? Number(form.commission_rate) || 40 : null,
+        commission_rate:   form.ownership === 'consignment' ? Number(form.commission_rate ?? 40) : null,
         tessera_id:        form.tessera_id || null,
         hg_code:           form.hg_code || null,
         updated_at:        new Date().toISOString(),
@@ -1348,6 +1348,7 @@ function ConsignmentReport({ artworks, artists }) {
     </div>
   )
 }
+
 
 
 
