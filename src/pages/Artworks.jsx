@@ -859,9 +859,15 @@ export default function Artworks() {
                         <div className="form-group">
                           <label className="form-label">{Number(form.commission_rate) === 0 ? "Fixed price to consignor" : "Consignment price"} <span style={{ fontWeight:400, textTransform:"none", letterSpacing:0, color:"var(--amber)", fontSize:10 }}>— agreed with owner</span></label>
                           <div style={{ display:"flex", gap:6 }}>
-                            <select className="form-select" style={{ width:80, flexShrink:0 }} value={form.consignment_currency||"NGN"} onChange={e=>{ alert('Currency changed to: ' + e.target.value); setForm(f=>({...f,consignment_currency:e.target.value})) }}>
-                              <option value="NGN">₦</option><option value="USD">$</option><option value="GBP">£</option><option value="EUR">€</option>
-                            </select>
+                            <div style={{ display:"flex", gap:2, flexShrink:0 }}>
+                              {[["NGN","₦"],["USD","$"],["GBP","£"],["EUR","€"]].map(([code,sym]) => (
+                                <button key={code} type="button" onClick={() => setForm(f=>({...f,consignment_currency:code}))}
+                                  style={{ padding:"4px 10px", fontSize:12, border:"1px solid " + ((form.consignment_currency||"NGN")===code ? "var(--ink)" : "var(--line)"),
+                                    background: (form.consignment_currency||"NGN")===code ? "var(--ink)" : "var(--white)",
+                                    color: (form.consignment_currency||"NGN")===code ? "#fff" : "var(--muted)",
+                                    borderRadius:3, cursor:"pointer", fontFamily:"inherit" }}>{sym}</button>
+                              ))}
+                            </div>
                             <input className="form-input" value={form.consignment_price ? Number(form.consignment_price).toLocaleString() : ""} onChange={e=>setForm(f=>({...f,consignment_price:e.target.value.replace(/,/g,"")}))} placeholder="0" />
                           </div>
                         </div>
