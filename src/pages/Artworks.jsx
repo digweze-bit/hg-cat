@@ -342,7 +342,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -469,7 +469,7 @@ export default function Artworks() {
         frame_cost:        form.is_framed && form.frame_cost ? Number(form.frame_cost) : null,
         consignment_price: form.ownership === 'consignment' && form.consignment_price ? Number(form.consignment_price) : null,
         consignor_name:    form.ownership === 'consignment' ? form.consignor_name || null : null,
-
+        consignment_currency: form.ownership === 'consignment' ? form.consignment_currency || 'NGN' : null,
         commission_rate:   form.ownership === 'consignment' ? Number(form.commission_rate) || 40 : null,
         tessera_id:        form.tessera_id || null,
         hg_code:           form.hg_code || null,
@@ -523,7 +523,8 @@ export default function Artworks() {
       consignor_name: artwork.consignor_name || '',
       tags: artwork.tags || [],
       consignor_contact: artwork.consignor_contact || '',
-      commission_rate: artwork.commission_rate || 40,
+      commission_rate: artwork.commission_rate ?? 40,
+      consignment_currency: artwork.consignment_currency || 'NGN',
       is_framed: artwork.is_framed || false,
       frame_cost: artwork.frame_cost || '',
       category: artwork.category || '',
