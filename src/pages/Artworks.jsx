@@ -475,6 +475,7 @@ export default function Artworks() {
         hg_code:           form.hg_code || null,
         updated_at:        new Date().toISOString(),
       }
+      console.log('SAVING PAYLOAD:', JSON.stringify({ ownership: payload.ownership, consignment_currency: payload.consignment_currency, commission_rate: payload.commission_rate }))
       if (modal === 'edit') {
         const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)
         if (updateErr) throw updateErr
