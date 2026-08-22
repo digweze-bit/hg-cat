@@ -858,8 +858,8 @@ export default function Artworks() {
                       <div className="form-row">
                         <div className="form-group">
                           <label className="form-label">{Number(form.commission_rate) === 0 ? "Fixed price to consignor" : "Consignment price"} <span style={{ fontWeight:400, textTransform:"none", letterSpacing:0, color:"var(--amber)", fontSize:10 }}>— agreed with owner</span></label>
-                          <div style={{ display:"flex", gap:6 }}>
-                            <div style={{ display:"flex", gap:2, flexShrink:0 }}>
+                          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                            <div style={{ display:"flex", gap:2, flexShrink:0, border:"2px solid var(--amber)", borderRadius:4, padding:2 }}>
                               {[["NGN","₦"],["USD","$"],["GBP","£"],["EUR","€"]].map(([code,sym]) => (
                                 <button key={code} type="button" onClick={() => setForm(f=>({...f,consignment_currency:code}))}
                                   style={{ padding:"4px 10px", fontSize:12, border:"1px solid " + ((form.consignment_currency||"NGN")===code ? "var(--ink)" : "var(--line)"),
