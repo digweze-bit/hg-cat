@@ -7,7 +7,7 @@ import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
 
-const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS']
+const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS', 'Returned']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
@@ -1347,5 +1347,6 @@ function ConsignmentReport({ artworks, artists }) {
     </div>
   )
 }
+
 
 
