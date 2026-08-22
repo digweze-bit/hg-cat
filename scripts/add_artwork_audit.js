@@ -8,33 +8,57 @@ let raw = fs.readFileSync(file, 'utf8')
 const usesCRLF = raw.includes('\r\n')
 let src = raw.replace(/\r\n/g, '\n')
 
-if (src.includes("auditLog('artwork.created'")) {
-  console.log('Already patched')
-  process.exit(0)
+if (src.includes('auditLog')) { console.log('Already patched'); process.exit(0) }
+
+function mustReplace(oldStr, newStr, label) {
+  if (!src.includes(oldStr)) { console.error('NOT FOUND: ' + label); console.error(oldStr.slice(0,150)); process.exit(1) }
+  src = src.replace(oldStr, newStr)
+  console.log('OK: ' + label)
 }
 
-// 1. Add import
-const importAnchor = "import { useState, useEffect, useMemo, useCallback, useRef } from 'react'"
-src = src.replace(importAnchor, importAnchor + "\nimport { auditLog } from '../lib/audit'")
+// 1. Import auditLog
+mustReplace(
+  "import { supabase, fetchAll } from '../lib/supabase'",
+  "import { supabase, fetchAll } from '../lib/supabase'\nimport { auditLog } from '../lib/audit'",
+  '1. Import auditLog'
+)
 
-// 2. Log artwork update — add AFTER the update call, before setArtworks
-const updateAnchor = "        const { error: updateErr } = await supabase.from('artworks').update(payload).eq('id', editId)\n        if (updateErr) throw updateErr"
-if (!src.includes(updateAnchor)) { console.error('update anchor not found'); process.exit(1) }
-src = src.replace(updateAnchor,
-  updateAnchor + "\n        auditLog('artwork.updated', { entityType:'artwork', entityId:editId, entityLabel:payload.title, metadata:{ artist: artistMap[payload.artist_id]?.name } })")
+// 2. Find the artwork update/save and add audit logging after successful save
+// Find the edit save path - look for "await supabase.from('artworks').update"
+const updateIdx = src.indexOf("await supabase.from('artworks').update(payload)")
+if (updateIdx < 0) { console.error('NOT FOUND: artwork update call'); process.exit(1) }
 
-// 3. Log artwork create — add AFTER insert, before cacheInvalidate
-const insertAnchor = "        const { error: insertErr } = await supabase.from('artworks').insert({ ...payload, visible: true, hg_code: hgCode })\n        if (insertErr) throw insertErr"
-if (!src.includes(insertAnchor)) { console.error('insert anchor not found'); process.exit(1) }
-src = src.replace(insertAnchor,
-  insertAnchor + "\n        auditLog('artwork.created', { entityType:'artwork', entityId:null, entityLabel:payload.title, metadata:{ artist: artistMap[payload.artist_id]?.name } })")
+// Find the line after update that checks for error
+const afterUpdate = src.indexOf('\n', updateIdx)
+const nextLines = src.slice(afterUpdate, afterUpdate + 500)
 
-// 4. Log artwork delete — add BEFORE the delete call (get title first)
-const deleteAnchor = "    if (!confirm('Delete this artwork?')) return\n    await supabase.from('artworks').delete().eq('id', id)"
-if (!src.includes(deleteAnchor)) { console.error('delete anchor not found'); process.exit(1) }
-src = src.replace(deleteAnchor,
-  "    if (!confirm('Delete this artwork?')) return\n    const toDelete = artworks.find(w => w.id === id)\n    await supabase.from('artworks').delete().eq('id', id)\n    auditLog('artwork.deleted', { entityType:'artwork', entityId:id, entityLabel:toDelete?.title, metadata:{ artist: artistMap[toDelete?.artist_id]?.name } })")
+// Add audit log after successful edit
+mustReplace(
+  "        toast('Artwork updated')\n        closeModal()",
+  `        // Log availability changes to audit trail
+        if (editId && form.availability) {
+          const oldArt = artworks.find(a => a.id === editId)
+          if (oldArt && oldArt.availability !== form.availability) {
+            auditLog('artwork.status_changed', {
+              entityType: 'artwork', entityId: editId, entityLabel: form.title,
+              metadata: { from: oldArt.availability, to: form.availability, consignor: form.consignor_name || null }
+            })
+          }
+        }
+        toast('Artwork updated')
+        closeModal()`,
+  '2. Audit log on edit'
+)
+
+// 3. Add audit log for new artwork creation
+mustReplace(
+  "        toast('Artwork created')\n        closeModal()",
+  `        auditLog('artwork.created', { entityType: 'artwork', entityId: data?.[0]?.id, entityLabel: form.title })
+        toast('Artwork created')
+        closeModal()`,
+  '3. Audit log on create'
+)
 
 const final = usesCRLF ? src.replace(/\n/g, '\r\n') : src
 fs.writeFileSync(file, final, 'utf8')
-console.log('Artworks audit logging added successfully')
+console.log('ALL DONE')
