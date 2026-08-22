@@ -104,7 +104,7 @@ function PriceFields({ form, setForm }) {
         <span style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', fontWeight:600 }}>Input currency</span>
         {DISPLAY_CURRENCIES.map(c => (
           <button key={c} type="button"
-            onClick={() => { window.alert("Price currency: " + c); setInputCurrency(c) }}
+            onClick={() => setInputCurrency(c)}
             style={{ padding:'3px 10px', fontSize:11, fontWeight:600, borderRadius:3, border:'1px solid',
               background: inputCurrency === c ? 'var(--ink)' : 'transparent',
               color: inputCurrency === c ? '#fff' : 'var(--muted)',
@@ -324,9 +324,12 @@ export default function Artworks() {
   const [subView, setSubView] = useState('artworks')
 
   // Handle edit artwork from other pages (e.g. Consignors)
+  const handledEditRef = useRef(null)
   useEffect(() => {
     const editId = location.state?.editArtworkId
     if (!editId || artworks.length === 0) return
+    if (handledEditRef.current === editId) return // already handled
+    handledEditRef.current = editId
     window.history.replaceState({}, '')
     const aw = artworks.find(w => w.id === editId)
     if (aw) openEdit(aw)
@@ -861,7 +864,7 @@ export default function Artworks() {
                           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
                             <div style={{ display:"flex", gap:2, flexShrink:0, border:"2px solid var(--amber)", borderRadius:4, padding:2 }}>
                               {[["NGN","₦"],["USD","$"],["GBP","£"],["EUR","€"]].map(([code,sym]) => (
-                                <button key={code} type="button" onClick={() => { window.alert("Consignment currency: " + code); setForm(f=>({...f,consignment_currency:code})) }}
+                                <button key={code} type="button" onClick={() => setForm(f=>({...f,consignment_currency:code}))}
                                   style={{ padding:"4px 10px", fontSize:12, border:"1px solid " + ((form.consignment_currency||"NGN")===code ? "var(--ink)" : "var(--line)"),
                                     background: (form.consignment_currency||"NGN")===code ? "var(--ink)" : "var(--white)",
                                     color: (form.consignment_currency||"NGN")===code ? "#fff" : "var(--muted)",
