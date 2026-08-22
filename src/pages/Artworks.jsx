@@ -859,7 +859,7 @@ export default function Artworks() {
                         <div className="form-group">
                           <label className="form-label">{Number(form.commission_rate) === 0 ? "Fixed price to consignor" : "Consignment price"} <span style={{ fontWeight:400, textTransform:"none", letterSpacing:0, color:"var(--amber)", fontSize:10 }}>— agreed with owner</span></label>
                           <div style={{ display:"flex", gap:6 }}>
-                            <select className="form-select" style={{ width:80, flexShrink:0 }} value={form.consignment_currency||"NGN"} onChange={e=>setForm(f=>({...f,consignment_currency:e.target.value}))}>
+                            <select className="form-select" style={{ width:80, flexShrink:0 }} value={form.consignment_currency||"NGN"} onChange={e=>{ alert('Currency changed to: ' + e.target.value); setForm(f=>({...f,consignment_currency:e.target.value})) }}>
                               <option value="NGN">₦</option><option value="USD">$</option><option value="GBP">£</option><option value="EUR">€</option>
                             </select>
                             <input className="form-input" value={form.consignment_price ? Number(form.consignment_price).toLocaleString() : ""} onChange={e=>setForm(f=>({...f,consignment_price:e.target.value.replace(/,/g,"")}))} placeholder="0" />
@@ -1349,6 +1349,7 @@ function ConsignmentReport({ artworks, artists }) {
     </div>
   )
 }
+
 
 
 
