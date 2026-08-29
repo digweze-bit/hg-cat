@@ -11,6 +11,7 @@ const REPORTS = [
   { id: 'consignment_client', label: 'Client consignment', desc: 'Consigned works grouped by secondary-market consignor' },
   { id: 'pending',    label: 'Pending collection',     desc: 'Invoiced artworks not yet marked as collected' },
   { id: 'collection', label: 'Collection report',      desc: 'Collected artworks for a period or invoice, with details' },
+  { id: 'artist_report', label: 'Artist report',        desc: 'Consignment, sales, and collection reports for a specific artist' },
 ]
 
 export default function Reports() {
@@ -742,3 +743,4 @@ ${body}
 function e(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
+
