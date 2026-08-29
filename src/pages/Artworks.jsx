@@ -861,17 +861,15 @@ export default function Artworks() {
                       <div className="form-row" style={{ gridTemplateColumns: Number(form.commission_rate) === 0 ? '1fr' : '1fr 1fr' }}>
                         <div className="form-group">
                           <label className="form-label">{Number(form.commission_rate) === 0 ? "Fixed price to consignor" : "Consignment price"} <span style={{ fontWeight:400, textTransform:"none", letterSpacing:0, color:"var(--amber)", fontSize:10 }}>— agreed with owner</span></label>
-                          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                            <div style={{ display:"flex", gap:2, flexShrink:0, border:"2px solid var(--amber)", borderRadius:4, padding:2 }}>
-                              {[["NGN","₦"],["USD","$"],["GBP","£"],["EUR","€"]].map(([code,sym]) => (
-                                <button key={code} type="button" onClick={() => setForm(f=>({...f,consignment_currency:code}))}
-                                  style={{ padding:"4px 10px", fontSize:12, border:"1px solid " + ((form.consignment_currency||"NGN")===code ? "var(--ink)" : "var(--line)"),
-                                    background: (form.consignment_currency||"NGN")===code ? "var(--ink)" : "var(--white)",
-                                    color: (form.consignment_currency||"NGN")===code ? "#fff" : "var(--muted)",
-                                    borderRadius:3, cursor:"pointer", fontFamily:"inherit" }}>{sym}</button>
-                              ))}
-                            </div>
-                            <input className="form-input" value={form.consignment_price ? Number(form.consignment_price).toLocaleString() : ""} onChange={e=>setForm(f=>({...f,consignment_price:e.target.value.replace(/,/g,"")}))} placeholder="0" />
+                          <div style={{ display:"flex", gap:8 }}>
+                            <select value={form.consignment_currency||"NGN"} onChange={e=>setForm(f=>({...f,consignment_currency:e.target.value}))}
+                              style={{ width:90, padding:"6px 8px", fontSize:13, border:"2px solid var(--amber)", borderRadius:4, background:"var(--white)", fontFamily:"inherit", cursor:"pointer" }}>
+                              <option value="NGN">\u20A6 NGN</option>
+                              <option value="USD">$ USD</option>
+                              <option value="GBP">\u00A3 GBP</option>
+                              <option value="EUR">\u20AC EUR</option>
+                            </select>
+                            <input className="form-input" style={{ flex:1 }} value={form.consignment_price ? Number(form.consignment_price).toLocaleString() : ""} onChange={e=>setForm(f=>({...f,consignment_price:e.target.value.replace(/,/g,"")}))} placeholder="0" />
                           </div>
                         </div>
                         {Number(form.commission_rate) > 0 && <div className="form-group">
