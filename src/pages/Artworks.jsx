@@ -858,7 +858,7 @@ export default function Artworks() {
                           Fixed price (no commission)
                         </label>
                       </div>
-                      <div className="form-row">
+                      <div className="form-row" style={{ gridTemplateColumns: Number(form.commission_rate) === 0 ? '1fr' : '1fr 1fr' }}>
                         <div className="form-group">
                           <label className="form-label">{Number(form.commission_rate) === 0 ? "Fixed price to consignor" : "Consignment price"} <span style={{ fontWeight:400, textTransform:"none", letterSpacing:0, color:"var(--amber)", fontSize:10 }}>— agreed with owner</span></label>
                           <div style={{ display:"flex", gap:6, alignItems:"center" }}>
@@ -874,15 +874,15 @@ export default function Artworks() {
                             <input className="form-input" value={form.consignment_price ? Number(form.consignment_price).toLocaleString() : ""} onChange={e=>setForm(f=>({...f,consignment_price:e.target.value.replace(/,/g,"")}))} placeholder="0" />
                           </div>
                         </div>
-                        <div className="form-group">
+                        {Number(form.commission_rate) > 0 && <div className="form-group">
                           <label className="form-label">Gallery commission (%)</label>
                           <input className="form-input" type="number" min={0} max={100} value={form.commission_rate} onChange={e=>setForm(f=>({...f,commission_rate:e.target.value}))} disabled={Number(form.commission_rate)===0} />
                           {form.consignment_price && Number(form.commission_rate) > 0 ? (() => {
                             const sym = ({NGN:"₦",USD:"$",GBP:"£",EUR:"€"})[form.consignment_currency||"NGN"] || "₦"
                             return <div style={{ fontSize:10, color:"var(--muted)", marginTop:4 }}>Gallery earns {sym}{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} · Owner receives {sym}{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}</div>
                           })() : null}
-                          {Number(form.commission_rate) === 0 && <div style={{ fontSize:10, color:"var(--amber)", marginTop:4 }}>Fixed price — gallery takes no commission</div>}
-                        </div>
+                        }
+                        {Number(form.commission_rate) === 0 && <div style={{ fontSize:10, color:'var(--amber)', marginTop:8 }}>Fixed price — gallery takes no commission</div>}
                       </div>
                     </>
                   )}
