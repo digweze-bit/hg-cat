@@ -881,7 +881,7 @@ export default function Artworks() {
                             const sym = ({NGN:"₦",USD:"$",GBP:"£",EUR:"€"})[form.consignment_currency||"NGN"] || "₦"
                             return <div style={{ fontSize:10, color:"var(--muted)", marginTop:4 }}>Gallery earns {sym}{Math.round(Number(form.consignment_price) * Number(form.commission_rate) / 100).toLocaleString()} · Owner receives {sym}{Math.round(Number(form.consignment_price) * (100 - Number(form.commission_rate)) / 100).toLocaleString()}</div>
                           })() : null}
-                        }
+                        </div>}
                         {Number(form.commission_rate) === 0 && <div style={{ fontSize:10, color:'var(--amber)', marginTop:8 }}>Fixed price — gallery takes no commission</div>}
                       </div>
                     </>
