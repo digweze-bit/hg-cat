@@ -561,6 +561,19 @@ export default function Reports() {
           </div>
         </div>
       )}
+
+      {/* Artist Report */}
+      {activeReport === 'artist_report' && (
+        <ArtistReportView
+          artists={artists} artworks={artworks} invoices={invoices}
+          artistMap={artistMap} clientMap={clientMap}
+          dateFrom={dateFrom} dateTo={dateTo}
+          selectedArtist={selectedArtist} setSelectedArtist={setSelectedArtist}
+          artistSearch={artistSearch} setArtistSearch={setArtistSearch}
+          artistSubReport={artistSubReport} setArtistSubReport={setArtistSubReport}
+          showPricing={showPricing} setShowPricing={setShowPricing}
+        />
+      )}
     </div>
   )
 }
