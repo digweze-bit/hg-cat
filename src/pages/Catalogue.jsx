@@ -1,5 +1,4 @@
-﻿import ArtworkInquiryEmbed from '../components/ArtworkInquiryEmbed'
-import { useState, useEffect, useMemo } from 'react'
+﻿import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 
@@ -373,9 +372,6 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
               </div>
             ))}
           </div>
-          {/* Inquiry form */}
-          <ArtworkInquiryEmbed artworkTitle={w.title} artworkId={w.id} />
-
           {w.writeup && (
             <div>
               <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'#999', marginBottom:8 }}>About this work</div>
@@ -399,6 +395,7 @@ function ArtworkDetail({ artwork: w, artist, onClose }) {
     </>
   )
 }
+
 
 
 
