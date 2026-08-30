@@ -89,17 +89,15 @@ export default function ArtworkPage() {
 
         .aw-grid { display:grid; grid-template-columns: 1fr; gap:28px; align-items:start; }
         .aw-img { max-height: 560px; width:100%; object-fit:contain; }
-        .aw-title { font-size: 17px; }
+        .aw-title { font-size: 13px; }
 
         @media (min-width: 900px) {
           .aw-grid { grid-template-columns: 1fr 1fr; gap:56px; }
           .aw-img { max-height: 680px; }
-          .aw-title { font-size: 19px; }
         }
         @media (max-width: 899px) {
           .aw-grid { grid-template-columns: 1fr !important; gap:20px !important; }
           .aw-img { max-height: 50vh; }
-          .aw-title { font-size: 15px; }
           .artwork-page { padding: 16px 14px 40px !important; }
         }
         .aw-body { font-family:'Inter',-apple-system,sans-serif; }
@@ -190,7 +188,7 @@ export default function ArtworkPage() {
               {/* Price — right after details */}
               {(artwork.price || artwork.retail_price) && (
                 <div style={{ paddingTop:16, borderTop:'1px solid #e8e3db' }}>
-                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:17, fontWeight:600, color:'#1a1714' }}>
+                  <div style={{ fontFamily:"'Inter',sans-serif", fontSize:13, fontWeight:600, color:'#1a1714' }}>
                     {artwork.price || `₦${Number(artwork.retail_price).toLocaleString()}`}
                   </div>
                 </div>
