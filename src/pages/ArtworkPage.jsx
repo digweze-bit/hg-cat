@@ -2,6 +2,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import QRCode from 'qrcode'
+import ArtworkInquiryEmbed from '../components/ArtworkInquiryEmbed'
 
 export default function ArtworkPage() {
   const { id } = useParams()
@@ -214,7 +215,6 @@ export default function ArtworkPage() {
               )}
             </div>
           )}
-          )}
 
           {/* Availability — small, bottom of page */}
           <div style={{ marginTop:28, textAlign:'center' }}>
@@ -230,7 +230,7 @@ export default function ArtworkPage() {
 
           {/* Inquiry form */}
           <div className="no-print" style={{ marginTop:32 }}>
-            <ArtworkInquiryEmbed artworkTitle={artwork.title} artworkId={artwork.id} />
+            <ArtworkInquiryEmbed artworkId={artwork.id} artworkTitle={artwork.title} artistName={artist?.name} />
           </div>
           {/* Lightbox */}
           {lightbox && (
