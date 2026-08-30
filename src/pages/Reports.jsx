@@ -1,27 +1,74 @@
-﻿import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase, fetchAll } from '../lib/supabase'
 import { formatAmount } from '../lib/currencies'
 
-const REPORTS = [
-  { id: 'sold',       label: 'Artworks sold',         desc: 'Works sold within a date range, with sale values' },
-  { id: 'loaned',     label: 'Artworks on loan',       desc: 'Works currently marked as loaned out' },
-  { id: 'received',   label: 'Artworks received',      desc: 'Works acquired or consigned within a date range' },
-  { id: 'receivable', label: 'Accounts receivable',    desc: 'Outstanding balances on sent and partially paid invoices' },
-  { id: 'consignment_artist', label: 'Artist consignment', desc: 'Consigned works grouped by artist' },
-  { id: 'consignment_client', label: 'Client consignment', desc: 'Consigned works grouped by secondary-market consignor' },
-  { id: 'pending',    label: 'Pending collection',     desc: 'Invoiced artworks not yet marked as collected' },
-  { id: 'collection', label: 'Collection report',      desc: 'Collected artworks for a period or invoice, with details' },
-  { id: 'artist_report', label: 'Artist report',        desc: 'Consignment, sales, and collection reports for a specific artist' },
+const GROUPS = [
+  {
+    id: 'artist',
+    label: 'Artist Reports',
+    desc: 'Consignment, sales, collection and returns for a given artist',
+    entity: 'artist',
+    reports: [
+      { id: 'consignment', label: 'Consignment', period: false },
+      { id: 'sales',       label: 'Sales',       period: true  },
+      { id: 'collection',  label: 'Collection',  period: true  },
+      { id: 'returns',     label: 'Returns',     period: true  },
+    ],
+  },
+  {
+    id: 'consignor',
+    label: 'Consignor Reports',
+    desc: 'Consignment, sales, collection and returns for a given consignor',
+    entity: 'consignor',
+    reports: [
+      { id: 'consignment', label: 'Consignment', period: false },
+      { id: 'sales',       label: 'Sales',       period: true  },
+      { id: 'collection',  label: 'Collection',  period: true  },
+      { id: 'returns',     label: 'Returns',     period: true  },
+    ],
+  },
+  {
+    id: 'sales',
+    label: 'Sales Reports',
+    desc: 'Revenue and outstanding balances across all invoices',
+    entity: null,
+    reports: [
+      { id: 'sales',      label: 'Sales',                period: true  },
+      { id: 'receivable', label: 'Accounts receivable',  period: false },
+    ],
+  },
+  {
+    id: 'artwork',
+    label: 'Artwork Reports',
+    desc: 'Inventory movement — sold, collected, pending, received and on loan',
+    entity: null,
+    reports: [
+      { id: 'sold',       label: 'Artworks sold',            period: true  },
+      { id: 'collection', label: 'Collection report',        period: true  },
+      { id: 'pending',    label: 'Pending collection',       period: false },
+      { id: 'received',   label: 'Acquired / consigned',     period: true  },
+      { id: 'loaned',     label: 'Works on loan',            period: false },
+    ],
+  },
 ]
 
+const DASH = '—'
+
+function workValue(w) {
+  // price is a free-text field, so only trust the numeric columns
+  return Number(w.consignment_price || w.retail_price || w.valuation || 0)
+}
+
 export default function Reports() {
-  const [activeReport, setActiveReport] = useState('sold')
-  const [artworks, setArtworks]   = useState([])
-  const [artists, setArtists]     = useState([])
-  const [invoices, setInvoices]   = useState([])
-  const [clients, setClients]     = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [dateFrom, setDateFrom]   = useState(() => {
+  const [groupId, setGroupId]   = useState('artist')
+  const [subId, setSubId]       = useState('consignment')
+  const [entityId, setEntityId] = useState('')       // artist id, or consignor name
+  const [artworks, setArtworks] = useState([])
+  const [artists, setArtists]   = useState([])
+  const [invoices, setInvoices] = useState([])
+  const [consignors, setConsignors] = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3)
     return d.toISOString().split('T')[0]
   })
@@ -29,132 +76,83 @@ export default function Reports() {
 
   useEffect(() => {
     async function load() {
-      const [a, w, inv, c] = await Promise.all([
+      const [a, w, inv, cons] = await Promise.all([
         fetchAll('artists', { order: 'name' }),
         fetchAll('artworks', { order: 'created_at' }),
         supabase.from('invoices')
-          .select('*, clients(name, email, phone), invoice_items(id, title, artist_name, item_type, delivered, delivered_at, collected_by, line_total, sort_order, image_url, cover_url)')
+          .select('*, clients(name, email, phone), invoice_items(id, artwork_id, title, artist_name, consignor_name, item_type, delivered, delivered_at, collected_by, line_total, sort_order)')
           .order('created_at', { ascending: false })
           .limit(2000)
           .then(r => r.data || []),
-        fetchAll('clients', { order: 'name' }),
+        supabase.from('consignors').select('*').order('name').then(r => r.data || []),
       ])
-      setArtists(a); setArtworks(w); setInvoices(inv); setClients(c)
-      setLoading(false)
+      setArtists(a); setArtworks(w); setInvoices(inv); setConsignors(cons)
       setLoading(false)
     }
     load()
   }, [])
 
-  const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
-  const clientMap = useMemo(() => Object.fromEntries(clients.map(c => [c.id, c])), [clients])
+  const group  = GROUPS.find(g => g.id === groupId)
+  const sub    = group.reports.find(r => r.id === subId) || group.reports[0]
 
-  // \u2500\u2500 REPORT DATA \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  const artistMap  = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
+  const artworkMap = useMemo(() => Object.fromEntries(artworks.map(w => [w.id, w])), [artworks])
 
-  const soldData = useMemo(() => {
-    // Paid invoices within date range \u2014 extract sold artworks
-    return invoices
-      .filter(inv => inv.status === 'paid' && inv.issue_date >= dateFrom && inv.issue_date <= dateTo)
-      .flatMap(inv => (inv.invoice_items || []).map(item => ({
-        ...item,
+  // Consignor names actually present on stock, merged with the consignors table
+  const consignorNames = useMemo(() => {
+    const set = new Set()
+    artworks.forEach(w => { if (w.consignor_name) set.add(w.consignor_name) })
+    consignors.forEach(c => { if (c.name) set.add(c.name) })
+    return [...set].sort((a, b) => a.localeCompare(b))
+  }, [artworks, consignors])
+
+  // Flatten invoice lines once, resolving artist/consignor from the linked artwork
+  const items = useMemo(() => invoices.flatMap(inv =>
+    (inv.invoice_items || []).map(it => {
+      const aw = artworkMap[it.artwork_id]
+      return {
+        ...it,
         invoice_number: inv.invoice_number,
-        client_name: inv.clients?.name || '\u2014',
-        sale_date: inv.issue_date,
+        invoice_status: inv.status,
+        client_name: inv.clients?.name || DASH,
+        issue_date: inv.issue_date,
         currency: inv.currency,
-        invoice_id: inv.id,
-      })))
-  }, [invoices, dateFrom, dateTo])
+        artist_id: aw?.artist_id || null,
+        artist_label: (aw && artistMap[aw.artist_id]?.name) || it.artist_name || DASH,
+        consignor_label: it.consignor_name || aw?.consignor_name || null,
+      }
+    })), [invoices, artworkMap, artistMap])
 
-  const soldTotal = useMemo(() =>
-    soldData.reduce((s, item) => s + Number(item.line_total || 0), 0), [soldData])
+  // Scope helpers — when no entity is picked, the report covers everything
+  function matchesEntity(w) {
+    if (!group.entity || !entityId) return true
+    return group.entity === 'artist' ? w.artist_id === entityId : w.consignor_name === entityId
+  }
+  function itemMatchesEntity(it) {
+    if (!group.entity || !entityId) return true
+    return group.entity === 'artist' ? it.artist_id === entityId : it.consignor_label === entityId
+  }
 
-  const loanedData = useMemo(() =>
-    artworks.filter(w => w.availability === 'Reserved' || (w.location && w.location.toLowerCase().includes('loan'))),
-    [artworks])
+  const inPeriod    = d => d && d >= dateFrom && d <= dateTo
+  const entityLabel = !entityId ? null
+    : group.entity === 'artist' ? artistMap[entityId]?.name : entityId
 
-  const receivedData = useMemo(() =>
-    artworks.filter(w => w.created_at >= dateFrom + 'T00:00:00' && w.created_at <= dateTo + 'T23:59:59'),
-    [artworks, dateFrom, dateTo])
-
-  const receivableData = useMemo(() =>
-    invoices.filter(inv => ['sent','partial'].includes(inv.status) && Number(inv.balance_due) > 0),
-    [invoices])
-
-  const totalReceivable = useMemo(() =>
-    receivableData.reduce((s, inv) => s + Number(inv.balance_due || 0), 0), [receivableData])
-
-  const receivableByCurrency = useMemo(() => {
-    const groups = {}
-    receivableData.forEach(inv => {
-      const cur = inv.currency || 'NGN'
-      if (!groups[cur]) groups[cur] = { currency: cur, total: 0, count: 0, invoices: [] }
-      groups[cur].total += Number(inv.balance_due || 0)
-      groups[cur].count += 1
-      groups[cur].invoices.push(inv)
+  const report = useMemo(() => {
+    if (loading) return null
+    return buildReport({
+      groupId, subId, group, sub, entityLabel,
+      artworks, items, invoices, artistMap,
+      matchesEntity, itemMatchesEntity, inPeriod, dateFrom, dateTo,
     })
-    return Object.values(groups).sort((a,b) => b.total - a.total)
-  }, [receivableData])
+  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo])
 
-  const consignmentByArtist = useMemo(() => {
-    const consigned = artworks.filter(w => w.ownership === 'consignment')
-    const groups = {}
-    consigned.forEach(w => {
-      const name = artistMap[w.artist_id]?.name || 'Unknown artist'
-      if (!groups[name]) groups[name] = { name, works: [], count: 0, totalValue: 0 }
-      groups[name].works.push(w)
-      groups[name].count += 1
-      groups[name].totalValue += Number(w.consignment_price || w.price || w.retail_price || 0)
-    })
-    return Object.values(groups).sort((a,b) => b.count - a.count)
-  }, [artworks, artistMap])
+  if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'…'}</div>
 
-  const consignmentByClient = useMemo(() => {
-    const consigned = artworks.filter(w => w.ownership === 'consignment')
-    const groups = {}
-    consigned.forEach(w => {
-      const name = w.consignor_name || 'Unspecified consignor'
-      if (!groups[name]) groups[name] = { name, works: [], count: 0, totalValue: 0 }
-      groups[name].works.push(w)
-      groups[name].count += 1
-      groups[name].totalValue += Number(w.consignment_price || w.price || w.retail_price || 0)
-    })
-    return Object.values(groups).sort((a,b) => b.count - a.count)
-  }, [artworks])
-
-  const pendingData = useMemo(() => {
-    return invoices
-      .filter(inv => inv.status === 'paid')
-      .flatMap(inv => (inv.invoice_items || [])
-        .filter(item => (item.item_type === 'artwork' || !item.item_type) && !item.delivered)
-        .map(item => ({
-          ...item,
-          invoice_number: inv.invoice_number,
-          client_name: inv.clients?.name || '\u2014',
-          invoice_date: inv.issue_date,
-          currency: inv.currency,
-          invoice_id: inv.id,
-        })))
-  }, [invoices])
-
-  const collectionData = useMemo(() => {
-    return invoices
-      .flatMap(inv => (inv.invoice_items || [])
-        .filter(item => item.delivered && item.delivered_at &&
-          item.delivered_at.slice(0,10) >= dateFrom && item.delivered_at.slice(0,10) <= dateTo)
-        .map(item => ({
-          ...item,
-          invoice_number: inv.invoice_number,
-          client_name: inv.clients?.name || '\u2014',
-          invoice_date: inv.issue_date,
-          currency: inv.currency,
-          invoice_id: inv.id,
-        })))
-      .sort((a,b) => (b.delivered_at||'').localeCompare(a.delivered_at||''))
-  }, [invoices, dateFrom, dateTo])
-
-  if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'\u2026'}</div>
-
-  const report = REPORTS.find(r => r.id === activeReport)
+  function pickGroup(g) {
+    setGroupId(g.id)
+    setSubId(g.reports[0].id)
+    setEntityId('')
+  }
 
   return (
     <div>
@@ -163,428 +161,492 @@ export default function Reports() {
           <div className="page-title">Reports</div>
           <div className="page-subtitle">Gallery financial and inventory reports</div>
         </div>
-        <button className="btn btn-outline" onClick={() => printReport(activeReport, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable, pendingData, collectionData, consignmentByArtist, consignmentByClient })}>
+        <button className="btn btn-outline" onClick={() => printReport(report)}>
           Print this report
         </button>
       </div>
 
-      {/* Report selector */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:24 }}>
-        {REPORTS.map(r => (
-          <div key={r.id}
-            onClick={() => setActiveReport(r.id)}
-            style={{ padding:'14px 16px', border:`1px solid ${activeReport===r.id?'var(--ink)':'var(--line)'}`, borderRadius:3, cursor:'pointer', background: activeReport===r.id?'var(--ink)':'var(--white)', transition:'all 150ms' }}
-          >
-            <div style={{ fontSize:13, fontWeight:500, color: activeReport===r.id?'var(--white)':'var(--ink)', marginBottom:4 }}>{r.label}</div>
-            <div style={{ fontSize:11, color: activeReport===r.id?'rgba(255,255,255,.6)':'var(--muted)', lineHeight:1.45 }}>{r.desc}</div>
+      {/* Group selector */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:16 }}>
+        {GROUPS.map(g => (
+          <div key={g.id} onClick={() => pickGroup(g)}
+            style={{ padding:'14px 16px', border:`1px solid ${groupId===g.id?'var(--ink)':'var(--line)'}`, borderRadius:3, cursor:'pointer', background: groupId===g.id?'var(--ink)':'var(--white)', transition:'all 150ms' }}>
+            <div style={{ fontSize:13, fontWeight:500, color: groupId===g.id?'var(--white)':'var(--ink)', marginBottom:4 }}>{g.label}</div>
+            <div style={{ fontSize:11, color: groupId===g.id?'rgba(255,255,255,.6)':'var(--muted)', lineHeight:1.45 }}>{g.desc}</div>
           </div>
         ))}
       </div>
 
-      {/* Date range \u2014 shown for sold and received */}
-      {['sold','received'].includes(activeReport) && (
-        <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:20, background:'var(--parchment)', padding:'12px 16px', borderRadius:3 }}>
-          <span style={{ fontSize:13, color:'var(--muted)' }}>Period:</span>
-          <input type="date" className="form-input" style={{ width:160 }} value={dateFrom} onChange={e=>setDateFrom(e.target.value)} />
-          <span style={{ fontSize:13, color:'var(--muted)' }}>to</span>
-          <input type="date" className="form-input" style={{ width:160 }} value={dateTo} onChange={e=>setDateTo(e.target.value)} />
+      {/* Controls: sub-report dropdown, entity picker, date range */}
+      <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap', marginBottom:20, background:'var(--parchment)', padding:'12px 16px', borderRadius:3 }}>
+        <span style={{ fontSize:13, color:'var(--muted)' }}>Report:</span>
+        <select className="form-select" style={{ width:200 }} value={sub.id} onChange={e => setSubId(e.target.value)}>
+          {group.reports.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+        </select>
+
+        {group.entity === 'artist' && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Artist:</span>
+            <select className="form-select" style={{ width:220 }} value={entityId} onChange={e => setEntityId(e.target.value)}>
+              <option value="">All artists</option>
+              {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          </>
+        )}
+
+        {group.entity === 'consignor' && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Consignor:</span>
+            <select className="form-select" style={{ width:220 }} value={entityId} onChange={e => setEntityId(e.target.value)}>
+              <option value="">All consignors</option>
+              {consignorNames.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </>
+        )}
+
+        {sub.period && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Period:</span>
+            <input type="date" className="form-input" style={{ width:150 }} value={dateFrom} onChange={e=>setDateFrom(e.target.value)} />
+            <span style={{ fontSize:13, color:'var(--muted)' }}>to</span>
+            <input type="date" className="form-input" style={{ width:150 }} value={dateTo} onChange={e=>setDateTo(e.target.value)} />
+          </>
+        )}
+      </div>
+
+      <ReportView report={report} />
+    </div>
+  )
+}
+
+// ── REPORT BUILDER ──────────────────────────────────────────────────────────
+// Every report resolves to the same shape so the screen and print renderers
+// can share one code path:
+//   { title, subtitle, note, stats: [{n,l,color}], sections: [{heading, columns, rows, footer}] }
+
+function buildReport(ctx) {
+  const { groupId, subId } = ctx
+  if (groupId === 'artist' || groupId === 'consignor') {
+    if (subId === 'consignment') return consignmentReport(ctx)
+    if (subId === 'sales')       return entitySalesReport(ctx)
+    if (subId === 'collection')  return entityCollectionReport(ctx)
+    if (subId === 'returns')     return returnsReport(ctx)
+  }
+  if (groupId === 'sales') {
+    if (subId === 'sales')      return soldReport(ctx)
+    if (subId === 'receivable') return receivableReport(ctx)
+  }
+  if (groupId === 'artwork') {
+    if (subId === 'sold')       return soldReport(ctx)
+    if (subId === 'collection') return collectionReport(ctx)
+    if (subId === 'pending')    return pendingReport(ctx)
+    if (subId === 'received')   return receivedReport(ctx)
+    if (subId === 'loaned')     return loanedReport(ctx)
+  }
+  return { title: 'Report', sections: [] }
+}
+
+function scopeLine(ctx) {
+  return ctx.entityLabel || (ctx.group.entity === 'artist' ? 'All artists' : ctx.group.entity === 'consignor' ? 'All consignors' : null)
+}
+function periodLine(ctx) {
+  return ctx.sub.period ? `Period: ${ctx.dateFrom} to ${ctx.dateTo}` : null
+}
+function subtitleFor(ctx) {
+  return [scopeLine(ctx), periodLine(ctx)].filter(Boolean).join('  ·  ') || null
+}
+
+function consignmentReport(ctx) {
+  const { artworks, artistMap, matchesEntity, group } = ctx
+  const works = artworks.filter(w => w.ownership === 'consignment' && matchesEntity(w))
+  const groupKey = w => group.entity === 'artist'
+    ? (artistMap[w.artist_id]?.name || 'Unknown artist')
+    : (w.consignor_name || 'Unspecified consignor')
+
+  const buckets = {}
+  works.forEach(w => {
+    const k = groupKey(w)
+    if (!buckets[k]) buckets[k] = []
+    buckets[k].push(w)
+  })
+  const total = works.reduce((s, w) => s + workValue(w), 0)
+
+  return {
+    title: `${group.label.replace(' Reports','')} consignment`,
+    subtitle: subtitleFor(ctx),
+    stats: [
+      { n: works.length, l: 'Consigned works', color: 'var(--amber)' },
+      { n: Object.keys(buckets).length, l: group.entity === 'artist' ? 'Artists' : 'Consignors' },
+      { n: formatAmount(total, 'NGN'), l: 'Total value' },
+    ],
+    sections: Object.entries(buckets)
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(([name, ws]) => ({
+        heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}`,
+        columns: ['Title', group.entity === 'artist' ? 'Consignor' : 'Artist', 'Year', 'Medium', 'Location', 'Status', 'Value'],
+        rows: ws.map(w => [
+          { text: w.title, bold: true },
+          { text: (group.entity === 'artist' ? w.consignor_name : artistMap[w.artist_id]?.name) || DASH, muted: true },
+          { text: w.year || DASH, muted: true },
+          { text: w.medium || DASH, muted: true },
+          { text: w.location || DASH, muted: true },
+          { text: w.availability || DASH },
+          { text: formatAmount(workValue(w), w.consignment_currency || 'NGN') },
+        ]),
+      })),
+    empty: 'No consigned works on record',
+  }
+}
+
+function entitySalesReport(ctx) {
+  const { items, itemMatchesEntity, inPeriod, group } = ctx
+  const rows = items.filter(it => it.invoice_status === 'paid' && inPeriod(it.issue_date) && itemMatchesEntity(it))
+  const total = rows.reduce((s, it) => s + Number(it.line_total || 0), 0)
+
+  return {
+    title: `${group.label.replace(' Reports','')} sales`,
+    subtitle: subtitleFor(ctx),
+    stats: [
+      { n: rows.length, l: 'Works sold', color: 'var(--green)' },
+      { n: formatAmount(total, 'NGN'), l: 'Total value' },
+    ],
+    sections: [{
+      columns: ['#', 'Title', 'Artist', group.entity === 'consignor' ? 'Consignor' : 'Client', 'Invoice', 'Date', 'Sale price'],
+      rows: rows.map((it, i) => [
+        { text: String(i + 1), muted: true },
+        { text: it.title, bold: true },
+        { text: it.artist_label, muted: true },
+        { text: (group.entity === 'consignor' ? it.consignor_label : it.client_name) || DASH },
+        { text: it.invoice_number },
+        { text: it.issue_date, muted: true },
+        { text: formatAmount(it.line_total, it.currency), color: 'var(--green)', bold: true },
+      ]),
+    }],
+    empty: 'No sales in this period',
+  }
+}
+
+function entityCollectionReport(ctx) {
+  const { items, itemMatchesEntity, inPeriod, group } = ctx
+  const rows = items
+    .filter(it => it.delivered && it.delivered_at && inPeriod(it.delivered_at.slice(0, 10)) && itemMatchesEntity(it))
+    .sort((a, b) => (b.delivered_at || '').localeCompare(a.delivered_at || ''))
+
+  return {
+    title: `${group.label.replace(' Reports','')} collection`,
+    subtitle: subtitleFor(ctx),
+    stats: [{ n: rows.length, l: 'Collected in period', color: 'var(--amber)' }],
+    sections: [{
+      columns: ['Artwork', 'Artist', 'Client', 'Invoice', 'Collected by', 'Collection date', 'Value'],
+      rows: rows.map(it => [
+        { text: it.title, bold: true },
+        { text: it.artist_label, muted: true },
+        { text: it.client_name },
+        { text: it.invoice_number },
+        { text: it.collected_by || DASH, muted: true },
+        { text: new Date(it.delivered_at).toLocaleDateString('en-GB'), muted: true },
+        { text: formatAmount(it.line_total, it.currency) },
+      ]),
+    }],
+    empty: 'No collections recorded in this period',
+  }
+}
+
+function returnsReport(ctx) {
+  const { artworks, artistMap, matchesEntity, inPeriod, group } = ctx
+  const all = artworks.filter(w => w.availability === 'Returned' && matchesEntity(w))
+  // Works returned before returned_at was introduced have no date — surface them
+  // separately rather than silently dropping them from a period-filtered view.
+  const dated   = all.filter(w => w.returned_at && inPeriod(w.returned_at))
+    .sort((a, b) => (b.returned_at || '').localeCompare(a.returned_at || ''))
+  const undated = all.filter(w => !w.returned_at)
+
+  const row = w => [
+    { text: w.title, bold: true },
+    { text: artistMap[w.artist_id]?.name || DASH, muted: true },
+    { text: w.consignor_name || DASH, muted: true },
+    { text: w.year || DASH, muted: true },
+    { text: w.medium || DASH, muted: true },
+    { text: w.returned_at || DASH, muted: true },
+    { text: formatAmount(workValue(w), w.consignment_currency || 'NGN') },
+  ]
+  const columns = ['Title', 'Artist', 'Consignor', 'Year', 'Medium', 'Returned', 'Value']
+
+  return {
+    title: `${group.label.replace(' Reports','')} returns`,
+    subtitle: subtitleFor(ctx),
+    note: undated.length
+      ? `${undated.length} returned work${undated.length !== 1 ? 's have' : ' has'} no return date recorded, so ${undated.length !== 1 ? 'they fall' : 'it falls'} outside the period filter and ${undated.length !== 1 ? 'are' : 'is'} listed separately below. Set a return date on the artwork to bring ${undated.length !== 1 ? 'them' : 'it'} into the dated report.`
+      : null,
+    stats: [
+      { n: dated.length, l: 'Returned in period', color: 'var(--amber)' },
+      { n: all.length, l: 'Returned works (all time)' },
+    ],
+    sections: [
+      { heading: undated.length ? 'Returned in period' : undefined, columns, rows: dated.map(row) },
+      ...(undated.length ? [{ heading: 'No return date recorded', columns, rows: undated.map(row) }] : []),
+    ],
+    empty: 'No returned works on record',
+  }
+}
+
+function soldReport(ctx) {
+  const { items, inPeriod } = ctx
+  const rows = items.filter(it => it.invoice_status === 'paid' && inPeriod(it.issue_date))
+  const total = rows.reduce((s, it) => s + Number(it.line_total || 0), 0)
+
+  return {
+    title: 'Artworks sold',
+    subtitle: periodLine(ctx),
+    stats: [
+      { n: rows.length, l: 'Works sold', color: 'var(--green)' },
+      { n: formatAmount(total, 'NGN'), l: 'Total revenue' },
+      { n: rows.length ? formatAmount(total / rows.length, 'NGN') : DASH, l: 'Average sale price' },
+    ],
+    sections: [{
+      columns: ['#', 'Title', 'Artist', 'Client', 'Invoice', 'Date', 'Sale price'],
+      rows: rows.map((it, i) => [
+        { text: String(i + 1), muted: true },
+        { text: it.title, bold: true },
+        { text: it.artist_label, muted: true },
+        { text: it.client_name },
+        { text: it.invoice_number },
+        { text: it.issue_date, muted: true },
+        { text: formatAmount(it.line_total, it.currency), color: 'var(--green)', bold: true },
+      ]),
+      footer: ['', '', '', '', '', 'Total', { text: formatAmount(total, 'NGN'), color: 'var(--green)', bold: true }],
+    }],
+    empty: 'No sales in this period',
+  }
+}
+
+function receivableReport(ctx) {
+  const { invoices } = ctx
+  const open = invoices.filter(inv => ['sent', 'partial'].includes(inv.status) && Number(inv.balance_due) > 0)
+  const today = new Date().toISOString().split('T')[0]
+
+  const byCurrency = {}
+  open.forEach(inv => {
+    const cur = inv.currency || 'NGN'
+    if (!byCurrency[cur]) byCurrency[cur] = { currency: cur, total: 0, invoices: [] }
+    byCurrency[cur].total += Number(inv.balance_due || 0)
+    byCurrency[cur].invoices.push(inv)
+  })
+  const groups = Object.values(byCurrency).sort((a, b) => b.total - a.total)
+
+  return {
+    title: 'Accounts receivable',
+    stats: [
+      { n: open.length, l: 'Open invoices', color: 'var(--amber)' },
+      { n: open.filter(i => i.status === 'partial').length, l: 'Partially paid' },
+      ...groups.map(g => ({ n: formatAmount(g.total, g.currency), l: `${g.currency} outstanding (${g.invoices.length})`, color: 'var(--amber)' })),
+    ],
+    note: 'Balances are shown in the original invoice currency.',
+    sections: groups.map(g => ({
+      heading: `${g.currency} — ${formatAmount(g.total, g.currency)} outstanding`,
+      columns: ['Invoice', 'Client', 'Invoice total', 'Paid', 'Balance due', 'Status', 'Due date'],
+      rows: g.invoices.map(inv => {
+        const overdue = inv.due_date && inv.due_date < today
+        return [
+          { text: inv.invoice_number, bold: true },
+          { text: inv.clients?.name || DASH },
+          { text: formatAmount(inv.total, inv.currency) },
+          { text: formatAmount(inv.amount_paid || 0, inv.currency), color: 'var(--green)' },
+          { text: formatAmount(inv.balance_due, inv.currency) + (overdue ? '  OVERDUE' : ''), color: overdue ? 'var(--red)' : 'var(--amber)', bold: true },
+          { text: inv.status },
+          { text: inv.due_date || DASH, color: overdue ? 'var(--red)' : undefined, muted: !overdue },
+        ]
+      }),
+      footer: ['', '', '', 'Subtotal', { text: formatAmount(g.total, g.currency), color: 'var(--amber)', bold: true }, '', ''],
+    })),
+    empty: 'No outstanding balances',
+  }
+}
+
+function collectionReport(ctx) {
+  const { items, inPeriod } = ctx
+  const rows = items
+    .filter(it => it.delivered && it.delivered_at && inPeriod(it.delivered_at.slice(0, 10)))
+    .sort((a, b) => (b.delivered_at || '').localeCompare(a.delivered_at || ''))
+
+  return {
+    title: 'Collection report',
+    subtitle: periodLine(ctx),
+    stats: [{ n: rows.length, l: 'Collected in period', color: 'var(--amber)' }],
+    sections: [{
+      columns: ['Artwork', 'Artist', 'Client', 'Invoice', 'Collected by', 'Collection date', 'Value'],
+      rows: rows.map(it => [
+        { text: it.title, bold: true },
+        { text: it.artist_label, muted: true },
+        { text: it.client_name },
+        { text: it.invoice_number },
+        { text: it.collected_by || DASH, muted: true },
+        { text: new Date(it.delivered_at).toLocaleDateString('en-GB'), muted: true },
+        { text: formatAmount(it.line_total, it.currency) },
+      ]),
+    }],
+    empty: 'No collections recorded in this period',
+  }
+}
+
+function pendingReport(ctx) {
+  const { items } = ctx
+  const rows = items.filter(it =>
+    it.invoice_status === 'paid' && (it.item_type === 'artwork' || !it.item_type) && !it.delivered)
+
+  return {
+    title: 'Pending collection',
+    stats: [{ n: rows.length, l: 'Awaiting collection', color: 'var(--amber)' }],
+    sections: [{
+      columns: ['Artwork', 'Artist', 'Client', 'Invoice', 'Invoice date', 'Value'],
+      rows: rows.map(it => [
+        { text: it.title, bold: true },
+        { text: it.artist_label, muted: true },
+        { text: it.client_name },
+        { text: it.invoice_number },
+        { text: it.issue_date, muted: true },
+        { text: formatAmount(it.line_total, it.currency) },
+      ]),
+    }],
+    empty: 'All artworks collected',
+  }
+}
+
+function receivedReport(ctx) {
+  const { artworks, artistMap, dateFrom, dateTo } = ctx
+  const works = artworks.filter(w =>
+    w.created_at >= dateFrom + 'T00:00:00' && w.created_at <= dateTo + 'T23:59:59')
+
+  return {
+    title: 'Works acquired or consigned',
+    subtitle: periodLine(ctx),
+    stats: [
+      { n: works.length, l: 'Works received' },
+      { n: works.filter(w => w.ownership === 'gallery').length, l: 'Gallery owned' },
+      { n: works.filter(w => w.ownership === 'consignment').length, l: 'Consignment' },
+    ],
+    sections: [{
+      columns: ['#', 'Title', 'Artist', 'Medium', 'Ownership', 'Consignor', 'Date added'],
+      rows: works.map((w, i) => [
+        { text: String(i + 1), muted: true },
+        { text: w.title, bold: true },
+        { text: artistMap[w.artist_id]?.name || DASH, muted: true },
+        { text: w.medium || DASH, muted: true },
+        { text: w.ownership === 'consignment' ? 'Consignment' : 'Gallery' },
+        { text: w.consignor_name || DASH },
+        { text: w.created_at?.slice(0, 10) || DASH, muted: true },
+      ]),
+    }],
+    empty: 'No works received in this period',
+  }
+}
+
+function loanedReport(ctx) {
+  const { artworks, artistMap } = ctx
+  const works = artworks.filter(w =>
+    w.loaned_to || w.availability === 'Reserved' || (w.location && w.location.toLowerCase().includes('loan')))
+  const missingBorrower = works.filter(w => !w.loaned_to).length
+
+  return {
+    title: 'Works on loan',
+    note: missingBorrower
+      ? `${missingBorrower} of these ${missingBorrower !== 1 ? 'works have' : 'work has'} no borrower recorded — the location field is shown instead. Set "Loaned to" on the artwork to name the borrower properly.`
+      : null,
+    stats: [
+      { n: works.length, l: 'Works on loan', color: 'var(--amber)' },
+      { n: works.length - missingBorrower, l: 'Borrower recorded' },
+    ],
+    sections: [{
+      columns: ['#', 'Title', 'Artist', 'Medium', 'Loaned to', 'Location', 'Status'],
+      rows: works.map((w, i) => [
+        { text: String(i + 1), muted: true },
+        { text: w.title, bold: true },
+        { text: artistMap[w.artist_id]?.name || DASH, muted: true },
+        { text: w.medium || DASH, muted: true },
+        { text: w.loaned_to || DASH, muted: !w.loaned_to },
+        { text: w.location || DASH, muted: true },
+        { text: w.availability || DASH },
+      ]),
+    }],
+    empty: 'No works currently on loan',
+  }
+}
+
+// ── SCREEN RENDERER ─────────────────────────────────────────────────────────
+
+function cellStyle(c) {
+  if (typeof c === 'string') return {}
+  return {
+    fontWeight: c.bold ? 600 : 400,
+    color: c.color || (c.muted ? 'var(--muted)' : undefined),
+    fontSize: c.muted ? 12 : 13,
+  }
+}
+function cellText(c) { return typeof c === 'string' ? c : c.text }
+
+function ReportView({ report }) {
+  if (!report) return null
+  const totalRows = report.sections.reduce((s, sec) => s + sec.rows.length, 0)
+
+  return (
+    <div>
+      {report.stats?.length > 0 && (
+        <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>
+          {report.stats.map((s, i) => (
+            <div key={i} className="card" style={{ padding:'16px 18px', minWidth:150 }}>
+              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color: s.color || 'var(--ink)' }}>{s.n}</div>
+              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>{s.l}</div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* \u2500\u2500 SOLD REPORT \u2500\u2500 */}
-      {activeReport === 'sold' && (
-        <div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
-            <div className="card" style={{ padding:'16px 18px' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--green)' }}>{soldData.length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Works sold</div>
-            </div>
-            <div className="card" style={{ padding:'16px 18px' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>
-                {'\u20A6'}{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
+      {totalRows === 0
+        ? <div className="card" style={{ padding:32, textAlign:'center', color:'var(--muted)' }}>{report.empty || 'Nothing to show'}</div>
+        : report.sections.filter(sec => sec.rows.length > 0).map((sec, si) => (
+            <div key={si} className="card" style={{ marginBottom:14 }}>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    {sec.heading && (
+                      <tr><th colSpan={sec.columns.length} style={{ background:'var(--parchment)', fontFamily:'var(--font-serif)', fontSize:14, padding:'10px 14px' }}>{sec.heading}</th></tr>
+                    )}
+                    <tr>{sec.columns.map(c => <th key={c}>{c}</th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {sec.rows.map((row, ri) => (
+                      <tr key={ri}>{row.map((c, ci) => <td key={ci} style={cellStyle(c)}>{cellText(c)}</td>)}</tr>
+                    ))}
+                  </tbody>
+                  {sec.footer && (
+                    <tfoot>
+                      <tr>{sec.footer.map((c, ci) => (
+                        <td key={ci} style={{ ...cellStyle(c), fontWeight:600, borderTop:'2px solid var(--line)', textAlign: cellText(c) === 'Total' || cellText(c) === 'Subtotal' ? 'right' : 'left' }}>{cellText(c)}</td>
+                      ))}</tr>
+                    </tfoot>
+                  )}
+                </table>
               </div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Total revenue</div>
             </div>
-            <div className="card" style={{ padding:'16px 18px' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>
-                {soldData.length ? '\u20A6' + Math.round(soldTotal / soldData.length).toLocaleString('en-NG') : '\u2014'}
-              </div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Average sale price</div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Date</th><th>Sale price</th></tr></thead>
-                <tbody>
-                  {soldData.length === 0
-                    ? <tr><td colSpan={7} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>No sales in this period</td></tr>
-                    : soldData.map((item, i) => {
-                        const artist = artistMap[item.artworks?.artist_id]
-                        return (
-                          <tr key={item.id}>
-                            <td style={{ color:'var(--muted)', fontSize:12 }}>{i+1}</td>
-                            <td style={{ fontWeight:500 }}>{item.title}</td>
-                            <td style={{ color:'var(--muted)', fontSize:13 }}>{artist?.name || item.artist_name || '\u2014'}</td>
-                            <td style={{ fontSize:13 }}>{item.client_name}</td>
-                            <td style={{ fontSize:12, color:'var(--muted)', fontFamily:'var(--font-serif)' }}>{item.invoice_number}</td>
-                            <td style={{ fontSize:12, color:'var(--muted)' }}>{item.sale_date}</td>
-                            <td style={{ fontWeight:500, color:'var(--green)' }}>{formatAmount(item.line_total, item.currency)}</td>
-                          </tr>
-                        )
-                      })
-                  }
-                </tbody>
-                {soldData.length > 0 && (
-                  <tfoot>
-                    <tr>
-                      <td colSpan={6} style={{ textAlign:'right', fontWeight:600, padding:'10px 14px', borderTop:'2px solid var(--line)' }}>Total</td>
-                      <td style={{ fontWeight:600, color:'var(--green)', padding:'10px 14px', borderTop:'2px solid var(--line)' }}>
-                        {'\u20A6'}{soldTotal.toLocaleString('en-NG', { maximumFractionDigits:0 })}
-                      </td>
-                    </tr>
-                  </tfoot>
-                )}
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+          ))
+      }
 
-      {/* \u2500\u2500 LOANED REPORT \u2500\u2500 */}
-      {activeReport === 'loaned' && (
-        <div>
-          <div className="card" style={{ marginBottom:16 }}>
-            <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--line)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1rem' }}>Works on loan / reserved</div>
-              <span className="badge badge-amber">{loanedData.length} works</span>
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Medium</th><th>Location</th><th>Status</th></tr></thead>
-                <tbody>
-                  {loanedData.length === 0
-                    ? <tr><td colSpan={6} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>No works currently on loan</td></tr>
-                    : loanedData.map((w, i) => (
-                        <tr key={w.id}>
-                          <td style={{ color:'var(--muted)', fontSize:12 }}>{i+1}</td>
-                          <td style={{ fontWeight:500 }}>{w.title}</td>
-                          <td style={{ color:'var(--muted)', fontSize:13 }}>{artistMap[w.artist_id]?.name || '\u2014'}</td>
-                          <td style={{ color:'var(--muted)', fontSize:13 }}>{w.medium || '\u2014'}</td>
-                          <td style={{ fontSize:13 }}>{w.location || '\u2014'}</td>
-                          <td><span className="badge badge-amber">{w.availability}</span></td>
-                        </tr>
-                      ))
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div style={{ fontSize:12, color:'var(--muted)', padding:'10px 14px', background:'var(--parchment)', borderRadius:3 }}>
-            Shows all works with status "Reserved" or with "loan" in their location field. To track loans properly, set the artwork's location to include the borrower's name and set availability to Reserved.
-          </div>
+      {report.note && (
+        <div style={{ fontSize:12, color:'var(--muted)', padding:'10px 14px', background:'var(--parchment)', borderRadius:3, marginTop:12 }}>
+          {report.note}
         </div>
-      )}
-
-      {/* \u2500\u2500 RECEIVED REPORT \u2500\u2500 */}
-      {activeReport === 'received' && (
-        <div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
-            <div className="card" style={{ padding:'16px 18px' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{receivedData.length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Works received</div>
-            </div>
-            <div className="card" style={{ padding:'16px 18px' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{receivedData.filter(w=>w.ownership==='gallery').length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Gallery owned</div>
-            </div>
-            <div className="card" style={{ padding:'16px 18px' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{receivedData.filter(w=>w.ownership==='consignment').length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Consignment</div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Medium</th><th>Ownership</th><th>Consignor</th><th>Date added</th></tr></thead>
-                <tbody>
-                  {receivedData.length === 0
-                    ? <tr><td colSpan={7} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>No works received in this period</td></tr>
-                    : receivedData.map((w, i) => (
-                        <tr key={w.id}>
-                          <td style={{ color:'var(--muted)', fontSize:12 }}>{i+1}</td>
-                          <td style={{ fontWeight:500 }}>{w.title}</td>
-                          <td style={{ color:'var(--muted)', fontSize:13 }}>{artistMap[w.artist_id]?.name || '\u2014'}</td>
-                          <td style={{ color:'var(--muted)', fontSize:13 }}>{w.medium || '\u2014'}</td>
-                          <td>
-                            {w.ownership === 'consignment'
-                              ? <span className="badge badge-amber">Consignment</span>
-                              : <span className="badge badge-blue">Gallery</span>}
-                          </td>
-                          <td style={{ fontSize:13 }}>{w.consignor_name || '\u2014'}</td>
-                          <td style={{ fontSize:12, color:'var(--muted)' }}>{w.created_at?.slice(0,10)}</td>
-                        </tr>
-                      ))
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* \u2500\u2500 ACCOUNTS RECEIVABLE \u2500\u2500 */}
-      {activeReport === 'receivable' && (
-        <div>
-          <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>
-            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>{receivableData.length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Open invoices</div>
-            </div>
-            <div className="card" style={{ padding:'16px 18px' }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{receivableData.filter(i=>i.status==='partial').length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Partially paid</div>
-            </div>
-            {receivableByCurrency.map(g => (
-              <div key={g.currency} className="card" style={{ padding:'16px 18px', minWidth:160 }}>
-                <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>
-                  {formatAmount(g.total, g.currency)}
-                </div>
-                <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>
-                  {g.currency} outstanding ({g.count})
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Invoice</th><th>Client</th><th>Invoice total</th><th>Paid</th><th>Balance due</th><th>Currency</th><th>Status</th><th>Due date</th></tr>
-                </thead>
-                <tbody>
-                  {receivableData.length === 0
-                    ? <tr><td colSpan={8} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>No outstanding balances</td></tr>
-                    : receivableByCurrency.map(group => (
-                        <>
-                          <tr key={'hdr-'+group.currency}><td colSpan={8} style={{ background:'var(--parchment)', fontWeight:600, fontSize:12, padding:'8px 14px' }}>{group.currency}</td></tr>
-                          {group.invoices.map(inv => {
-                            const overdue = inv.due_date && inv.due_date < new Date().toISOString().split('T')[0]
-                            return (
-                              <tr key={inv.id}>
-                                <td style={{ fontFamily:'var(--font-serif)', fontWeight:500 }}>{inv.invoice_number}</td>
-                                <td>{inv.clients?.name || '\u2014'}</td>
-                                <td>{formatAmount(inv.total, inv.currency)}</td>
-                                <td style={{ color:'var(--green)' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>
-                                <td style={{ fontWeight:600, color: overdue ? 'var(--red)' : 'var(--amber)' }}>
-                                  {formatAmount(inv.balance_due, inv.currency)}
-                                  {overdue && <span style={{ fontSize:10, marginLeft:5, color:'var(--red)' }}>OVERDUE</span>}
-                                </td>
-                                <td style={{ fontSize:12, color:'var(--muted)' }}>{inv.currency}</td>
-                                <td><span className="badge badge-amber">{inv.status}</span></td>
-                                <td style={{ fontSize:12, color: overdue ? 'var(--red)' : 'var(--muted)' }}>{inv.due_date || '\u2014'}</td>
-                              </tr>
-                            )
-                          })}
-                          <tr key={'sub-'+group.currency} style={{ background:'var(--surface-1,#f8f7f5)' }}>
-                            <td colSpan={4} style={{ textAlign:'right', fontWeight:600, padding:'8px 14px', fontSize:12 }}>Subtotal ({group.currency})</td>
-                            <td style={{ fontWeight:600, color:'var(--amber)', padding:'8px 14px', fontSize:12 }}>{formatAmount(group.total, group.currency)}</td>
-                            <td colSpan={3} />
-                          </tr>
-                        </>
-                      ))
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div style={{ fontSize:12, color:'var(--muted)', padding:'10px 14px', background:'var(--parchment)', borderRadius:3, marginTop:12 }}>
-            Balances shown in original invoice currency. NGN equivalent total uses exchange rates at time of invoicing.
-          </div>
-        </div>
-      )}
-
-      {/* CONSIGNMENT BY ARTIST */}
-      {activeReport === 'consignment_artist' && (
-        <div>
-          <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>
-            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>{consignmentByArtist.reduce((s,g)=>s+g.count,0)}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Consigned works</div>
-            </div>
-            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{consignmentByArtist.length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Artists</div>
-            </div>
-          </div>
-          {consignmentByArtist.length === 0
-            ? <div className="card" style={{ padding:32, textAlign:'center', color:'var(--muted)' }}>No consigned works on record</div>
-            : consignmentByArtist.map(group => (
-              <div key={group.name} className="card" style={{ marginBottom:14 }}>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr><th colSpan={6} style={{ background:'var(--parchment)', fontFamily:'var(--font-serif)', fontSize:14, padding:'10px 14px' }}>{group.name} — {group.count} work{group.count!==1?'s':''}</th></tr>
-                      <tr><th>Title</th><th>Year</th><th>Medium</th><th>Location</th><th>Status</th><th>Value</th></tr>
-                    </thead>
-                    <tbody>
-                      {group.works.map(w => (
-                        <tr key={w.id}>
-                          <td style={{ fontWeight:500 }}>{w.title}</td>
-                          <td style={{ fontSize:12, color:'var(--muted)' }}>{w.year || '\u2014'}</td>
-                          <td style={{ fontSize:12, color:'var(--muted)' }}>{w.medium || '\u2014'}</td>
-                          <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || '\u2014'}</td>
-                          <td><span className="badge">{w.availability}</span></td>
-                          <td>{formatAmount(w.consignment_price || w.price || w.retail_price || 0, 'NGN')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      )}
-
-      {/* CONSIGNMENT BY CLIENT */}
-      {activeReport === 'consignment_client' && (
-        <div>
-          <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>
-            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>{consignmentByClient.reduce((s,g)=>s+g.count,0)}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Consigned works</div>
-            </div>
-            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem' }}>{consignmentByClient.length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Consignors</div>
-            </div>
-          </div>
-          {consignmentByClient.length === 0
-            ? <div className="card" style={{ padding:32, textAlign:'center', color:'var(--muted)' }}>No consigned works on record</div>
-            : consignmentByClient.map(group => (
-              <div key={group.name} className="card" style={{ marginBottom:14 }}>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr><th colSpan={6} style={{ background:'var(--parchment)', fontFamily:'var(--font-serif)', fontSize:14, padding:'10px 14px' }}>{group.name} — {group.count} work{group.count!==1?'s':''}</th></tr>
-                      <tr><th>Title</th><th>Artist</th><th>Year</th><th>Location</th><th>Status</th><th>Value</th></tr>
-                    </thead>
-                    <tbody>
-                      {group.works.map(w => (
-                        <tr key={w.id}>
-                          <td style={{ fontWeight:500 }}>{w.title}</td>
-                          <td style={{ fontSize:12, color:'var(--muted)' }}>{artistMap[w.artist_id]?.name || '\u2014'}</td>
-                          <td style={{ fontSize:12, color:'var(--muted)' }}>{w.year || '\u2014'}</td>
-                          <td style={{ fontSize:12, color:'var(--muted)' }}>{w.location || '\u2014'}</td>
-                          <td><span className="badge">{w.availability}</span></td>
-                          <td>{formatAmount(w.consignment_price || w.price || w.retail_price || 0, 'NGN')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      )}
-
-      {/* PENDING COLLECTION */}
-      {activeReport === 'pending' && (
-        <div>
-          <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>
-            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>{pendingData.length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Awaiting collection</div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Artwork</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Invoice date</th><th>Value</th></tr>
-                </thead>
-                <tbody>
-                  {pendingData.length === 0
-                    ? <tr><td colSpan={6} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>All artworks collected</td></tr>
-                    : pendingData.map(item => (
-                      <tr key={item.id}>
-                        <td style={{ fontWeight:500 }}>{item.title}</td>
-                        <td style={{ fontSize:12, color:'var(--muted)' }}>{item.artist_name}</td>
-                        <td style={{ fontSize:13 }}>{item.client_name}</td>
-                        <td style={{ fontFamily:'var(--font-serif)', fontSize:13 }}>{item.invoice_number}</td>
-                        <td style={{ fontSize:12, color:'var(--muted)' }}>{item.invoice_date}</td>
-                        <td>{formatAmount(item.line_total, item.currency)}</td>
-                      </tr>
-                    ))
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* COLLECTION REPORT */}
-      {activeReport === 'collection' && (
-        <div>
-          <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>
-            <div className="card" style={{ padding:'16px 18px', minWidth:140 }}>
-              <div style={{ fontFamily:'var(--font-serif)', fontSize:'1.8rem', color:'var(--amber)' }}>{collectionData.length}</div>
-              <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textTransform:'uppercase', letterSpacing:'.06em' }}>Collected in period</div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Artwork</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Collected by</th><th>Collection date</th><th>Value</th></tr>
-                </thead>
-                <tbody>
-                  {collectionData.length === 0
-                    ? <tr><td colSpan={7} style={{ textAlign:'center', color:'var(--muted)', padding:32 }}>No collections recorded in this period</td></tr>
-                    : collectionData.map(item => (
-                      <tr key={item.id}>
-                        <td style={{ fontWeight:500 }}>{item.title}</td>
-                        <td style={{ fontSize:12, color:'var(--muted)' }}>{item.artist_name}</td>
-                        <td style={{ fontSize:13 }}>{item.client_name}</td>
-                        <td style={{ fontFamily:'var(--font-serif)', fontSize:13 }}>{item.invoice_number}</td>
-                        <td style={{ fontSize:12, color:'var(--muted)' }}>{item.collected_by || '\u2014'}</td>
-                        <td style={{ fontSize:12, color:'var(--muted)' }}>{new Date(item.delivered_at).toLocaleDateString('en-GB')}</td>
-                        <td>{formatAmount(item.line_total, item.currency)}</td>
-                      </tr>
-                    ))
-                  }
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Artist Report */}
-      {activeReport === 'artist_report' && (
-        <ArtistReportView
-          artists={artists} artworks={artworks} invoices={invoices}
-          artistMap={artistMap} clientMap={clientMap}
-          dateFrom={dateFrom} dateTo={dateTo}
-          selectedArtist={selectedArtist} setSelectedArtist={setSelectedArtist}
-          artistSearch={artistSearch} setArtistSearch={setArtistSearch}
-          artistSubReport={artistSubReport} setArtistSubReport={setArtistSubReport}
-          showPricing={showPricing} setShowPricing={setShowPricing}
-        />
       )}
     </div>
   )
 }
 
-// \u2500\u2500 PRINT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function printReport(reportId, { soldData, loanedData, receivedData, receivableData, artistMap, dateFrom, dateTo, soldTotal, totalReceivable, pendingData, collectionData, consignmentByArtist, consignmentByClient }) {
-  const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
-  const period = `${dateFrom} to ${dateTo}`
+// ── PRINT ───────────────────────────────────────────────────────────────────
 
-  const baseStyle = `
+function printReport(report) {
+  if (!report) return
+  const today = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })
+
+  const style = `
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:-apple-system,sans-serif;color:#1a1714;padding:32px 40px;font-size:12px;}
     .header{margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid #1a1714;}
@@ -593,145 +655,53 @@ function printReport(reportId, { soldData, loanedData, receivedData, receivableD
     .meta{font-size:10px;color:#aaa;margin-top:4px;}
     .stat-row{display:flex;gap:24px;margin:16px 0;padding:12px 16px;background:#f9f8f6;border-radius:3px;}
     .stat{text-align:center;}
-    .stat-n{font-family:Georgia,serif;font-size:22px;color:#1a1714;}
+    .stat-n{font-family:Georgia,serif;font-size:20px;color:#1a1714;}
     .stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-top:3px;}
-    table{width:100%;border-collapse:collapse;margin-top:12px;}
+    h3{margin:18px 0 6px;font-size:12px;font-weight:600;}
+    table{width:100%;border-collapse:collapse;margin-top:8px;page-break-inside:auto;}
     th{padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;border-bottom:2px solid #1a1714;background:#f0ece4;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     td{padding:7px 10px;border-bottom:1px solid #ece8e1;font-size:11px;vertical-align:top;}
     tfoot td{font-weight:600;border-top:2px solid #1a1714;border-bottom:none;background:#f9f8f6;}
+    tr{page-break-inside:avoid;}
+    .note{margin-top:16px;padding:8px 12px;background:#f9f8f6;font-size:10px;color:#777;border-radius:3px;}
     .footer{margin-top:24px;padding-top:12px;border-top:1px solid #ddd9d1;font-size:10px;color:#aaa;text-align:center;}
     @media print{body{padding:16px 20px;}}
   `
 
-  let body = ''
-
-  if (reportId === 'sold') {
-    body = `
-      <div class="stat-row">
-        <div class="stat"><div class="stat-n">${soldData.length}</div><div class="stat-l">Works sold</div></div>
-        <div class="stat"><div class="stat-n">{'\u20A6'}${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</div><div class="stat-l">Total revenue</div></div>
-        <div class="stat"><div class="stat-n">${soldData.length ? '\u20A6'+Math.round(soldTotal/soldData.length).toLocaleString('en-NG') : '\u2014'}</div><div class="stat-l">Average price</div></div>
-      </div>
-      <table>
-        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Date</th><th>Sale price</th></tr></thead>
-        <tbody>${soldData.map((item,i)=>`<tr><td>${i+1}</td><td><strong>${e(item.title)}</strong></td><td>${e(item.artist_name||'\u2014')}</td><td>${e(item.client_name)}</td><td>${e(item.invoice_number)}</td><td>${e(item.sale_date)}</td><td style="color:#2d6a4f;font-weight:500">${formatAmount(item.line_total,item.currency)}</td></tr>`).join('')}</tbody>
-        <tfoot><tr><td colspan="6" style="text-align:right">Total</td><td style="color:#2d6a4f">{'\u20A6'}${soldTotal.toLocaleString('en-NG',{maximumFractionDigits:0})}</td></tr></tfoot>
-      </table>`
+  const printCell = c => {
+    const t = e(cellText(c))
+    if (typeof c === 'string') return t
+    const col = c.color === 'var(--green)' ? '#2d6a4f'
+      : c.color === 'var(--red)' ? '#8b1a1a'
+      : c.color === 'var(--amber)' ? '#92600a'
+      : c.muted ? '#888' : ''
+    const css = [col && `color:${col}`, c.bold && 'font-weight:600'].filter(Boolean).join(';')
+    return css ? `<span style="${css}">${t}</span>` : t
   }
 
-  if (reportId === 'loaned') {
-    body = `
-      <table>
-        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Medium</th><th>Location / borrower</th><th>Status</th></tr></thead>
-        <tbody>${loanedData.map((w,i)=>`<tr><td>${i+1}</td><td><strong>${e(w.title)}</strong></td><td>${e(artistMap[w.artist_id]?.name||'\u2014')}</td><td>${e(w.medium||'\u2014')}</td><td>${e(w.location||'\u2014')}</td><td>${e(w.availability)}</td></tr>`).join('')}</tbody>
-      </table>`
-  }
+  const totalRows = report.sections.reduce((s, sec) => s + sec.rows.length, 0)
 
-  if (reportId === 'received') {
-    body = `
-      <div class="stat-row">
-        <div class="stat"><div class="stat-n">${receivedData.length}</div><div class="stat-l">Works received</div></div>
-        <div class="stat"><div class="stat-n">${receivedData.filter(w=>w.ownership==='gallery').length}</div><div class="stat-l">Gallery owned</div></div>
-        <div class="stat"><div class="stat-n">${receivedData.filter(w=>w.ownership==='consignment').length}</div><div class="stat-l">Consignment</div></div>
-      </div>
-      <table>
-        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Medium</th><th>Ownership</th><th>Consignor</th><th>Date added</th></tr></thead>
-        <tbody>${receivedData.map((w,i)=>`<tr><td>${i+1}</td><td><strong>${e(w.title)}</strong></td><td>${e(artistMap[w.artist_id]?.name||'\u2014')}</td><td>${e(w.medium||'\u2014')}</td><td>${e(w.ownership||'gallery')}</td><td>${e(w.consignor_name||'\u2014')}</td><td>${e(w.created_at?.slice(0,10)||'\u2014')}</td></tr>`).join('')}</tbody>
-      </table>`
-  }
-
-  if (reportId === 'receivable') {
-    body = (() => {
-      const today = new Date().toISOString().split('T')[0]
-      const groups = {}
-      receivableData.forEach(inv => {
-        const cur = inv.currency || 'NGN'
-        if (!groups[cur]) groups[cur] = { currency: cur, total: 0, invoices: [] }
-        groups[cur].total += Number(inv.balance_due || 0)
-        groups[cur].invoices.push(inv)
-      })
-      const groupList = Object.values(groups).sort((a,b) => b.total - a.total)
-      return `
-      <div class="stat-row">
-        <div class="stat"><div class="stat-n">${receivableData.length}</div><div class="stat-l">Open invoices</div></div>
-        <div class="stat"><div class="stat-n">${receivableData.filter(i=>i.status==='partial').length}</div><div class="stat-l">Partial payments</div></div>
-      </div>
-      ${groupList.map(g => `
-        <h3 style="margin:18px 0 8px;font-size:13px;font-weight:600;border-bottom:1px solid #ddd;padding-bottom:4px">${e(g.currency)} — ${formatAmount(g.total, g.currency)} outstanding</h3>
+  const body = totalRows === 0
+    ? `<p style="padding:24px 0;color:#888;text-align:center">${e(report.empty || 'Nothing to show')}</p>`
+    : report.sections.filter(sec => sec.rows.length > 0).map(sec => `
+        ${sec.heading ? `<h3>${e(sec.heading)}</h3>` : ''}
         <table>
-          <thead><tr><th>Invoice</th><th>Client</th><th>Total</th><th>Paid</th><th>Balance due</th><th>Status</th><th>Due date</th></tr></thead>
-          <tbody>${g.invoices.map(inv => {
-            const overdue = inv.due_date && inv.due_date < today
-            return `<tr><td>${e(inv.invoice_number)}</td><td>${e(inv.clients?.name||'—')}</td><td>${formatAmount(inv.total,inv.currency)}</td><td style="color:#2d6a4f">${formatAmount(inv.amount_paid||0,inv.currency)}</td><td style="color:${overdue?'#8b1a1a':'#92600a'};font-weight:600">${formatAmount(inv.balance_due,inv.currency)}${overdue?' ⚠ OVERDUE':''}</td><td>${e(inv.status)}</td><td style="color:${overdue?'#8b1a1a':'inherit'}">${e(inv.due_date||'—')}</td></tr>`
-          }).join('')}</tbody>
-          <tfoot><tr><td colspan="4" style="text-align:right;font-weight:600">Subtotal</td><td style="color:#92600a;font-weight:600">${formatAmount(g.total,g.currency)}</td><td colspan="2"></td></tr></tfoot>
-        </table>
-      `).join('')}`
-    })()
-  }
+          <thead><tr>${sec.columns.map(c => `<th>${e(c)}</th>`).join('')}</tr></thead>
+          <tbody>${sec.rows.map(row => `<tr>${row.map(c => `<td>${printCell(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+          ${sec.footer ? `<tfoot><tr>${sec.footer.map(c => `<td>${printCell(c)}</td>`).join('')}</tr></tfoot>` : ''}
+        </table>`).join('')
 
-  if (reportId === 'pending') {
-    body = `
-      <div class="stat-row">
-        <div class="stat"><div class="stat-n">${pendingData.length}</div><div class="stat-l">Awaiting collection</div></div>
-      </div>
-      <table>
-        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Invoice date</th><th>Value</th></tr></thead>
-        <tbody>${pendingData.map((item,i)=>`<tr><td>${i+1}</td><td><strong>${e(item.title)}</strong></td><td>${e(item.artist_name||'—')}</td><td>${e(item.client_name)}</td><td>${e(item.invoice_number)}</td><td>${e(item.invoice_date)}</td><td>${formatAmount(item.line_total,item.currency)}</td></tr>`).join('')}</tbody>
-      </table>`
-  }
-
-  if (reportId === 'collection') {
-    body = `
-      <div class="stat-row">
-        <div class="stat"><div class="stat-n">${collectionData.length}</div><div class="stat-l">Collected in period</div></div>
-      </div>
-      <table>
-        <thead><tr><th>#</th><th>Title</th><th>Artist</th><th>Client</th><th>Invoice</th><th>Collected by</th><th>Collection date</th><th>Value</th></tr></thead>
-        <tbody>${collectionData.map((item,i)=>`<tr><td>${i+1}</td><td><strong>${e(item.title)}</strong></td><td>${e(item.artist_name||'—')}</td><td>${e(item.client_name)}</td><td>${e(item.invoice_number)}</td><td>${e(item.collected_by||'—')}</td><td>${e(item.delivered_at ? new Date(item.delivered_at).toLocaleDateString('en-GB') : '—')}</td><td>${formatAmount(item.line_total,item.currency)}</td></tr>`).join('')}</tbody>
-      </table>`
-  }
-
-  if (reportId === 'consignment_artist') {
-    body = `
-      <div class="stat-row">
-        <div class="stat"><div class="stat-n">${consignmentByArtist.reduce((s,g)=>s+g.count,0)}</div><div class="stat-l">Consigned works</div></div>
-        <div class="stat"><div class="stat-n">${consignmentByArtist.length}</div><div class="stat-l">Artists</div></div>
-      </div>
-      ${consignmentByArtist.map(group => `
-        <table style="margin-top:16px">
-          <thead><tr><th colspan="5" style="background:#f0ece4;font-size:12px;padding:8px 10px">${e(group.name)} — ${group.count} work${group.count!==1?'s':''}</th></tr>
-          <tr><th>Title</th><th>Year</th><th>Medium</th><th>Location</th><th>Value</th></tr></thead>
-          <tbody>${group.works.map(w=>`<tr><td><strong>${e(w.title)}</strong></td><td>${e(w.year||'—')}</td><td>${e(w.medium||'—')}</td><td>${e(w.location||'—')}</td><td>${formatAmount(w.consignment_price||w.price||w.retail_price||0,'NGN')}</td></tr>`).join('')}</tbody>
-        </table>`).join('')}`
-  }
-
-  if (reportId === 'consignment_client') {
-    body = `
-      <div class="stat-row">
-        <div class="stat"><div class="stat-n">${consignmentByClient.reduce((s,g)=>s+g.count,0)}</div><div class="stat-l">Consigned works</div></div>
-        <div class="stat"><div class="stat-n">${consignmentByClient.length}</div><div class="stat-l">Consignors</div></div>
-      </div>
-      ${consignmentByClient.map(group => `
-        <table style="margin-top:16px">
-          <thead><tr><th colspan="5" style="background:#f0ece4;font-size:12px;padding:8px 10px">${e(group.name)} — ${group.count} work${group.count!==1?'s':''}</th></tr>
-          <tr><th>Title</th><th>Artist</th><th>Year</th><th>Location</th><th>Value</th></tr></thead>
-          <tbody>${group.works.map(w=>`<tr><td><strong>${e(w.title)}</strong></td><td>${e(artistMap[w.artist_id]?.name||'—')}</td><td>${e(w.year||'—')}</td><td>${e(w.location||'—')}</td><td>${formatAmount(w.consignment_price||w.price||w.retail_price||0,'NGN')}</td></tr>`).join('')}</tbody>
-        </table>`).join('')}`
-  }
-
-  const titles = { sold:'Artworks Sold', loaned:'Artworks on Loan', received:'Artworks Received', receivable:'Accounts Receivable' }
-  const subtitles = { sold:`Period: ${period}`, received:`Period: ${period}` }
-
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${titles[reportId]} \u2014 Hourglass Gallery</title><style>${baseStyle}</style></head><body>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${e(report.title)} — Hourglass Gallery</title><style>${style}</style></head><body>
 <div class="header">
   <div class="logo">Hourglass Gallery</div>
-  <div class="report-title">${titles[reportId]}</div>
-  ${subtitles[reportId] ? `<div class="meta">${subtitles[reportId]}</div>` : ''}
+  <div class="report-title">${e(report.title)}</div>
+  ${report.subtitle ? `<div class="meta">${e(report.subtitle)}</div>` : ''}
   <div class="meta">Generated ${today}</div>
 </div>
+${report.stats?.length ? `<div class="stat-row">${report.stats.map(s => `<div class="stat"><div class="stat-n">${e(s.n)}</div><div class="stat-l">${e(s.l)}</div></div>`).join('')}</div>` : ''}
 ${body}
-<div class="footer">Hourglass Gallery {'\u00B7'} 298A Akin Olugbade Street, Victoria Island, Lagos</div>
+${report.note ? `<div class="note">${e(report.note)}</div>` : ''}
+<div class="footer">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
 </body></html>`
 
   const w = window.open('', '_blank', 'width=1100,height=750')
@@ -741,6 +711,5 @@ ${body}
 }
 
 function e(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
-

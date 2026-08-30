@@ -93,6 +93,8 @@ create table public.artworks (
   price          text,
   tags           text[] default '{}',
   location       text,
+  loaned_to      text,          -- borrower, when availability = 'Reserved'
+  returned_at    date,          -- return date, when availability = 'Returned'
   visible        boolean not null default true,
   sort_order     integer default 0,
   created_at     timestamptz default now(),

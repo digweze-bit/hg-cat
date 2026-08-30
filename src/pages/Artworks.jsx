@@ -11,7 +11,7 @@ const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS', 'Returned']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'' }
+const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'' }
 
 
 function convertDimensions(str, fromUnit, toUnit) {
@@ -345,7 +345,7 @@ export default function Artworks() {
   async function load() {
     const [a, w] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at', order: 'sort_order', onUpdate: w => setArtworks(w) }),
     ])
     setArtists(a)
     setArtworks(w)
@@ -476,6 +476,8 @@ export default function Artworks() {
         commission_rate:   (form.ownership === 'consignment' || form.ownership === 'artist_owned') ? Number(form.commission_rate ?? 40) : null,
         tessera_id:        form.tessera_id || null,
         hg_code:           form.hg_code || null,
+        loaned_to:         form.availability === 'Reserved' ? form.loaned_to || null : null,
+        returned_at:       form.availability === 'Returned' ? form.returned_at || null : null,
         updated_at:        new Date().toISOString(),
       }
       console.log('SAVING PAYLOAD:', JSON.stringify({ ownership: payload.ownership, consignment_currency: payload.consignment_currency, commission_rate: payload.commission_rate }))
@@ -536,6 +538,8 @@ export default function Artworks() {
       inventory_price: artwork.inventory_price || '',
       valuation: artwork.valuation || '',
       tessera_id: artwork.tessera_id || '',
+      loaned_to: artwork.loaned_to || '',
+      returned_at: artwork.returned_at || '',
     })
     setEditId(artwork.id)
     setModal('edit')
@@ -803,6 +807,20 @@ export default function Artworks() {
                     </select>
                   </div>
                 </div>
+                {form.availability === 'Reserved' && (
+                  <div className="form-group">
+                    <label className="form-label">Loaned to</label>
+                    <input className="form-input" value={form.loaned_to||''} placeholder="Borrower name"
+                      onChange={e=>setForm(f=>({...f,loaned_to:e.target.value}))} />
+                  </div>
+                )}
+                {form.availability === 'Returned' && (
+                  <div className="form-group">
+                    <label className="form-label">Returned on</label>
+                    <input className="form-input" type="date" style={{ width:180 }} value={form.returned_at||''}
+                      onChange={e=>setForm(f=>({...f,returned_at:e.target.value}))} />
+                  </div>
+                )}
                 <div className="form-group">
                   <label className="form-label">Tags</label>
                   <TagInput tags={Array.isArray(form.tags)?form.tags:(form.tags?form.tags.split(',').map(t=>t.trim()).filter(Boolean):[])} onChange={t=>setForm(f=>({...f,tags:t}))} suggestions={ARTWORK_TAG_SUGGESTIONS} placeholder="e.g. modernist, sculpture..." />
