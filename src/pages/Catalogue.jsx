@@ -1,7 +1,6 @@
 ﻿import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
-import ArtworkInquiryEmbed from '../components/ArtworkInquiryEmbed'
 
 const PLACEHOLDER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="500" viewBox="0 0 400 500"%3E%3Crect width="400" height="500" fill="%23ede9e2"/%3E%3C/svg%3E'
 
@@ -14,7 +13,6 @@ export default function Catalogue() {
   const { artistId: urlArtistId } = useParams()
   const navigate = useNavigate()
   const [activeArtist, setActiveArtist] = useState(null)
-  const [selected, setSelected] = useState(null)
   const [mediumFilter, setMediumFilter] = useState('')
   const [artworkSort, setArtworkSort] = useState('title')
   const [availFilter, setAvailFilter]   = useState('')
@@ -128,7 +126,7 @@ export default function Catalogue() {
         {/* Header */}
         <div style={{ background:'#fff', borderBottom:'1px solid #e8e5e0', padding:'18px 40px', display:'flex', alignItems:'center', gap:16 }}>
           <button
-            onClick={() => { setActiveArtist(null); setSelected(null); setMediumFilter(''); setAvailFilter(''); navigate('/') }}
+            onClick={() => { setActiveArtist(null); setMediumFilter(''); setAvailFilter(''); navigate('/') }}
             style={{ background:'none', border:'none', cursor:'pointer', color:'#c8651b', fontSize:13, fontFamily:'inherit', padding:0, display:'flex', alignItems:'center', gap:5 }}
           >
             &larr; Artist List
@@ -211,15 +209,11 @@ export default function Catalogue() {
             ? <div style={{ textAlign:'center', padding:'60px 0', color:'#999', fontSize:14 }}>No works found</div>
             : <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:16, paddingBottom:60 }}>
                 {artistWorks.map(w => (
-                  <ArtworkCard key={w.id} artwork={w} onClick={() => setSelected(w)} />
+                  <ArtworkCard key={w.id} artwork={w} onClick={() => navigate(`/artwork/${w.id}`)} />
                 ))}
               </div>
           }
         </div>
-
-        {selected && (
-          <ArtworkDetail artwork={selected} artist={activeArtist} onClose={() => setSelected(null)} />
-        )}
       </div>
     )
   }
@@ -336,69 +330,5 @@ function ArtworkCard({ artwork: w, onClick }) {
     </div>
   )
 }
-
-function ArtworkDetail({ artwork: w, artist, onClose }) {
-  return (
-    <>
-    <style>{`
-      @media (max-width: 699px) {
-        .aw-detail-modal { flex-direction: column !important; max-height: 95vh !important; }
-        .aw-detail-img { width: 100% !important; max-height: 45vh; }
-        .aw-detail-img img { max-height: 45vh; object-fit: contain; }
-        .aw-detail-text { padding: 18px !important; }
-      }
-    `}</style>
-    <div style={{ position:'fixed', inset:0, background:'rgba(26,23,20,.65)', zIndex:100, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
-      onClick={onClose}>
-      <div className="aw-detail-modal" style={{ background:'#fff', borderRadius:3, maxWidth:860, width:'100%', maxHeight:'90vh', display:'flex', overflowY:'auto', boxShadow:'0 8px 48px rgba(0,0,0,.25)' }}
-        onClick={e => e.stopPropagation()}>
-        <div className="aw-detail-img" style={{ width:'45%', flexShrink:0, background:'#f0ece4' }}>
-          <img src={w.image_url || PLACEHOLDER} alt={w.title}
-            style={{ width:'100%', height:'100%', objectFit:'contain', objectPosition: w.image_position || 'center', display:'block' }}
-            onError={e => { e.target.src = PLACEHOLDER }} />
-        </div>
-        <div className="aw-detail-text" style={{ flex:1, padding:'28px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16, fontFamily:'-apple-system,sans-serif' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-            <div>
-              <div style={{ fontFamily:'Georgia,serif', fontSize:'1.4rem', fontWeight:400, color:'#1a1714', marginBottom:4, lineHeight:1.2 }}>{w.title}</div>
-              {artist && <div style={{ fontSize:13, color:'#999' }}>{artist.name}</div>}
-            </div>
-            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#999', fontSize:20, lineHeight:1, padding:4 }}>{'\u2715'}</button>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-            {[['Year',w.year],['Medium',w.medium],['Dimensions',w.dimensions],['Edition',w.series],['Series',w.series],['Location',w.location],['Status',w.availability]].filter(([,v])=>v).map(([label,val])=>(
-              <div key={label}>
-                <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'#999', marginBottom:3 }}>{label}</div>
-                <div style={{ fontSize:13, color: label==='Status' ? (val==='Available'?'#2d6a4f':val==='Sold'?'#8b1a1a':'#92600a') : '#1a1714', fontWeight: label==='Status'?500:400 }}>{val}</div>
-              </div>
-            ))}
-          </div>
-          {w.writeup && (
-            <div>
-              <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'#999', marginBottom:8 }}>About this work</div>
-              <p style={{ fontSize:13, lineHeight:1.75, color:'#555', margin:0 }}>{w.writeup}</p>
-            </div>
-          )}
-          {artist?.bio && (
-            <div>
-              <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'#999', marginBottom:8 }}>About the artist</div>
-              <p style={{ fontSize:13, lineHeight:1.75, color:'#555', margin:0 }}>{artist.bio}</p>
-            </div>
-          )}
-          {w.tags?.length > 0 && (
-            <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
-              {w.tags.map(t=><span key={t} style={{ fontSize:11, padding:'3px 10px', background:'#f0ece4', borderRadius:20, color:'#999' }}>{t}</span>)}
-            </div>
-          )}
-
-          <ArtworkInquiryEmbed artworkId={w.id} artworkTitle={w.title} artistName={artist?.name} />
-        </div>
-      </div>
-    </div>
-    </>
-  )
-}
-
-
 
 

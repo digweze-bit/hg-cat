@@ -13,8 +13,18 @@ export default function ArtworkPage() {
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [showFullRes, setShowFullRes] = useState(false)
   const [lightbox, setLightbox] = useState(false)
+  const [siblings, setSiblings] = useState([])
+  const [inquiryOpen, setInquiryOpen] = useState(false)
 
   useEffect(() => {
+    setLoading(true)
+    setArtist(null)
+    setShowFullRes(false)
+    setLightbox(false)
+    setSiblings([])
+    setInquiryOpen(false)
+    window.scrollTo(0, 0)
+
     async function load() {
       const { data: w } = await supabase.from('artworks').select('*').eq('id', id).single()
       if (!w) { setLoading(false); return }
@@ -22,6 +32,15 @@ export default function ArtworkPage() {
       if (w.artist_id) {
         const { data: a } = await supabase.from('artists').select('*').eq('id', w.artist_id).single()
         setArtist(a)
+        // Fresh query every load — links get shared externally, so we can't
+        // rely on router state carrying the artist's work list.
+        const { data: sibs } = await supabase.from('artworks')
+          .select('id, sort_order, title')
+          .eq('artist_id', w.artist_id)
+          .eq('visible', true)
+          .order('sort_order', { ascending: true })
+          .order('title', { ascending: true })
+        setSiblings(sibs || [])
       }
       const url = `${window.location.origin}/artwork/${id}`
       const dataUrl = await QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: '#1a1714', light: '#ffffff' } })
@@ -30,6 +49,10 @@ export default function ArtworkPage() {
     }
     load()
   }, [id])
+
+  const siblingIndex = siblings.findIndex(s => s.id === id)
+  const prevSibling = siblingIndex > 0 ? siblings[siblingIndex - 1] : null
+  const nextSibling = siblingIndex >= 0 && siblingIndex < siblings.length - 1 ? siblings[siblingIndex + 1] : null
 
   function whatsappShare() {
     const url = `${window.location.origin}/artwork/${id}`
@@ -84,33 +107,15 @@ export default function ArtworkPage() {
 
       <div className="aw-body" style={{ minHeight:'100vh', background:'#faf8f5', overflowY:'auto' }}>
 
-        {/* Top bar */}
-        <div className="no-print" style={{ borderBottom:'1px solid #e8e3db', background:'#fff', padding:'12px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
-          <a href="/" style={{ display:'flex', flexDirection:'column', gap:0, textDecoration:'none', lineHeight:1.1 }}>
+        {/* Top bar — logo only */}
+        <div className="no-print" style={{ borderBottom:'1px solid #e8e3db', background:'#fff', padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <a href="/" style={{ display:'flex', flexDirection:'column', gap:0, textDecoration:'none', lineHeight:1.1, alignItems:'center' }}>
             <div style={{ display:'flex', alignItems:'baseline', gap:1 }}>
               <span style={{ fontWeight:700, fontSize:14, letterSpacing:'-.01em', color:'#1a1714' }}>HOURGLASS</span>
               <span style={{ fontWeight:700, fontSize:14, color:'#E05C2A' }}>/</span>
             </div>
             <span style={{ fontWeight:700, fontSize:8, letterSpacing:'.2em', color:'#E05C2A', marginLeft:1 }}>GALLERY</span>
           </a>
-          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-            <button onClick={whatsappShare}
-              style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3, border:'1px solid #25D366', background:'#fff', color:'#25D366', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              Share
-            </button>
-            {qrDataUrl && (
-              <a href={qrDataUrl} download={`QR-${artwork.hg_code||artwork.id}.png`}
-                style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3, border:'1px solid #e8e3db', background:'#fff', color:'#1a1714', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit', textDecoration:'none' }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="2" height="2"/><rect x="14" y="19" width="2" height="2"/><rect x="19" y="19" width="2" height="2"/></svg>
-                QR
-              </a>
-            )}
-            <button onClick={printPage}
-              style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3, border:'1px solid #e8e3db', background:'#fff', color:'#1a1714', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-              Print
-            </button>
-          </div>
         </div>
 
         {/* Main content */}
@@ -227,10 +232,42 @@ export default function ArtworkPage() {
             </span>
           </div>
 
+          {/* Actions — Share / QR / Print / Inquire */}
+          <div className="no-print" style={{ marginTop:16, display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>
+            <button onClick={whatsappShare}
+              style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3, border:'1px solid #25D366', background:'#fff', color:'#25D366', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              Share
+            </button>
+            {qrDataUrl && (
+              <a href={qrDataUrl} download={`QR-${artwork.hg_code||artwork.id}.png`}
+                style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3, border:'1px solid #e8e3db', background:'#fff', color:'#1a1714', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit', textDecoration:'none' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="2" height="2"/><rect x="14" y="19" width="2" height="2"/><rect x="19" y="19" width="2" height="2"/></svg>
+                QR
+              </a>
+            )}
+            <button onClick={printPage}
+              style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3, border:'1px solid #e8e3db', background:'#fff', color:'#1a1714', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+              Print
+            </button>
+            <button onClick={() => setInquiryOpen(v => !v)}
+              style={{
+                display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3,
+                border: inquiryOpen ? '1px solid #E05C2A' : '1px solid #e8e3db',
+                background:'#fff', color: inquiryOpen ? '#E05C2A' : '#1a1714',
+                fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit',
+              }}>
+              Inquire
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                style={{ transform: inquiryOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition:'transform 220ms ease' }}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          </div>
 
           {/* Inquiry form */}
-          <div className="no-print" style={{ marginTop:32 }}>
-            <ArtworkInquiryEmbed artworkId={artwork.id} artworkTitle={artwork.title} artistName={artist?.name} />
+          <div className="no-print" style={{ marginTop:16 }}>
+            <ArtworkInquiryEmbed expanded={inquiryOpen} artworkId={artwork.id} artworkTitle={artwork.title} artistName={artist?.name} />
           </div>
           {/* Lightbox */}
           {lightbox && (
@@ -241,6 +278,37 @@ export default function ArtworkPage() {
               <button onClick={() => setLightbox(false)}
                 style={{ position:'absolute', top:16, right:20, background:'none', border:'none', color:'#fff', fontSize:28, cursor:'pointer', opacity:.7 }}>
                 {'✕'}
+              </button>
+            </div>
+          )}
+
+          {/* Previous / Next — same artist */}
+          {artist && siblings.length > 1 && (
+            <div className="no-print" style={{ marginTop:32, paddingTop:20, borderTop:'1px solid #e8e3db', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+              <button
+                onClick={() => prevSibling && navigate(`/artwork/${prevSibling.id}`)}
+                disabled={!prevSibling}
+                style={{
+                  display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3,
+                  border:'1px solid #e8e3db', background:'#fff',
+                  color: prevSibling ? '#1a1714' : '#d8d3cb',
+                  fontSize:11, fontWeight:600, cursor: prevSibling ? 'pointer' : 'default',
+                  fontFamily:'inherit', opacity: prevSibling ? 1 : .5,
+                }}>
+                &larr; Previous
+              </button>
+              <span style={{ fontSize:11, color:'#9a9490' }}>{siblingIndex + 1} of {siblings.length} by {artist.name}</span>
+              <button
+                onClick={() => nextSibling && navigate(`/artwork/${nextSibling.id}`)}
+                disabled={!nextSibling}
+                style={{
+                  display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:3,
+                  border:'1px solid #e8e3db', background:'#fff',
+                  color: nextSibling ? '#1a1714' : '#d8d3cb',
+                  fontSize:11, fontWeight:600, cursor: nextSibling ? 'pointer' : 'default',
+                  fontFamily:'inherit', opacity: nextSibling ? 1 : .5,
+                }}>
+                Next &rarr;
               </button>
             </div>
           )}

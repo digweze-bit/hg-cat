@@ -25,14 +25,15 @@ const LABEL_STYLE = {
 };
 
 /**
- * Collapsible native inquiry form for an artwork. Inserts directly into
- * the Supabase "inquiries" table (RLS: anonymous inserts only).
+ * Native inquiry form for an artwork, shown/hidden by the parent's
+ * `expanded` prop (the toggle button lives outside this component).
+ * Inserts directly into the Supabase "inquiries" table (RLS: anonymous
+ * inserts only).
  *
  * Usage:
- *   <ArtworkInquiryEmbed artworkId={artwork.id} artworkTitle={artwork.title} artistName={artist?.name} />
+ *   <ArtworkInquiryEmbed expanded={open} artworkId={artwork.id} artworkTitle={artwork.title} artistName={artist?.name} />
  */
-export default function ArtworkInquiryEmbed({ artworkId, artworkTitle, artistName }) {
-  const [expanded, setExpanded] = useState(false);
+export default function ArtworkInquiryEmbed({ expanded, artworkId, artworkTitle, artistName }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -69,55 +70,6 @@ export default function ArtworkInquiryEmbed({ artworkId, artworkTitle, artistNam
 
   return (
     <div className="artwork-inquiry-embed" style={{ fontFamily: "'Inter',-apple-system,sans-serif" }}>
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-        style={{
-          width: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          background: "none",
-          border: "none",
-          borderTop: "1px solid #e8e3db",
-          padding: "16px 0",
-          margin: 0,
-          cursor: "pointer",
-          fontFamily: "inherit",
-          textAlign: "left",
-        }}
-      >
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: ".1em",
-            textTransform: "uppercase",
-            color: "#9a9490",
-          }}
-        >
-          Inquire about this work
-        </span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#9a9490"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{
-            flexShrink: 0,
-            transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
-            transition: "transform 220ms ease",
-          }}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
-
       <div
         style={{
           display: "grid",
