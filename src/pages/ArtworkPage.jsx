@@ -119,6 +119,14 @@ export default function ArtworkPage() {
         {/* Main content */}
         <div className="artwork-page" style={{ maxWidth:1100, margin:'0 auto', padding:'32px 20px 60px' }}>
 
+          {/* Breadcrumb — back to the artist's page */}
+          {artist && (
+            <button className="no-print" onClick={() => navigate(`/artist/${artist.id}`)}
+              style={{ display:'flex', alignItems:'center', gap:5, marginBottom:20, background:'none', border:'none', cursor:'pointer', padding:0, fontSize:11, color:'#9a9490', fontFamily:'inherit' }}>
+              &larr; {artist.name}
+            </button>
+          )}
+
           <div className="aw-grid">
 
             {/* Image — always first */}
