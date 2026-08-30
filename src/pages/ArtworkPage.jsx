@@ -11,6 +11,7 @@ export default function ArtworkPage() {
   const [loading, setLoading] = useState(true)
   const [qrDataUrl, setQrDataUrl] = useState(null)
   const [showFullRes, setShowFullRes] = useState(false)
+  const [lightbox, setLightbox] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -120,8 +121,8 @@ export default function ArtworkPage() {
             <div>
               {artwork.image_url ? (
                 <>
-                  <img className="aw-img" src={showFullRes && artwork.full_image_url ? artwork.full_image_url : artwork.image_url} alt={artwork.title}
-                    style={{ width:'100%', display:'block', borderRadius:2, objectFit:'contain', background:'#f0ece6' }} />
+                  <img className="aw-img" onClick={() => setLightbox(true)} src={showFullRes && artwork.full_image_url ? artwork.full_image_url : artwork.image_url} alt={artwork.title}
+                    style={{ width:'100%', display:'block', borderRadius:2, objectFit:'contain', background:'#f0ece6', cursor:'zoom-in' }} />
                   {artwork.full_image_url && !showFullRes && (
                     <button onClick={() => setShowFullRes(true)}
                       style={{ marginTop:8, fontSize:11, color:'#9a9490', background:'none', border:'1px solid #e8e3db', borderRadius:3, padding:'5px 10px', cursor:'pointer', fontFamily:'inherit' }}>
@@ -231,6 +232,19 @@ export default function ArtworkPage() {
           <div className="no-print" style={{ marginTop:32 }}>
             <ArtworkInquiryEmbed artworkTitle={artwork.title} artworkId={artwork.id} />
           </div>
+          {/* Lightbox */}
+          {lightbox && (
+            <div className="no-print" onClick={() => setLightbox(false)}
+              style={{ position:'fixed', inset:0, zIndex:9999, background:'rgba(0,0,0,.92)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'zoom-out', padding:16 }}>
+              <img src={artwork.full_image_url || artwork.image_url} alt={artwork.title}
+                style={{ maxWidth:'95vw', maxHeight:'95vh', objectFit:'contain', borderRadius:2 }} />
+              <button onClick={() => setLightbox(false)}
+                style={{ position:'absolute', top:16, right:20, background:'none', border:'none', color:'#fff', fontSize:28, cursor:'pointer', opacity:.7 }}>
+                {'✕'}
+              </button>
+            </div>
+          )}
+
           {/* Footer */}
           <div style={{ marginTop:32, paddingTop:20, borderTop:'1px solid #e8e3db', display:'flex', flexDirection:'column', gap:6, alignItems:'center', textAlign:'center' }}>
             <div style={{ fontSize:11, color:'#9a9490' }}>
