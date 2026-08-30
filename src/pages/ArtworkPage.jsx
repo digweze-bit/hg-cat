@@ -226,6 +226,11 @@ export default function ArtworkPage() {
             </span>
           </div>
 
+
+          {/* Inquiry form */}
+          <div className="no-print" style={{ marginTop:32 }}>
+            <ArtworkInquiryEmbed artworkTitle={artwork.title} artworkId={artwork.id} />
+          </div>
           {/* Footer */}
           <div style={{ marginTop:32, paddingTop:20, borderTop:'1px solid #e8e3db', display:'flex', flexDirection:'column', gap:6, alignItems:'center', textAlign:'center' }}>
             <div style={{ fontSize:11, color:'#9a9490' }}>
