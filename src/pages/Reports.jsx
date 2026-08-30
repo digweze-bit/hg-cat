@@ -54,6 +54,25 @@ const GROUPS = [
 
 const DASH = '—'
 
+// Three receiving routes. Both 'artist_owned' and 'consignment' are consignments:
+// the first is consigned directly by the artist, the second by a collector/estate.
+const OWNERSHIP_LABEL = {
+  gallery:      'Gallery owned',
+  artist_owned: 'Artist consignment',
+  consignment:  'Client / estate consignment',
+}
+const CONSIGNED = ['artist_owned', 'consignment']
+
+function isConsigned(w) { return CONSIGNED.includes(w.ownership) }
+
+// For an artist consignment the artist is the consignor, so consignor_name is
+// left null on those rows — fall back to the artist's name.
+function effectiveConsignor(w, artistMap) {
+  if (w.consignor_name) return w.consignor_name
+  if (w.ownership === 'artist_owned') return artistMap[w.artist_id]?.name || null
+  return null
+}
+
 function workValue(w) {
   // price is a free-text field, so only trust the numeric columns
   return Number(w.consignment_price || w.retail_price || w.valuation || 0)
@@ -101,10 +120,13 @@ export default function Reports() {
   // Consignor names actually present on stock, merged with the consignors table
   const consignorNames = useMemo(() => {
     const set = new Set()
-    artworks.forEach(w => { if (w.consignor_name) set.add(w.consignor_name) })
+    artworks.forEach(w => {
+      const n = effectiveConsignor(w, artistMap)
+      if (n && isConsigned(w)) set.add(n)
+    })
     consignors.forEach(c => { if (c.name) set.add(c.name) })
     return [...set].sort((a, b) => a.localeCompare(b))
-  }, [artworks, consignors])
+  }, [artworks, consignors, artistMap])
 
   // Flatten invoice lines once, resolving artist/consignor from the linked artwork
   const items = useMemo(() => invoices.flatMap(inv =>
@@ -119,14 +141,16 @@ export default function Reports() {
         currency: inv.currency,
         artist_id: aw?.artist_id || null,
         artist_label: (aw && artistMap[aw.artist_id]?.name) || it.artist_name || DASH,
-        consignor_label: it.consignor_name || aw?.consignor_name || null,
+        consignor_label: it.consignor_name || (aw ? effectiveConsignor(aw, artistMap) : null),
       }
     })), [invoices, artworkMap, artistMap])
 
   // Scope helpers — when no entity is picked, the report covers everything
   function matchesEntity(w) {
     if (!group.entity || !entityId) return true
-    return group.entity === 'artist' ? w.artist_id === entityId : w.consignor_name === entityId
+    return group.entity === 'artist'
+      ? w.artist_id === entityId
+      : effectiveConsignor(w, artistMap) === entityId
   }
   function itemMatchesEntity(it) {
     if (!group.entity || !entityId) return true
@@ -258,10 +282,12 @@ function subtitleFor(ctx) {
 
 function consignmentReport(ctx) {
   const { artworks, artistMap, matchesEntity, group } = ctx
-  const works = artworks.filter(w => w.ownership === 'consignment' && matchesEntity(w))
+  // Both consignment routes count — artist consignments (consigned directly by
+  // the artist) and client/estate consignments.
+  const works = artworks.filter(w => isConsigned(w) && matchesEntity(w))
   const groupKey = w => group.entity === 'artist'
     ? (artistMap[w.artist_id]?.name || 'Unknown artist')
-    : (w.consignor_name || 'Unspecified consignor')
+    : (effectiveConsignor(w, artistMap) || 'Unspecified consignor')
 
   const buckets = {}
   works.forEach(w => {
@@ -270,12 +296,15 @@ function consignmentReport(ctx) {
     buckets[k].push(w)
   })
   const total = works.reduce((s, w) => s + workValue(w), 0)
+  const byArtist = works.filter(w => w.ownership === 'artist_owned').length
 
   return {
     title: `${group.label.replace(' Reports','')} consignment`,
     subtitle: subtitleFor(ctx),
     stats: [
       { n: works.length, l: 'Consigned works', color: 'var(--amber)' },
+      { n: byArtist, l: 'From artists' },
+      { n: works.length - byArtist, l: 'From clients / estates' },
       { n: Object.keys(buckets).length, l: group.entity === 'artist' ? 'Artists' : 'Consignors' },
       { n: formatAmount(total, 'NGN'), l: 'Total value' },
     ],
@@ -283,10 +312,11 @@ function consignmentReport(ctx) {
       .sort((a, b) => b[1].length - a[1].length)
       .map(([name, ws]) => ({
         heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}`,
-        columns: ['Title', group.entity === 'artist' ? 'Consignor' : 'Artist', 'Year', 'Medium', 'Location', 'Status', 'Value'],
+        columns: ['Title', group.entity === 'artist' ? 'Consignor' : 'Artist', 'Type', 'Year', 'Medium', 'Location', 'Status', 'Value'],
         rows: ws.map(w => [
           { text: w.title, bold: true },
-          { text: (group.entity === 'artist' ? w.consignor_name : artistMap[w.artist_id]?.name) || DASH, muted: true },
+          { text: (group.entity === 'artist' ? effectiveConsignor(w, artistMap) : artistMap[w.artist_id]?.name) || DASH, muted: true },
+          { text: w.ownership === 'artist_owned' ? 'Artist' : 'Client / estate', muted: true },
           { text: w.year || DASH, muted: true },
           { text: w.medium || DASH, muted: true },
           { text: w.location || DASH, muted: true },
@@ -523,17 +553,18 @@ function receivedReport(ctx) {
     stats: [
       { n: works.length, l: 'Works received' },
       { n: works.filter(w => w.ownership === 'gallery').length, l: 'Gallery owned' },
-      { n: works.filter(w => w.ownership === 'consignment').length, l: 'Consignment' },
+      { n: works.filter(w => w.ownership === 'artist_owned').length, l: 'Artist consignment' },
+      { n: works.filter(w => w.ownership === 'consignment').length, l: 'Client consignment' },
     ],
     sections: [{
-      columns: ['#', 'Title', 'Artist', 'Medium', 'Ownership', 'Consignor', 'Date added'],
+      columns: ['#', 'Title', 'Artist', 'Medium', 'Received as', 'Consignor', 'Date added'],
       rows: works.map((w, i) => [
         { text: String(i + 1), muted: true },
         { text: w.title, bold: true },
         { text: artistMap[w.artist_id]?.name || DASH, muted: true },
         { text: w.medium || DASH, muted: true },
-        { text: w.ownership === 'consignment' ? 'Consignment' : 'Gallery' },
-        { text: w.consignor_name || DASH },
+        { text: OWNERSHIP_LABEL[w.ownership] || OWNERSHIP_LABEL.gallery },
+        { text: effectiveConsignor(w, artistMap) || DASH },
         { text: w.created_at?.slice(0, 10) || DASH, muted: true },
       ]),
     }],
