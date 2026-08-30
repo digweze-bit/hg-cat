@@ -71,6 +71,16 @@ function workValue(w) {
   return Number(w.consignment_price || w.retail_price || w.valuation || 0)
 }
 
+// Thumbnail cell. Prefer the artwork's own image over the snapshot stored on
+// the invoice line, so reports reflect the current image.
+function thumb(w) {
+  return { img: w?.thumbnail_url || w?.image_url || null }
+}
+function itemThumb(it) {
+  return { img: it.thumbnail_url || it.image_url || it.cover_url || null }
+}
+const THUMB_COL = ''
+
 export default function Reports() {
   const [groupId, setGroupId]   = useState('artist')
   const [subId, setSubId]       = useState('consignment')
@@ -92,7 +102,7 @@ export default function Reports() {
         fetchAll('artists', { order: 'name' }),
         fetchAll('artworks', { order: 'created_at' }),
         supabase.from('invoices')
-          .select('*, clients(name, email, phone), invoice_items(id, artwork_id, title, artist_name, consignor_name, item_type, delivered, delivered_at, collected_by, line_total, sort_order)')
+          .select('*, clients(name, email, phone), invoice_items(id, artwork_id, title, artist_name, consignor_name, item_type, delivered, delivered_at, collected_by, line_total, sort_order, thumbnail_url, image_url, cover_url)')
           .order('created_at', { ascending: false })
           .limit(2000)
           .then(r => r.data || []),
@@ -135,6 +145,7 @@ export default function Reports() {
         artist_label: (aw && artistMap[aw.artist_id]?.name) || it.artist_name || DASH,
         // Only third-party/estate consignments carry a consignor
         consignor_label: it.consignor_name || aw?.consignor_name || null,
+        thumbnail_url: aw?.thumbnail_url || aw?.image_url || it.thumbnail_url,
       }
     })), [invoices, artworkMap, artistMap])
 
@@ -305,9 +316,10 @@ function consignmentReport(ctx) {
       .map(([name, ws]) => ({
         heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}`,
         columns: byArtist
-          ? ['Title', 'Year', 'Medium', 'Location', 'Status', 'Value']
-          : ['Title', 'Artist', 'Year', 'Medium', 'Location', 'Status', 'Value'],
+          ? [THUMB_COL, 'Title', 'Year', 'Medium', 'Location', 'Status', 'Value']
+          : [THUMB_COL, 'Title', 'Artist', 'Year', 'Medium', 'Location', 'Status', 'Value'],
         rows: ws.map(w => [
+          thumb(w),
           { text: w.title, bold: true },
           ...(byArtist ? [] : [{ text: artistMap[w.artist_id]?.name || DASH, muted: true }]),
           { text: w.year || DASH, muted: true },
@@ -336,9 +348,10 @@ function entitySalesReport(ctx) {
       { n: formatAmount(total, 'NGN'), l: 'Total value' },
     ],
     sections: [{
-      columns: ['#', 'Title', 'Artist', group.entity === 'consignor' ? 'Consignor' : 'Client', 'Invoice', 'Date', 'Sale price'],
+      columns: ['#', THUMB_COL, 'Title', 'Artist', group.entity === 'consignor' ? 'Consignor' : 'Client', 'Invoice', 'Date', 'Sale price'],
       rows: rows.map((it, i) => [
         { text: String(i + 1), muted: true },
+        itemThumb(it),
         { text: it.title, bold: true },
         { text: it.artist_label, muted: true },
         { text: (group.entity === 'consignor' ? it.consignor_label : it.client_name) || DASH },
@@ -362,8 +375,9 @@ function entityCollectionReport(ctx) {
     subtitle: subtitleFor(ctx),
     stats: [{ n: rows.length, l: 'Collected in period', color: 'var(--amber)' }],
     sections: [{
-      columns: ['Artwork', 'Artist', 'Client', 'Invoice', 'Collected by', 'Collection date', 'Value'],
+      columns: [THUMB_COL, 'Artwork', 'Artist', 'Client', 'Invoice', 'Collected by', 'Collection date', 'Value'],
       rows: rows.map(it => [
+        itemThumb(it),
         { text: it.title, bold: true },
         { text: it.artist_label, muted: true },
         { text: it.client_name },
@@ -387,6 +401,7 @@ function returnsReport(ctx) {
   const undated = all.filter(w => !w.returned_at)
 
   const row = w => [
+    thumb(w),
     { text: w.title, bold: true },
     { text: artistMap[w.artist_id]?.name || DASH, muted: true },
     { text: w.consignor_name || DASH, muted: true },
@@ -395,7 +410,7 @@ function returnsReport(ctx) {
     { text: w.returned_at || DASH, muted: true },
     { text: formatAmount(workValue(w), w.consignment_currency || 'NGN') },
   ]
-  const columns = ['Title', 'Artist', 'Consignor', 'Year', 'Medium', 'Returned', 'Value']
+  const columns = [THUMB_COL, 'Title', 'Artist', 'Consignor', 'Year', 'Medium', 'Returned', 'Value']
 
   return {
     title: `${group.label.replace(' Reports','')} returns`,
@@ -429,9 +444,10 @@ function soldReport(ctx) {
       { n: rows.length ? formatAmount(total / rows.length, 'NGN') : DASH, l: 'Average sale price' },
     ],
     sections: [{
-      columns: ['#', 'Title', 'Artist', 'Client', 'Invoice', 'Date', 'Sale price'],
+      columns: ['#', THUMB_COL, 'Title', 'Artist', 'Client', 'Invoice', 'Date', 'Sale price'],
       rows: rows.map((it, i) => [
         { text: String(i + 1), muted: true },
+        itemThumb(it),
         { text: it.title, bold: true },
         { text: it.artist_label, muted: true },
         { text: it.client_name },
@@ -439,7 +455,7 @@ function soldReport(ctx) {
         { text: it.issue_date, muted: true },
         { text: formatAmount(it.line_total, it.currency), color: 'var(--green)', bold: true },
       ]),
-      footer: ['', '', '', '', '', 'Total', { text: formatAmount(total, 'NGN'), color: 'var(--green)', bold: true }],
+      footer: ['', '', '', '', '', '', 'Total', { text: formatAmount(total, 'NGN'), color: 'var(--green)', bold: true }],
     }],
     empty: 'No sales in this period',
   }
@@ -499,8 +515,9 @@ function collectionReport(ctx) {
     subtitle: periodLine(ctx),
     stats: [{ n: rows.length, l: 'Collected in period', color: 'var(--amber)' }],
     sections: [{
-      columns: ['Artwork', 'Artist', 'Client', 'Invoice', 'Collected by', 'Collection date', 'Value'],
+      columns: [THUMB_COL, 'Artwork', 'Artist', 'Client', 'Invoice', 'Collected by', 'Collection date', 'Value'],
       rows: rows.map(it => [
+        itemThumb(it),
         { text: it.title, bold: true },
         { text: it.artist_label, muted: true },
         { text: it.client_name },
@@ -523,8 +540,9 @@ function pendingReport(ctx) {
     title: 'Pending collection',
     stats: [{ n: rows.length, l: 'Awaiting collection', color: 'var(--amber)' }],
     sections: [{
-      columns: ['Artwork', 'Artist', 'Client', 'Invoice', 'Invoice date', 'Value'],
+      columns: [THUMB_COL, 'Artwork', 'Artist', 'Client', 'Invoice', 'Invoice date', 'Value'],
       rows: rows.map(it => [
+        itemThumb(it),
         { text: it.title, bold: true },
         { text: it.artist_label, muted: true },
         { text: it.client_name },
@@ -552,9 +570,10 @@ function receivedReport(ctx) {
       { n: works.filter(w => w.ownership === 'consignment').length, l: 'Client consignment' },
     ],
     sections: [{
-      columns: ['#', 'Title', 'Artist', 'Medium', 'Received as', 'Consignor', 'Date added'],
+      columns: ['#', THUMB_COL, 'Title', 'Artist', 'Medium', 'Received as', 'Consignor', 'Date added'],
       rows: works.map((w, i) => [
         { text: String(i + 1), muted: true },
+        thumb(w),
         { text: w.title, bold: true },
         { text: artistMap[w.artist_id]?.name || DASH, muted: true },
         { text: w.medium || DASH, muted: true },
@@ -583,9 +602,10 @@ function loanedReport(ctx) {
       { n: works.length - missingBorrower, l: 'Borrower recorded' },
     ],
     sections: [{
-      columns: ['#', 'Title', 'Artist', 'Medium', 'Loaned to', 'Location', 'Status'],
+      columns: ['#', THUMB_COL, 'Title', 'Artist', 'Medium', 'Loaned to', 'Location', 'Status'],
       rows: works.map((w, i) => [
         { text: String(i + 1), muted: true },
+        thumb(w),
         { text: w.title, bold: true },
         { text: artistMap[w.artist_id]?.name || DASH, muted: true },
         { text: w.medium || DASH, muted: true },
@@ -600,8 +620,11 @@ function loanedReport(ctx) {
 
 // ── SCREEN RENDERER ─────────────────────────────────────────────────────────
 
+const isImgCell = c => typeof c === 'object' && c !== null && 'img' in c
+
 function cellStyle(c) {
   if (typeof c === 'string') return {}
+  if (isImgCell(c)) return { width: 56, padding: '6px 10px' }
   return {
     fontWeight: c.bold ? 600 : 400,
     color: c.color || (c.muted ? 'var(--muted)' : undefined),
@@ -609,6 +632,14 @@ function cellStyle(c) {
   }
 }
 function cellText(c) { return typeof c === 'string' ? c : c.text }
+
+function CellContent({ c }) {
+  if (!isImgCell(c)) return <>{cellText(c)}</>
+  const box = { width:44, height:44, borderRadius:2, background:'var(--parchment)', display:'block', objectFit:'cover' }
+  return c.img
+    ? <img src={c.img} alt="" loading="lazy" style={box} onError={e => { e.target.style.visibility = 'hidden' }} />
+    : <div style={box} />
+}
 
 function ReportView({ report }) {
   if (!report) return null
@@ -637,11 +668,11 @@ function ReportView({ report }) {
                     {sec.heading && (
                       <tr><th colSpan={sec.columns.length} style={{ background:'var(--parchment)', fontFamily:'var(--font-serif)', fontSize:14, padding:'10px 14px' }}>{sec.heading}</th></tr>
                     )}
-                    <tr>{sec.columns.map(c => <th key={c}>{c}</th>)}</tr>
+                    <tr>{sec.columns.map((c, ci) => <th key={ci}>{c}</th>)}</tr>
                   </thead>
                   <tbody>
                     {sec.rows.map((row, ri) => (
-                      <tr key={ri}>{row.map((c, ci) => <td key={ci} style={cellStyle(c)}>{cellText(c)}</td>)}</tr>
+                      <tr key={ri}>{row.map((c, ci) => <td key={ci} style={cellStyle(c)}><CellContent c={c} /></td>)}</tr>
                     ))}
                   </tbody>
                   {sec.footer && (
@@ -686,7 +717,8 @@ function printReport(report) {
     h3{margin:18px 0 6px;font-size:12px;font-weight:600;}
     table{width:100%;border-collapse:collapse;margin-top:8px;page-break-inside:auto;}
     th{padding:7px 10px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#888;border-bottom:2px solid #1a1714;background:#f0ece4;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    td{padding:7px 10px;border-bottom:1px solid #ece8e1;font-size:11px;vertical-align:top;}
+    td{padding:7px 10px;border-bottom:1px solid #ece8e1;font-size:11px;vertical-align:middle;}
+    .thumb{width:38px;height:38px;object-fit:cover;border-radius:2px;background:#f0ece4;display:block;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     tfoot td{font-weight:600;border-top:2px solid #1a1714;border-bottom:none;background:#f9f8f6;}
     tr{page-break-inside:avoid;}
     .note{margin-top:16px;padding:8px 12px;background:#f9f8f6;font-size:10px;color:#777;border-radius:3px;}
@@ -695,6 +727,9 @@ function printReport(report) {
   `
 
   const printCell = c => {
+    if (isImgCell(c)) {
+      return c.img ? `<img class="thumb" src="${e(c.img)}" alt="" />` : '<div class="thumb"></div>'
+    }
     const t = e(cellText(c))
     if (typeof c === 'string') return t
     const col = c.color === 'var(--green)' ? '#2d6a4f'
@@ -733,7 +768,16 @@ ${report.note ? `<div class="note">${e(report.note)}</div>` : ''}
   const w = window.open('', '_blank', 'width=1100,height=750')
   w.document.write(html)
   w.document.close()
-  setTimeout(() => w.print(), 500)
+
+  // Thumbnails load over the network, so hold the print dialog until they
+  // settle — otherwise the sheet prints with empty image boxes.
+  const deadline = Date.now() + 8000
+  const ready = () => {
+    const imgs = Array.from(w.document.images || [])
+    return imgs.every(i => i.complete) || Date.now() > deadline
+  }
+  const waitThenPrint = () => ready() ? w.print() : setTimeout(waitThenPrint, 200)
+  setTimeout(waitThenPrint, 300)
 }
 
 function e(s) {
