@@ -19,6 +19,7 @@ const NAV = [
 
   { path: '/admin/search', label: 'Search', icon: '\u2315' },
   { path: '/admin/consignors', label: 'Consignors', icon: '\u25D0' },
+  { path: '/admin/loanees', label: 'Loanees', icon: '\u25D1' },
   { path: '/admin/books', label: 'Books', icon: '\u25A3' },
   { path: '/admin/catalogue', label: 'Catalogue', icon: '\u25A4' },
   { path: '/admin/forms', label: 'Forms', icon: '\u25FB' },
@@ -94,6 +95,7 @@ export default function AdminLayout() {
              location.pathname.includes('archive') ? 'Live Archive' :
              location.pathname.includes('sales') ? 'Sales & Invoices' :
              location.pathname.includes('consignors') ? 'Consignors' :
+             location.pathname.includes('loanees') ? 'Loanees' :
              location.pathname.includes('books') ? 'Books' :
              location.pathname.includes('forms') ? 'Forms' :
              location.pathname.includes('certificates') ? 'Certificates' :

@@ -25,6 +25,7 @@ const Search = lazy(() => import('./pages/Search'))
 const BackfillThumbnails = lazy(() => import('./pages/BackfillThumbnails'))
 const BatchUpload = lazy(() => import('./pages/BatchUpload'))
 const Consignors   = lazy(() => import('./pages/Consignors'))
+const Loanees      = lazy(() => import('./pages/Loanees'))
 const Books        = lazy(() => import('./pages/Books'))
 const Forms        = lazy(() => import('./pages/Forms'))
 const Reports      = lazy(() => import('./pages/Reports'))
@@ -88,6 +89,7 @@ export default function App() {
               <Route path="backfill-thumbnails" element={<BackfillThumbnails />} />
               <Route path="batch-upload" element={<BatchUpload />} />
               <Route path="consignors" element={<Consignors />} />
+              <Route path="loanees" element={<Loanees />} />
               <Route path="books" element={<Books />} />
               <Route path="forms" element={<Forms />} />
               <Route path="catalogue" element={<CatalogueBuilder />} />
