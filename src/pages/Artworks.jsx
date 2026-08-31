@@ -8,10 +8,11 @@ import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
 
 const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS', 'Returned']
+const LOANEE_TYPES = ['Individual', 'Institution', 'Museum', 'Gallery', 'Corporate', 'Other']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'' }
+const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'' }
 
 
 function convertDimensions(str, fromUnit, toUnit) {
@@ -338,18 +339,26 @@ export default function Artworks() {
   const [editId, setEditId] = useState(null)
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
+  const [loanees, setLoanees] = useState([])
   const [uploading, setUploading] = useState(false)
   const [page, setPage] = useState(0)
   const PER_PAGE = 30
 
   async function load() {
-    const [a, w] = await Promise.all([
+    const [a, w, l] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      supabase.from('loanees').select('*').order('name').then(r => r.data || []),
     ])
     setArtists(a)
     setArtworks(w)
+    setLoanees(l)
     setLoading(false)
+  }
+
+  async function reloadLoanees() {
+    const { data } = await supabase.from('loanees').select('*').order('name')
+    setLoanees(data || [])
   }
 
   useEffect(() => { load() }, [])
@@ -443,6 +452,37 @@ export default function Artworks() {
     savingRef.current = true
     setSaving(true)
     try {
+      // Resolve the loan entry first — a new loanee may need creating so the
+      // artwork can reference it.
+      let loaneeId = null
+      let loanedToName = null
+      if (form.availability === 'Reserved') {
+        if (form.loanee_mode === 'saved') {
+          loaneeId = form.loanee_id || null
+          loanedToName = loanees.find(l => l.id === loaneeId)?.name || null
+        } else if (form.loaned_to?.trim()) {
+          loanedToName = form.loaned_to.trim()
+          if (form.save_loanee !== false) {
+            const existing = loanees.find(l => l.name.toLowerCase() === loanedToName.toLowerCase())
+            if (existing) {
+              loaneeId = existing.id
+            } else {
+              const { data: created, error: loaneeErr } = await supabase.from('loanees')
+                .insert({
+                  name: loanedToName,
+                  type: form.loanee_type || 'Individual',
+                  email: form.loanee_email?.trim() || null,
+                  phone: form.loanee_phone?.trim() || null,
+                })
+                .select().single()
+              if (loaneeErr) throw loaneeErr
+              loaneeId = created.id
+              await reloadLoanees()
+            }
+          }
+        }
+      }
+
       const payload = {
         title:             form.title,
         artist_id:         form.artist_id || null,
@@ -476,7 +516,10 @@ export default function Artworks() {
         commission_rate:   (form.ownership === 'consignment' || form.ownership === 'artist_owned') ? Number(form.commission_rate ?? 40) : null,
         tessera_id:        form.tessera_id || null,
         hg_code:           form.hg_code || null,
-        loaned_to:         form.availability === 'Reserved' ? form.loaned_to || null : null,
+        loaned_to:         loanedToName,
+        loanee_id:         loaneeId,
+        loan_date:         form.availability === 'Reserved' ? form.loan_date || null : null,
+        loan_due_date:     form.availability === 'Reserved' ? form.loan_due_date || null : null,
         returned_at:       form.availability === 'Returned' ? form.returned_at || null : null,
         updated_at:        new Date().toISOString(),
       }
@@ -540,6 +583,16 @@ export default function Artworks() {
       tessera_id: artwork.tessera_id || '',
       loaned_to: artwork.loaned_to || '',
       returned_at: artwork.returned_at || '',
+      loanee_id: artwork.loanee_id || '',
+      // An existing loan with a saved loanee edits as "saved"; a free-text
+      // borrower keeps its name in the "new" branch so it isn't lost.
+      loanee_mode: artwork.loanee_id ? 'saved' : (artwork.loaned_to ? 'new' : 'saved'),
+      loanee_type: 'Individual',
+      loanee_email: '',
+      loanee_phone: '',
+      save_loanee: true,
+      loan_date: artwork.loan_date || '',
+      loan_due_date: artwork.loan_due_date || '',
     })
     setEditId(artwork.id)
     setModal('edit')
@@ -808,10 +861,81 @@ export default function Artworks() {
                   </div>
                 </div>
                 {form.availability === 'Reserved' && (
-                  <div className="form-group">
-                    <label className="form-label">Loaned to</label>
-                    <input className="form-input" value={form.loaned_to||''} placeholder="Borrower name"
-                      onChange={e=>setForm(f=>({...f,loaned_to:e.target.value}))} />
+                  <div style={{ background:'var(--parchment)', borderRadius:3, padding:'12px 14px', display:'flex', flexDirection:'column', gap:11 }}>
+                    <div style={{ fontSize:11, fontWeight:500, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)' }}>Loan entry</div>
+
+                    <div className="form-row">
+                      {[['saved','Saved loanee'],['new','New loanee']].map(([key,label]) => (
+                        <label key={key} style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', padding:'9px 12px', border:`1px solid ${form.loanee_mode===key?'var(--ink)':'var(--line)'}`, borderRadius:3, background: form.loanee_mode===key?'var(--ink)':'var(--white)', color: form.loanee_mode===key?'var(--white)':'var(--ink)', fontSize:13, flex:1 }}>
+                          <input type="radio" name="loanee_mode" checked={form.loanee_mode===key} style={{ accentColor:'var(--ink)' }}
+                            onChange={()=>setForm(f=>({...f, loanee_mode:key, loanee_id:'', loaned_to:'' }))} />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+
+                    {form.loanee_mode === 'saved' ? (
+                      <div className="form-group">
+                        <label className="form-label">Loanee</label>
+                        <select className="form-select" value={form.loanee_id||''}
+                          onChange={e=>setForm(f=>({...f,loanee_id:e.target.value}))}>
+                          <option value="">{'— select loanee —'}</option>
+                          {loanees.map(l => <option key={l.id} value={l.id}>{l.name}{l.type ? ` (${l.type})` : ''}</option>)}
+                        </select>
+                        {loanees.length === 0 && (
+                          <div style={{ fontSize:11, color:'var(--muted)', marginTop:5 }}>
+                            No saved loanees yet {'—'} choose "New loanee" to add the first one.
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label className="form-label">Loanee name</label>
+                            <input className="form-input" value={form.loaned_to||''} placeholder="Borrower name"
+                              onChange={e=>setForm(f=>({...f,loaned_to:e.target.value}))} />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Type</label>
+                            <select className="form-select" value={form.loanee_type||'Individual'}
+                              onChange={e=>setForm(f=>({...f,loanee_type:e.target.value}))}>
+                              {LOANEE_TYPES.map(t => <option key={t}>{t}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label className="form-label">Email</label>
+                            <input className="form-input" value={form.loanee_email||''}
+                              onChange={e=>setForm(f=>({...f,loanee_email:e.target.value}))} />
+                          </div>
+                          <div className="form-group">
+                            <label className="form-label">Phone</label>
+                            <input className="form-input" value={form.loanee_phone||''}
+                              onChange={e=>setForm(f=>({...f,loanee_phone:e.target.value}))} />
+                          </div>
+                        </div>
+                        <label style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:'var(--muted)', cursor:'pointer' }}>
+                          <input type="checkbox" checked={form.save_loanee !== false}
+                            onChange={e=>setForm(f=>({...f,save_loanee:e.target.checked}))} />
+                          Save this loanee for future loans
+                        </label>
+                      </>
+                    )}
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label className="form-label">Loan date</label>
+                        <input className="form-input" type="date" value={form.loan_date||''}
+                          onChange={e=>setForm(f=>({...f,loan_date:e.target.value}))} />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Due back</label>
+                        <input className="form-input" type="date" value={form.loan_due_date||''}
+                          onChange={e=>setForm(f=>({...f,loan_due_date:e.target.value}))} />
+                      </div>
+                    </div>
                   </div>
                 )}
                 {form.availability === 'Returned' && (

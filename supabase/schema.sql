@@ -93,7 +93,10 @@ create table public.artworks (
   price          text,
   tags           text[] default '{}',
   location       text,
-  loaned_to      text,          -- borrower, when availability = 'Reserved'
+  loaned_to      text,          -- borrower name, when availability = 'Reserved'
+  loanee_id      uuid,          -- FK to loanees, added below (table defined later)
+  loan_date      date,          -- date the work went out
+  loan_due_date  date,          -- date the work is expected back
   returned_at    date,          -- return date, when availability = 'Returned'
   visible        boolean not null default true,
   sort_order     integer default 0,
@@ -159,6 +162,30 @@ create policy "Staff manage provenance"
   on public.provenance_entries for all using (
     exists (select 1 from public.profiles where id = auth.uid() and approved = true)
   );
+
+-- ── LOANEES ─────────────────────────────────────────────────
+-- People and institutions that borrow artworks.
+create table public.loanees (
+  id           uuid default uuid_generate_v4() primary key,
+  name         text not null,
+  type         text default 'Individual',
+  email        text,
+  phone        text,
+  address      text,
+  notes        text,
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+alter table public.loanees enable row level security;
+create policy "Staff manage loanees"
+  on public.loanees for all using (
+    exists (select 1 from public.profiles where id = auth.uid() and approved = true)
+  );
+
+alter table public.artworks
+  add constraint artworks_loanee_id_fkey
+  foreign key (loanee_id) references public.loanees(id) on delete set null;
+create index artworks_loanee_id_idx on public.artworks(loanee_id);
 
 -- ── CLIENTS ─────────────────────────────────────────────────
 create table public.clients (

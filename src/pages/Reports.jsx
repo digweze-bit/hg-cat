@@ -47,7 +47,7 @@ const GROUPS = [
       { id: 'collection', label: 'Collection report',        period: true  },
       { id: 'pending',    label: 'Pending collection',       period: false },
       { id: 'received',   label: 'Acquired / consigned',     period: true  },
-      { id: 'loaned',     label: 'Works on loan',            period: false },
+      { id: 'loaned',     label: 'Works on loan',            period: false, loanee: true },
     ],
   },
 ]
@@ -89,6 +89,8 @@ export default function Reports() {
   const [artists, setArtists]   = useState([])
   const [invoices, setInvoices] = useState([])
   const [consignors, setConsignors] = useState([])
+  const [loanees, setLoanees]   = useState([])
+  const [loaneeId, setLoaneeId] = useState('')
   const [loading, setLoading]   = useState(true)
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3)
@@ -98,7 +100,7 @@ export default function Reports() {
 
   useEffect(() => {
     async function load() {
-      const [a, w, inv, cons] = await Promise.all([
+      const [a, w, inv, cons, loan] = await Promise.all([
         fetchAll('artists', { order: 'name' }),
         fetchAll('artworks', { order: 'created_at' }),
         supabase.from('invoices')
@@ -107,8 +109,9 @@ export default function Reports() {
           .limit(2000)
           .then(r => r.data || []),
         supabase.from('consignors').select('*').order('name').then(r => r.data || []),
+        supabase.from('loanees').select('*').order('name').then(r => r.data || []),
       ])
-      setArtists(a); setArtworks(w); setInvoices(inv); setConsignors(cons)
+      setArtists(a); setArtworks(w); setInvoices(inv); setConsignors(cons); setLoanees(loan)
       setLoading(false)
     }
     load()
@@ -169,8 +172,9 @@ export default function Reports() {
       groupId, subId, group, sub, entityLabel,
       artworks, items, invoices, artistMap,
       matchesEntity, itemMatchesEntity, inPeriod, dateFrom, dateTo,
+      loanees, loaneeId,
     })
-  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo])
+  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId])
 
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'…'}</div>
 
@@ -226,6 +230,16 @@ export default function Reports() {
             <select className="form-select" style={{ width:220 }} value={entityId} onChange={e => setEntityId(e.target.value)}>
               <option value="">All consignors</option>
               {consignorNames.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </>
+        )}
+
+        {sub.loanee && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Loanee:</span>
+            <select className="form-select" style={{ width:220 }} value={loaneeId} onChange={e => setLoaneeId(e.target.value)}>
+              <option value="">All loanees</option>
+              {loanees.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
           </>
         )}
@@ -587,34 +601,61 @@ function receivedReport(ctx) {
 }
 
 function loanedReport(ctx) {
-  const { artworks, artistMap } = ctx
-  const works = artworks.filter(w =>
-    w.loaned_to || w.availability === 'Reserved' || (w.location && w.location.toLowerCase().includes('loan')))
-  const missingBorrower = works.filter(w => !w.loaned_to).length
+  const { artworks, artistMap, loanees, loaneeId } = ctx
+  const loaneeMap = Object.fromEntries((loanees || []).map(l => [l.id, l]))
+  const today = new Date().toISOString().split('T')[0]
+
+  let works = artworks.filter(w =>
+    w.loanee_id || w.loaned_to || w.availability === 'Reserved' ||
+    (w.location && w.location.toLowerCase().includes('loan')))
+  if (loaneeId) works = works.filter(w => w.loanee_id === loaneeId)
+
+  const nameOf = w => loaneeMap[w.loanee_id]?.name || w.loaned_to || 'Unrecorded loanee'
+  const buckets = {}
+  works.forEach(w => {
+    const k = nameOf(w)
+    if (!buckets[k]) buckets[k] = []
+    buckets[k].push(w)
+  })
+
+  const overdue = works.filter(w => w.loan_due_date && w.loan_due_date < today).length
+  const unrecorded = works.filter(w => !w.loanee_id && !w.loaned_to).length
 
   return {
     title: 'Works on loan',
-    note: missingBorrower
-      ? `${missingBorrower} of these ${missingBorrower !== 1 ? 'works have' : 'work has'} no borrower recorded — the location field is shown instead. Set "Loaned to" on the artwork to name the borrower properly.`
+    subtitle: loaneeId ? (loaneeMap[loaneeId]?.name || null) : 'All loanees',
+    note: unrecorded
+      ? `${unrecorded} ${unrecorded !== 1 ? 'works are' : 'work is'} marked Reserved with no loanee recorded, grouped under "Unrecorded loanee". Set the loan entry on those artworks to attribute them.`
       : null,
     stats: [
       { n: works.length, l: 'Works on loan', color: 'var(--amber)' },
-      { n: works.length - missingBorrower, l: 'Borrower recorded' },
+      { n: Object.keys(buckets).length, l: 'Loanees' },
+      { n: overdue, l: 'Overdue', color: overdue ? 'var(--red)' : undefined },
     ],
-    sections: [{
-      columns: ['#', THUMB_COL, 'Title', 'Artist', 'Medium', 'Loaned to', 'Location', 'Status'],
-      rows: works.map((w, i) => [
-        { text: String(i + 1), muted: true },
-        thumb(w),
-        { text: w.title, bold: true },
-        { text: artistMap[w.artist_id]?.name || DASH, muted: true },
-        { text: w.medium || DASH, muted: true },
-        { text: w.loaned_to || DASH, muted: !w.loaned_to },
-        { text: w.location || DASH, muted: true },
-        { text: w.availability || DASH },
-      ]),
-    }],
-    empty: 'No works currently on loan',
+    sections: Object.entries(buckets)
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(([name, ws]) => {
+        const l = loanees?.find(x => x.name === name)
+        const contact = [l?.type, l?.email, l?.phone].filter(Boolean).join(' · ')
+        return {
+          heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}${contact ? `  (${contact})` : ''}`,
+          columns: [THUMB_COL, 'Title', 'Artist', 'Medium', 'Location', 'Loaned', 'Due back', 'Status'],
+          rows: ws.map(w => {
+            const isOverdue = w.loan_due_date && w.loan_due_date < today
+            return [
+              thumb(w),
+              { text: w.title, bold: true },
+              { text: artistMap[w.artist_id]?.name || DASH, muted: true },
+              { text: w.medium || DASH, muted: true },
+              { text: w.location || DASH, muted: true },
+              { text: w.loan_date || DASH, muted: true },
+              { text: (w.loan_due_date || DASH) + (isOverdue ? '  OVERDUE' : ''), color: isOverdue ? 'var(--red)' : undefined, bold: isOverdue, muted: !isOverdue },
+              { text: w.availability || DASH },
+            ]
+          }),
+        }
+      }),
+    empty: loaneeId ? 'No works currently on loan to this loanee' : 'No works currently on loan',
   }
 }
 
