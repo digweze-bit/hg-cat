@@ -209,7 +209,7 @@ export default function Loanees() {
                   {selectedWorks.map(w => {
                     const isOverdue = w.loan_due_date && w.loan_due_date < today
                     return (
-                      <tr key={w.id} onClick={() => navigate('/admin/artworks', { state: { editArtworkId: w.id } })}
+                      <tr key={w.id} onClick={() => navigate('/admin/artworks', { state: { editArtworkId: w.id, returnTo: '/admin/loanees' } })}
                         style={{borderBottom:'1px solid var(--line-soft)', cursor:'pointer'}}
                         onMouseEnter={e=>e.currentTarget.style.background='var(--parchment)'}
                         onMouseLeave={e=>e.currentTarget.style.background='transparent'}>

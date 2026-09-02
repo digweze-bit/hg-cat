@@ -12,7 +12,7 @@ const LOANEE_TYPES = ['Individual', 'Institution', 'Museum', 'Gallery', 'Corpora
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'' }
+const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'', loan_price:'' }
 
 
 function convertDimensions(str, fromUnit, toUnit) {
@@ -324,16 +324,18 @@ export default function Artworks() {
   const [modal, setModal] = useState(null)
   const [subView, setSubView] = useState('artworks')
 
-  // Handle edit artwork from other pages (e.g. Consignors)
+  // Handle edit artwork from other pages (e.g. Consignors, Loanees)
   const handledEditRef = useRef(null)
+  const [editReturnTo, setEditReturnTo] = useState(null)
   useEffect(() => {
     const editId = location.state?.editArtworkId
     if (!editId || artworks.length === 0) return
     if (handledEditRef.current === editId) return // already handled
     handledEditRef.current = editId
+    const returnTo = location.state?.returnTo || null
     window.history.replaceState({}, '')
     const aw = artworks.find(w => w.id === editId)
-    if (aw) openEdit(aw)
+    if (aw) { setEditReturnTo(returnTo); openEdit(aw) }
   }, [location.state, artworks])
   const [form, setForm] = useState(EMPTY)
   const [editId, setEditId] = useState(null)
@@ -347,7 +349,7 @@ export default function Artworks() {
   async function load() {
     const [a, w, l] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date,loan_price', order: 'sort_order', onUpdate: w => setArtworks(w) }),
       supabase.from('loanees').select('*').order('name').then(r => r.data || []),
     ])
     setArtists(a)
@@ -520,6 +522,7 @@ export default function Artworks() {
         loanee_id:         loaneeId,
         loan_date:         form.availability === 'Reserved' ? form.loan_date || null : null,
         loan_due_date:     form.availability === 'Reserved' ? form.loan_due_date || null : null,
+        loan_price:        form.availability === 'Reserved' && form.loan_price ? Number(form.loan_price) : null,
         returned_at:       form.availability === 'Returned' ? form.returned_at || null : null,
         updated_at:        new Date().toISOString(),
       }
@@ -593,12 +596,20 @@ export default function Artworks() {
       save_loanee: true,
       loan_date: artwork.loan_date || '',
       loan_due_date: artwork.loan_due_date || '',
+      loan_price: artwork.loan_price || '',
     })
     setEditId(artwork.id)
     setModal('edit')
   }
 
-  function closeModal() { setModal(null); setForm(EMPTY); setEditId(null) }
+  function closeModal() {
+    setModal(null); setForm(EMPTY); setEditId(null)
+    if (editReturnTo) {
+      const dest = editReturnTo
+      setEditReturnTo(null)
+      navigate(dest)
+    }
+  }
 
   const sf = (key, val) => { setFilters(f => ({...f, [key]: val})); setPage(0) }
 
@@ -935,6 +946,11 @@ export default function Artworks() {
                         <input className="form-input" type="date" value={form.loan_due_date||''}
                           onChange={e=>setForm(f=>({...f,loan_due_date:e.target.value}))} />
                       </div>
+                    </div>
+                    <div className="form-group" style={{ marginBottom:0, maxWidth:200 }}>
+                      <label className="form-label">Loan price (₦)</label>
+                      <input className="form-input" type="number" value={form.loan_price||''}
+                        onChange={e=>setForm(f=>({...f,loan_price:e.target.value}))} placeholder="0" />
                     </div>
                   </div>
                 )}

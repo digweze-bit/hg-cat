@@ -639,7 +639,7 @@ function loanedReport(ctx) {
         const contact = [l?.type, l?.email, l?.phone].filter(Boolean).join(' · ')
         return {
           heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}${contact ? `  (${contact})` : ''}`,
-          columns: [THUMB_COL, 'Title', 'Artist', 'Medium', 'Location', 'Loaned', 'Due back', 'Status'],
+          columns: [THUMB_COL, 'Title', 'Artist', 'Medium', 'Loaned', 'Due back', 'Loan price'],
           rows: ws.map(w => {
             const isOverdue = w.loan_due_date && w.loan_due_date < today
             return [
@@ -647,10 +647,9 @@ function loanedReport(ctx) {
               { text: w.title, bold: true },
               { text: artistMap[w.artist_id]?.name || DASH, muted: true },
               { text: w.medium || DASH, muted: true },
-              { text: w.location || DASH, muted: true },
               { text: w.loan_date || DASH, muted: true },
               { text: (w.loan_due_date || DASH) + (isOverdue ? '  OVERDUE' : ''), color: isOverdue ? 'var(--red)' : undefined, bold: isOverdue, muted: !isOverdue },
-              { text: w.availability || DASH },
+              { text: w.loan_price ? formatAmount(w.loan_price, 'NGN') : DASH },
             ]
           }),
         }
