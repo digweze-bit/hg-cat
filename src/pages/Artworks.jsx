@@ -12,7 +12,7 @@ const LOANEE_TYPES = ['Individual', 'Institution', 'Museum', 'Gallery', 'Corpora
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'', loan_price:'' }
+const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'', loan_price:'', loan_commission_rate:0 }
 
 
 function convertDimensions(str, fromUnit, toUnit) {
@@ -349,7 +349,7 @@ export default function Artworks() {
   async function load() {
     const [a, w, l] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date,loan_price', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date,loan_price,loan_commission_rate', order: 'sort_order', onUpdate: w => setArtworks(w) }),
       supabase.from('loanees').select('*').order('name').then(r => r.data || []),
     ])
     setArtists(a)
@@ -523,6 +523,7 @@ export default function Artworks() {
         loan_date:         form.availability === 'Reserved' ? form.loan_date || null : null,
         loan_due_date:     form.availability === 'Reserved' ? form.loan_due_date || null : null,
         loan_price:        form.availability === 'Reserved' && form.loan_price ? Number(form.loan_price) : null,
+        loan_commission_rate: form.availability === 'Reserved' ? Number(form.loan_commission_rate) || 0 : null,
         returned_at:       form.availability === 'Returned' ? form.returned_at || null : null,
         updated_at:        new Date().toISOString(),
       }
@@ -597,6 +598,7 @@ export default function Artworks() {
       loan_date: artwork.loan_date || '',
       loan_due_date: artwork.loan_due_date || '',
       loan_price: artwork.loan_price || '',
+      loan_commission_rate: artwork.loan_commission_rate || 0,
     })
     setEditId(artwork.id)
     setModal('edit')
@@ -947,10 +949,38 @@ export default function Artworks() {
                           onChange={e=>setForm(f=>({...f,loan_due_date:e.target.value}))} />
                       </div>
                     </div>
-                    <div className="form-group" style={{ marginBottom:0, maxWidth:200 }}>
-                      <label className="form-label">Loan price (₦)</label>
-                      <input className="form-input" type="number" value={form.loan_price||''}
-                        onChange={e=>setForm(f=>({...f,loan_price:e.target.value}))} placeholder="0" />
+                    {/* Fixed vs commission loan pricing */}
+                    <div style={{ display:"flex", gap:12 }}>
+                      <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, cursor:"pointer" }}>
+                        <input type="radio" name="loanPriceType" checked={Number(form.loan_commission_rate) === 0} onChange={()=>setForm(f=>({...f,loan_commission_rate:0}))} style={{ width:"auto" }} />
+                        Fixed price
+                      </label>
+                      <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, cursor:"pointer" }}>
+                        <input type="radio" name="loanPriceType" checked={Number(form.loan_commission_rate) > 0} onChange={()=>setForm(f=>({...f,loan_commission_rate:f.loan_commission_rate||20}))} style={{ width:"auto" }} />
+                        Commission
+                      </label>
+                    </div>
+                    <div className="form-row" style={{ gridTemplateColumns: Number(form.loan_commission_rate) > 0 ? '1fr 1fr' : '1fr' }}>
+                      <div className="form-group" style={{ marginBottom:0, maxWidth: Number(form.loan_commission_rate) > 0 ? undefined : 200 }}>
+                        <label className="form-label">Loan price (₦)</label>
+                        <input className="form-input" type="number" value={form.loan_price||''}
+                          onChange={e=>setForm(f=>({...f,loan_price:e.target.value}))} placeholder="0" />
+                        {Number(form.loan_commission_rate) === 0 && (
+                          <div style={{ fontSize:10, color:'var(--muted)', marginTop:4 }}>Fixed price — the loanee pays this figure in full</div>
+                        )}
+                      </div>
+                      {Number(form.loan_commission_rate) > 0 && (
+                        <div className="form-group" style={{ marginBottom:0 }}>
+                          <label className="form-label">Commission (%)</label>
+                          <input className="form-input" type="number" min={0} max={100} value={form.loan_commission_rate}
+                            onChange={e=>setForm(f=>({...f,loan_commission_rate:e.target.value}))} />
+                          {form.loan_price ? (
+                            <div style={{ fontSize:10, color:'var(--muted)', marginTop:4 }}>
+                              True cost to loanee: ₦{Math.round(Number(form.loan_price) * (100 - Number(form.loan_commission_rate)) / 100).toLocaleString()} ({Number(form.loan_price).toLocaleString()} less {form.loan_commission_rate}%)
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -637,11 +637,16 @@ function loanedReport(ctx) {
       .map(([name, ws]) => {
         const l = loanees?.find(x => x.name === name)
         const contact = [l?.type, l?.email, l?.phone].filter(Boolean).join(' · ')
+        const rates = [...new Set(ws.map(w => Number(w.loan_commission_rate) || 0))]
+        const typeNote = rates.length === 1
+          ? (rates[0] > 0 ? `Commission — ${rates[0]}%` : 'Fixed price')
+          : 'Mixed pricing'
         return {
-          heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}${contact ? `  (${contact})` : ''}`,
-          columns: [THUMB_COL, 'Title', 'Artist', 'Medium', 'Loaned', 'Due back', 'Loan price'],
+          heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}${contact ? `  (${contact})` : ''}  ·  ${typeNote}`,
+          columns: [THUMB_COL, 'Title', 'Artist', 'Medium', 'Loaned', 'Due back', 'Loan price', 'Type'],
           rows: ws.map(w => {
             const isOverdue = w.loan_due_date && w.loan_due_date < today
+            const rate = Number(w.loan_commission_rate) || 0
             return [
               thumb(w),
               { text: w.title, bold: true },
@@ -650,6 +655,7 @@ function loanedReport(ctx) {
               { text: w.loan_date || DASH, muted: true },
               { text: (w.loan_due_date || DASH) + (isOverdue ? '  OVERDUE' : ''), color: isOverdue ? 'var(--red)' : undefined, bold: isOverdue, muted: !isOverdue },
               { text: w.loan_price ? formatAmount(w.loan_price, 'NGN') : DASH },
+              { text: w.loan_price ? (rate > 0 ? `${rate}% commission` : 'Fixed') : DASH, muted: rate === 0 },
             ]
           }),
         }

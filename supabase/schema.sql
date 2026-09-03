@@ -509,6 +509,14 @@ comment on column public.artworks.consignor_name is 'Name of consigning owner';
 comment on column public.artworks.consignor_contact is 'Contact details for consignor';
 comment on column public.artworks.commission_rate is 'Gallery commission % on consignment sale';
 
+-- ── LOAN PRICING FIELDS (add to artworks) ───────────────────
+-- loan_price already exists on this table; loan_commission_rate mirrors
+-- the consignment fixed/commission split above, but for loan figures.
+alter table public.artworks
+  add column if not exists loan_commission_rate numeric(5,2);
+
+comment on column public.artworks.loan_commission_rate is 'Loan pricing: null/0 = fixed loan price (loan_price is the figure paid); >0 = commission %, true cost to loanee is loan_price less this percentage';
+
 -- ── OWNERSHIP ON INVOICE ITEMS ───────────────────────────────
 alter table public.invoice_items
   add column if not exists ownership text default 'gallery',
