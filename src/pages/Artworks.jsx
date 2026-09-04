@@ -345,6 +345,10 @@ export default function Artworks() {
   const [uploading, setUploading] = useState(false)
   const [page, setPage] = useState(0)
   const PER_PAGE = 30
+  // Price on printed labels — opt-in, same gate as the public ?view=gallery page
+  const [labelShowPrice, setLabelShowPrice] = useState(
+    () => new URLSearchParams(window.location.search).get('view') === 'gallery'
+  )
 
   async function load() {
     const [a, w, l] = await Promise.all([
@@ -692,6 +696,16 @@ export default function Artworks() {
         >
           🖨 Print list
         </button>
+        <label
+          title="Show the price on printed labels and on the page the QR code opens"
+          style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, cursor:'pointer',
+            padding:'6px 12px', borderRadius:3, border:'1px solid',
+            borderColor: labelShowPrice ? 'var(--ink)' : 'var(--line)',
+            background: labelShowPrice ? 'var(--ink)' : 'var(--white)',
+            color: labelShowPrice ? 'var(--white)' : 'var(--muted)', whiteSpace:'nowrap' }}>
+          <input type="checkbox" checked={labelShowPrice} onChange={e => setLabelShowPrice(e.target.checked)} style={{ margin:0 }} />
+          Price on labels
+        </label>
       </div>
 
       {/* Table */}
@@ -769,7 +783,7 @@ export default function Artworks() {
                     <div style={{ display:'flex', gap:5 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => openEdit(w)}>Edit</button>
                       <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => handleDelete(w.id)}>Del</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => printArtworkLabel(w, artistMap)}>Label</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => printArtworkLabel(w, artistMap, labelShowPrice)}>Label</button>
                     </div>
                   </td>
                 </tr>
@@ -1168,7 +1182,28 @@ export default function Artworks() {
   )
 }
 
-async function printArtworkLabel(w, artistMap) {
+const LABEL_CURRENCY_SYMBOLS = { NGN:'₦', USD:'$', GBP:'£', EUR:'€' }
+
+// Price for a printed label / gallery view.
+// retail_price is stored in NGN; price is the free-text public display value
+// ("₦2,500,000", "$1,500", "POA"), so keep whatever currency it carries.
+function artworkLabelPrice(w) {
+  const retail = Number(w.retail_price)
+  if (w.retail_price != null && w.retail_price !== '' && !isNaN(retail) && retail > 0) {
+    return LABEL_CURRENCY_SYMBOLS.NGN + retail.toLocaleString('en-US', { maximumFractionDigits: 0 })
+  }
+  const raw = String(w.price == null ? '' : w.price).trim()
+  if (!raw) return ''
+  const m = raw.match(/([₦$£€]|NGN|USD|GBP|EUR)?\s*(\d[\d,]*(?:\.\d+)?)/i)
+  if (!m) return raw   // e.g. "POA" / "Price on request"
+  const n = Number(m[2].replace(/,/g, ''))
+  if (isNaN(n) || n === 0) return raw
+  const sym = LABEL_CURRENCY_SYMBOLS[(m[1] || '').toUpperCase()] || m[1] || LABEL_CURRENCY_SYMBOLS.NGN
+  const formatted = sym + n.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  return raw.slice(0, m.index) + formatted + raw.slice(m.index + m[0].length)
+}
+
+async function printArtworkLabel(w, artistMap, showPrice = false) {
   // 4x2 inches at 200 DPI = 800 x 400 px
   const DPI = 200
   const W = 4 * DPI   // 800px
@@ -1179,7 +1214,10 @@ async function printArtworkLabel(w, artistMap) {
   // Font stack: Optima on Mac, Gill Sans on Windows, fallback to Trebuchet
   const FONT = 'Optima, "Gill Sans", "Gill Sans MT", Trebuchet MS, sans-serif'
 
-  const url = window.location.origin + '/artwork/' + w.id
+  const priceText = showPrice ? artworkLabelPrice(w) : ''
+
+  // ?view=gallery unlocks the price on the public artwork page too
+  const url = window.location.origin + '/artwork/' + w.id + (showPrice ? '?view=gallery' : '')
 
   // QR: 58% of height, vertically centered
   const qrSize = Math.round(H * 0.58)
@@ -1220,6 +1258,7 @@ async function printArtworkLabel(w, artistMap) {
 
   const TITLE_SIZE = 30
   const DETAIL_SIZE = 26
+  const PRICE_SIZE = TITLE_SIZE
   const LINE_GAP = Math.round(DETAIL_SIZE * 1.8)
 
   const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
@@ -1231,11 +1270,13 @@ async function printArtworkLabel(w, artistMap) {
     { text: w.year || '', size: DETAIL_SIZE, weight: '300' },
     { text: w.medium || '', size: DETAIL_SIZE, weight: '300' },
     { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: DETAIL_SIZE, weight: '300' },
+    // Price — sits below the details, at title size
+    { text: priceText, size: PRICE_SIZE, weight: '600', gapBefore: LINE_GAP + 10 },
   ].filter(l => l.text)
 
   // Calculate total text height for vertical centering relative to QR
   const totalTextH = textLines.reduce((acc, l, i) =>
-    acc + (i < textLines.length - 1 ? LINE_GAP : l.size), 0)
+    acc + (i === 0 ? 0 : (l.gapBefore || LINE_GAP)), 0) + textLines[textLines.length - 1].size
 
   // Center text block relative to QR code vertical extent
   const textBlockCenter = qrTop + qrSize / 2
@@ -1261,7 +1302,7 @@ async function printArtworkLabel(w, artistMap) {
       }
     }
     if (cur) ctx.fillText(cur, textX, y)
-    if (i < textLines.length - 1) y += LINE_GAP
+    if (i < textLines.length - 1) y += textLines[i + 1].gapBefore || LINE_GAP
   }
 
   // Draw border LAST so it sits on top of everything
