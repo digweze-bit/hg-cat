@@ -345,9 +345,9 @@ export default function Artworks() {
   const [uploading, setUploading] = useState(false)
   const [page, setPage] = useState(0)
   const PER_PAGE = 30
-  // Price on printed labels — opt-in, same gate as the public ?view=gallery page
+  // Price on printed labels — on by default, ?view=hide leaves it off
   const [labelShowPrice, setLabelShowPrice] = useState(
-    () => new URLSearchParams(window.location.search).get('view') === 'gallery'
+    () => new URLSearchParams(window.location.search).get('view') !== 'hide'
   )
 
   async function load() {
