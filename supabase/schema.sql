@@ -509,6 +509,15 @@ comment on column public.artworks.consignor_name is 'Name of consigning owner';
 comment on column public.artworks.consignor_contact is 'Contact details for consignor';
 comment on column public.artworks.commission_rate is 'Gallery commission % on consignment sale';
 
+-- ── SALE PRICE CURRENCY (add to artworks) ───────────────────
+-- retail_price is always stored converted to NGN; price_currency records the
+-- currency the work was actually quoted in so labels and the public page can
+-- show the right symbol.
+alter table public.artworks
+  add column if not exists price_currency text default 'NGN';
+
+comment on column public.artworks.price_currency is 'Currency the sale price was quoted in (NGN|USD|GBP|EUR); retail_price stays in NGN';
+
 -- ── LOAN PRICING FIELDS (add to artworks) ───────────────────
 -- loan_price already exists on this table; loan_commission_rate mirrors
 -- the consignment fixed/commission split above, but for loan figures.

@@ -12,7 +12,7 @@ const LOANEE_TYPES = ['Individual', 'Institution', 'Museum', 'Gallery', 'Corpora
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'', loan_price:'', loan_commission_rate:0 }
+const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', price_currency:'NGN', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'', loan_price:'', loan_commission_rate:0 }
 
 
 function convertDimensions(str, fromUnit, toUnit) {
@@ -29,12 +29,19 @@ function convertDimensions(str, fromUnit, toUnit) {
 function PriceFields({ form, setForm }) {
   const [rates, setRates]             = useState(null)
   const [rateLoading, setRateLoading] = useState(false)
-  const [inputCurrency, setInputCurrency] = useState('NGN')
+  const [inputCurrency, setInputCurrency] = useState(form.price_currency || 'NGN')
   const [rateInput, setRateInput]     = useState('')   // what user types
   const [confirmedRate, setConfirmedRate] = useState(null) // set after clicking Set
   const [rateMode, setRateMode]       = useState(null) // null | 'live' | 'fixed'
 
   const DISPLAY_CURRENCIES = ['NGN', 'USD', 'GBP', 'EUR']
+
+  // The chosen currency is what the price was quoted in — store it so labels
+  // and the public page can show the right symbol.
+  function changeCurrency(c) {
+    setInputCurrency(c)
+    setForm(f => ({ ...f, price_currency: c }))
+  }
 
   async function loadLiveRate() {
     setRateLoading(true)
@@ -85,7 +92,13 @@ function PriceFields({ form, setForm }) {
     const updates = {}
     updates[field] = ngnVal !== null ? ngnVal : (val ? Number(val) : null)
     if (field === 'retail_price' && ngnVal) {
-      updates.price = '₦' + ngnVal.toLocaleString()
+      // retail_price stays converted to NGN for reports and sorting; the public
+      // display price keeps the currency and amount the work was quoted in.
+      const entered = Number(String(val).replace(/,/g, ''))
+      updates.price = inputCurrency !== 'NGN' && entered
+        ? sym + entered.toLocaleString()
+        : '₦' + ngnVal.toLocaleString()
+      updates.price_currency = inputCurrency
     }
     setForm(f => ({ ...f, ...updates }))
   }
@@ -105,7 +118,7 @@ function PriceFields({ form, setForm }) {
         <span style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.07em', color:'var(--muted)', fontWeight:600 }}>Input currency</span>
         {DISPLAY_CURRENCIES.map(c => (
           <button key={c} type="button"
-            onClick={() => setInputCurrency(c)}
+            onClick={() => changeCurrency(c)}
             style={{ padding:'3px 10px', fontSize:11, fontWeight:600, borderRadius:3, border:'1px solid',
               background: inputCurrency === c ? 'var(--ink)' : 'transparent',
               color: inputCurrency === c ? '#fff' : 'var(--muted)',
@@ -353,7 +366,7 @@ export default function Artworks() {
   async function load() {
     const [a, w, l] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date,loan_price,loan_commission_rate', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,price_currency,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date,loan_price,loan_commission_rate', order: 'sort_order', onUpdate: w => setArtworks(w) }),
       supabase.from('loanees').select('*').order('name').then(r => r.data || []),
     ])
     setArtists(a)
@@ -502,6 +515,7 @@ export default function Artworks() {
         ownership:         form.ownership || 'gallery',
         location:          form.location || null,
         price:             form.price || null,
+        price_currency:    form.price_currency || 'NGN',
         retail_price:      form.retail_price ? Number(form.retail_price) : null,
         inventory_price:   form.inventory_price ? Number(form.inventory_price) : null,
         valuation:         form.valuation ? Number(form.valuation) : null,
@@ -585,6 +599,7 @@ export default function Artworks() {
       is_framed: artwork.is_framed || false,
       frame_cost: artwork.frame_cost || '',
       category: artwork.category || '',
+      price_currency: artwork.price_currency || 'NGN',
       retail_price: artwork.retail_price || '',
       inventory_price: artwork.inventory_price || '',
       valuation: artwork.valuation || '',
@@ -1184,23 +1199,35 @@ export default function Artworks() {
 
 const LABEL_CURRENCY_SYMBOLS = { NGN:'₦', USD:'$', GBP:'£', EUR:'€' }
 
-// Price for a printed label / gallery view.
-// retail_price is stored in NGN; price is the free-text public display value
-// ("₦2,500,000", "$1,500", "POA"), so keep whatever currency it carries.
+// Price for a printed label / gallery view, in the currency the work was
+// quoted in (price_currency). retail_price is always the NGN conversion, so
+// it can only speak for NGN-priced works; for USD/GBP/EUR the amount as
+// entered survives in the free-text display price ("$1,500", "POA").
 function artworkLabelPrice(w) {
+  const cur = String(w.price_currency || 'NGN').toUpperCase()
+  const sym = LABEL_CURRENCY_SYMBOLS[cur] || LABEL_CURRENCY_SYMBOLS.NGN
   const retail = Number(w.retail_price)
-  if (w.retail_price != null && w.retail_price !== '' && !isNaN(retail) && retail > 0) {
-    return LABEL_CURRENCY_SYMBOLS.NGN + retail.toLocaleString('en-US', { maximumFractionDigits: 0 })
+  const hasRetail = w.retail_price != null && w.retail_price !== '' && !isNaN(retail) && retail > 0
+
+  if (cur === 'NGN' && hasRetail) {
+    return sym + retail.toLocaleString('en-US', { maximumFractionDigits: 0 })
   }
+
   const raw = String(w.price == null ? '' : w.price).trim()
-  if (!raw) return ''
-  const m = raw.match(/([₦$£€]|NGN|USD|GBP|EUR)?\s*(\d[\d,]*(?:\.\d+)?)/i)
-  if (!m) return raw   // e.g. "POA" / "Price on request"
-  const n = Number(m[2].replace(/,/g, ''))
-  if (isNaN(n) || n === 0) return raw
-  const sym = LABEL_CURRENCY_SYMBOLS[(m[1] || '').toUpperCase()] || m[1] || LABEL_CURRENCY_SYMBOLS.NGN
-  const formatted = sym + n.toLocaleString('en-US', { maximumFractionDigits: 2 })
-  return raw.slice(0, m.index) + formatted + raw.slice(m.index + m[0].length)
+  if (raw) {
+    const m = raw.match(/([₦$£€]|NGN|USD|GBP|EUR)?\s*(\d[\d,]*(?:\.\d+)?)/i)
+    if (!m) return raw   // e.g. "POA" / "Price on request"
+    const n = Number(m[2].replace(/,/g, ''))
+    if (isNaN(n) || n === 0) return raw
+    // A symbol typed into the display price wins over the stored currency
+    const textSym = m[1] ? (LABEL_CURRENCY_SYMBOLS[m[1].toUpperCase()] || m[1]) : sym
+    const formatted = textSym + n.toLocaleString('en-US', { maximumFractionDigits: 2 })
+    return raw.slice(0, m.index) + formatted + raw.slice(m.index + m[0].length)
+  }
+
+  // Priced in a foreign currency but no display price kept — the NGN figure
+  // is all that's left, so label it honestly as NGN.
+  return hasRetail ? LABEL_CURRENCY_SYMBOLS.NGN + retail.toLocaleString('en-US', { maximumFractionDigits: 0 }) : ''
 }
 
 async function printArtworkLabel(w, artistMap, showPrice = false) {
