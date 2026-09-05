@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       workbox: {
-        cacheId: 'hgcat-v19',
+        cacheId: 'hgcat-v20',
 
         // Precache the app shell — everything needed to render the UI
         // Exclude heavy chunks that are only needed occasionally

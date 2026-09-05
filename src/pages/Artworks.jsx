@@ -777,6 +777,12 @@ export default function Artworks() {
                     {(() => {
                       const ngn = Number(w.retail_price) || 0
                       if (!ngn) return w.price || '—'
+                      // Works quoted in a foreign currency hold that currency's
+                      // figure — converting it again would be wrong
+                      const cur = String(w.price_currency || 'NGN').toUpperCase()
+                      if (cur !== 'NGN') {
+                        return w.price || `${({NGN:'₦',USD:'$',GBP:'£',EUR:'€'})[cur] || ''}${ngn.toLocaleString()}`
+                      }
                       if (displayCurrency === 'USD' && usdRate) {
                         return `$${Math.round(ngn / usdRate).toLocaleString()}`
                       }
