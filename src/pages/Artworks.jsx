@@ -1209,25 +1209,28 @@ function artworkLabelPrice(w) {
   const retail = Number(w.retail_price)
   const hasRetail = w.retail_price != null && w.retail_price !== '' && !isNaN(retail) && retail > 0
 
-  if (cur === 'NGN' && hasRetail) {
-    return sym + retail.toLocaleString('en-US', { maximumFractionDigits: 0 })
-  }
-
   const raw = String(w.price == null ? '' : w.price).trim()
-  if (raw) {
-    const m = raw.match(/([₦$£€]|NGN|USD|GBP|EUR)?\s*(\d[\d,]*(?:\.\d+)?)/i)
-    if (!m) return raw   // e.g. "POA" / "Price on request"
-    const n = Number(m[2].replace(/,/g, ''))
-    if (isNaN(n) || n === 0) return raw
-    // A symbol typed into the display price wins over the stored currency
+  const m = raw ? raw.match(/([₦$£€]|NGN|USD|GBP|EUR)?\s*(\d[\d,]*(?:\.\d+)?)/i) : null
+  const n = m ? Number(m[2].replace(/,/g, '')) : NaN
+  const hasAmount = m && !isNaN(n) && n !== 0
+
+  // The display price wins whenever it names a currency of its own, or the
+  // work isn't quoted in naira — many works were priced in dollars long
+  // before price_currency existed, and that figure only survives here.
+  if (hasAmount && (m[1] || cur !== 'NGN')) {
     const textSym = m[1] ? (LABEL_CURRENCY_SYMBOLS[m[1].toUpperCase()] || m[1]) : sym
     const formatted = textSym + n.toLocaleString('en-US', { maximumFractionDigits: 2 })
     return raw.slice(0, m.index) + formatted + raw.slice(m.index + m[0].length)
   }
 
-  // Priced in a foreign currency but no display price kept — the NGN figure
-  // is all that's left, so label it honestly as NGN.
-  return hasRetail ? LABEL_CURRENCY_SYMBOLS.NGN + retail.toLocaleString('en-US', { maximumFractionDigits: 0 }) : ''
+  // retail_price is always the NGN conversion, so it can only ever print ₦
+  if (hasRetail) {
+    return LABEL_CURRENCY_SYMBOLS.NGN + retail.toLocaleString('en-US', { maximumFractionDigits: 0 })
+  }
+  if (hasAmount) {
+    return sym + n.toLocaleString('en-US', { maximumFractionDigits: 2 })
+  }
+  return raw   // "POA" / "Price on request", or '' when nothing is priced
 }
 
 async function printArtworkLabel(w, artistMap, showPrice = false) {
