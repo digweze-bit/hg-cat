@@ -5,6 +5,7 @@ import { useAuth } from '../components/AuthProvider'
 const NAV = [
   { section: 'Catalogue' },
   { path: '/admin', label: 'Dashboard', icon: '\u25A4' },
+  { path: '/admin/clients', label: 'Clients', icon: '\u25D3' },
   { path: '/admin/artists', label: 'Artists', icon: '\u25CE' },
   { path: '/admin/artworks', label: 'Artworks', icon: '\u25FB' },
   { path: '/admin/batch-upload', label: 'Batch upload', icon: '\u25A4' },

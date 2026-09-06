@@ -45,7 +45,7 @@ export default function Dashboard() {
     { label: 'Total works', value: stats.totalArtworks, path: '/admin/artworks', color: 'var(--ink)' },
     { label: 'Available', value: stats.availableWorks, path: '/admin/artworks', color: 'var(--green)' },
     { label: 'Sold', value: stats.soldWorks, path: '/admin/artworks', color: 'var(--red)' },
-    { label: 'Clients', value: stats.totalClients, path: '/admin/sales', color: 'var(--blue)' },
+    { label: 'Clients', value: stats.totalClients, path: '/admin/clients', color: 'var(--blue)' },
     { label: 'Pending invoices', value: stats.pendingInvoices, path: '/admin/sales', color: 'var(--amber)' },
   ]
 
