@@ -1,8 +1,22 @@
 ﻿import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabasePublic'
 import QRCode from 'qrcode'
 import ArtworkInquiryEmbed from '../components/ArtworkInquiryEmbed'
+
+/**
+ * Loads the signed-in client on demand. Only called when the anon read came
+ * back empty, i.e. staff previewing a work that RLS hides from the public —
+ * so a public visitor never downloads or constructs an auth client.
+ */
+async function staffClientIfSignedIn() {
+  try {
+    if (!localStorage.getItem('hgcat-auth')) return null
+  } catch (_) { return null }
+  const { supabase: authed } = await import('../lib/supabase')
+  const { data: { session } } = await authed.auth.getSession()
+  return session ? authed : null
+}
 
 export default function ArtworkPage() {
   const { id } = useParams()
@@ -28,15 +42,27 @@ export default function ArtworkPage() {
     window.scrollTo(0, 0)
 
     async function load() {
-      const { data: w } = await supabase.from('artworks').select('*').eq('id', id).single()
+      // Read as anon by default so this page never holds an auth session — a
+      // second tab refreshing its own token is what gets the admin signed out.
+      // Hidden works are invisible to anon, so when staff open one to preview
+      // it we fall back to the signed-in client just for that case.
+      let client = supabase
+      let { data: w } = await client.from('artworks').select('*').eq('id', id).single()
+      if (!w) {
+        const staffClient = await staffClientIfSignedIn()
+        if (staffClient) {
+          client = staffClient
+          ;({ data: w } = await client.from('artworks').select('*').eq('id', id).single())
+        }
+      }
       if (!w) { setLoading(false); return }
       setArtwork(w)
       if (w.artist_id) {
-        const { data: a } = await supabase.from('artists').select('*').eq('id', w.artist_id).single()
+        const { data: a } = await client.from('artists').select('*').eq('id', w.artist_id).single()
         setArtist(a)
         // Fresh query every load — links get shared externally, so we can't
         // rely on router state carrying the artist's work list.
-        const { data: sibs } = await supabase.from('artworks')
+        const { data: sibs } = await client.from('artworks')
           .select('id, sort_order, title')
           .eq('artist_id', w.artist_id)
           .eq('visible', true)

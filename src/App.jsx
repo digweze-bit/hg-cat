@@ -1,14 +1,16 @@
 ﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
-import { AuthProvider } from './components/AuthProvider'
 import RequireAuth from './components/RequireAuth'
 
 // Public pages \u2014 load immediately
 import Catalogue from './pages/Catalogue'
-import AdminLogin from './pages/AdminLogin'
 
 // Admin pages \u2014 lazy loaded
+// AdminAuthLayout carries AuthProvider, so the auth client is only ever
+// constructed once an /admin route renders.
+const AdminAuthLayout = lazy(() => import('./components/AdminAuthLayout'))
+const AdminLogin   = lazy(() => import('./pages/AdminLogin'))
 const AdminLayout  = lazy(() => import('./pages/AdminLayout'))
 const Dashboard    = lazy(() => import('./pages/Dashboard'))
 const Artists      = lazy(() => import('./pages/Artists'))
@@ -34,6 +36,7 @@ const Certificates = lazy(() => import('./pages/Certificates'))
 const Users        = lazy(() => import('./pages/Users'))
 const ArtworkPage  = lazy(() => import('./pages/ArtworkPage'))
 const FormSign     = lazy(() => import('./pages/FormSign'))
+const CatalogueBuilder = lazy(() => import('./pages/CatalogueBuilder'))
 
 function PageLoader() {
   return (
@@ -60,50 +63,51 @@ function UpdateBanner() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <UpdateBanner />
+      <UpdateBanner />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Catalogue />} />
             <Route path="/artist/:artistId" element={<Catalogue />} />
             <Route path="/artwork/:id" element={<ArtworkPage />} />
             <Route path="/sign/:token" element={<FormSign />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={
-              <RequireAuth>
-                <AdminLayout />
-              </RequireAuth>
-            }>
-              <Route index element={<Dashboard />} />
-              <Route path="artists" element={<Artists />} />
-              <Route path="artworks" element={<Artworks />} />
-              <Route path="archive" element={<Archive />} />
+            {/* Auth lives here and nowhere else: public routes above never
+                mount AuthProvider, so they never start a token refresh. */}
+            <Route element={<AdminAuthLayout />}>
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin" element={
+                <RequireAuth>
+                  <AdminLayout />
+                </RequireAuth>
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="artists" element={<Artists />} />
+                <Route path="artworks" element={<Artworks />} />
+                <Route path="archive" element={<Archive />} />
 
-              <Route path="sales" element={<Sales />} />
-              <Route path="clients" element={<Clients />} />
-              <Route path="safekeeping" element={<Safekeeping />} />
-              <Route path="crm" element={<CRM />} />
-              <Route path="audit-log" element={<AuditLog />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="hr" element={<HR />} />
-              <Route path="search" element={<Search />} />
+                <Route path="sales" element={<Sales />} />
+                <Route path="clients" element={<Clients />} />
+                <Route path="safekeeping" element={<Safekeeping />} />
+                <Route path="crm" element={<CRM />} />
+                <Route path="audit-log" element={<AuditLog />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="hr" element={<HR />} />
+                <Route path="search" element={<Search />} />
 
-              <Route path="backfill-thumbnails" element={<BackfillThumbnails />} />
-              <Route path="batch-upload" element={<BatchUpload />} />
-              <Route path="consignors" element={<Consignors />} />
-              <Route path="loanees" element={<Loanees />} />
-              <Route path="books" element={<Books />} />
-              <Route path="forms" element={<Forms />} />
-              <Route path="catalogue" element={<CatalogueBuilder />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="certificates" element={<Certificates />} />
-              <Route path="users" element={<Users />} />
+                <Route path="backfill-thumbnails" element={<BackfillThumbnails />} />
+                <Route path="batch-upload" element={<BatchUpload />} />
+                <Route path="consignors" element={<Consignors />} />
+                <Route path="loanees" element={<Loanees />} />
+                <Route path="books" element={<Books />} />
+                <Route path="forms" element={<Forms />} />
+                <Route path="catalogue" element={<CatalogueBuilder />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="certificates" element={<Certificates />} />
+                <Route path="users" element={<Users />} />
+              </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
-      </AuthProvider>
     </BrowserRouter>
   )
 }
-import CatalogueBuilder from './pages/CatalogueBuilder'

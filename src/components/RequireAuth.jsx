@@ -1,8 +1,8 @@
 import { Navigate } from 'react-router-dom'
-import { useAuth } from './AuthProvider'
+import { useAuth } from './authContext'
 
 export default function RequireAuth({ children }) {
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, signOut } = useAuth()
 
   // Still checking session \u2014 show minimal spinner
   if (loading) return (
@@ -28,7 +28,7 @@ export default function RequireAuth({ children }) {
           Your account is awaiting approval by an administrator.
         </p>
         <button className="btn btn-outline mt-4"
-          onClick={() => { import('../lib/supabase').then(m => m.supabase.auth.signOut()) }}>
+          onClick={signOut}>
           Sign out
         </button>
       </div>

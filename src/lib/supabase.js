@@ -1,63 +1,39 @@
-﻿import { createClient } from '@supabase/supabase-js'
-import { cacheGet, cacheSet } from './cache'
-
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL || 'https://gmukkxnxyvmywgrbkwnr.supabase.co',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtdWtreG54eXZteXdncmJrd25yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxMTk1NzgsImV4cCI6MjA5ODY5NTU3OH0.zscg6b3jhsijnAEE9-yoMVSlQYwDHjO47j5-R_odP9g'
-)
+import { createClient } from '@supabase/supabase-js'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabaseConfig'
+import { crossTabAuthLock } from './authLock'
+import { makeFetchAll } from './fetchAll'
 
 /**
- * Fetch rows with stale-while-revalidate caching.
- * Returns cache immediately if available, revalidates in background.
+ * The admin client: signed-in, persists its session and auto-refreshes it.
+ *
+ * Importing this module creates the client, which starts the auto-refresh
+ * ticker — so only admin code may import it. Public pages use
+ * ./supabasePublic instead, which never touches /token.
  */
-export async function fetchAll(table, query = {}) {
-  const {
-    select = '*',
-    filters = [],
-    order = 'created_at',
-    ascending = true,
-    cache = true,
-    onUpdate = null,
-  } = query
 
-  const cacheKey = `${table}:${select}:${JSON.stringify(filters)}:${order}:${ascending}`
+const AUTH_STORAGE_KEY = 'hgcat-auth'
 
-  async function fetchFresh() {
-    // Single request \u2014 Supabase Pro allows up to 1000 rows by default
-    // For larger tables we paginate, but only if needed
-    let all = []
-    let offset = 0
-    const PAGE = 1000
-
-    while (true) {
-      let q = supabase.from(table).select(select).range(offset, offset + PAGE - 1)
-      filters.forEach(([col, op, val]) => { q = q.filter(col, op, val) })
-      q = q.order(order, { ascending })
-      const { data, error } = await q
-      if (error) throw error
-      if (!data || data.length === 0) break
-      all = all.concat(data)
-      if (data.length < PAGE) break  // last page, stop
-      offset += PAGE
-      if (offset > 20000) break      // safety cap \u2014 no table should exceed 20k rows here
-    }
-    return all
+// auth-js's default key is `sb-<project-ref>-auth-token`. Carry an existing
+// session across to the new key once, so renaming it doesn't sign everyone out.
+try {
+  if (!localStorage.getItem(AUTH_STORAGE_KEY)) {
+    const legacyKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`
+    const legacy = localStorage.getItem(legacyKey)
+    if (legacy) localStorage.setItem(AUTH_STORAGE_KEY, legacy)
   }
+} catch (_) {}
 
-  if (!cache) return fetchFresh()
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    storageKey: AUTH_STORAGE_KEY,
+    // Serialises refreshes across tabs. See ./authLock for why this is needed:
+    // without it each tab races the others to POST /token, and the 429 that
+    // follows tears down the session for all of them.
+    lock: crossTabAuthLock,
+  },
+})
 
-  const cached = cacheGet(cacheKey)
-  if (cached) {
-    // Return cache immediately, revalidate silently in background
-    fetchFresh().then(fresh => {
-      cacheSet(cacheKey, fresh)
-      if (onUpdate) onUpdate(fresh)
-    }).catch(() => {})
-    return cached
-  }
-
-  // No cache \u2014 must wait
-  const fresh = await fetchFresh()
-  cacheSet(cacheKey, fresh)
-  return fresh
-}
+export const fetchAll = makeFetchAll(supabase)

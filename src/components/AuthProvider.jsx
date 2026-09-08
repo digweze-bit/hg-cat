@@ -1,7 +1,9 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { AuthContext } from './authContext'
 
-const AuthContext = createContext(null)
+// Re-exported so existing admin pages can keep importing useAuth from here.
+export { useAuth } from './authContext'
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(undefined) // undefined = still checking
@@ -48,8 +50,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  return useContext(AuthContext)
 }
