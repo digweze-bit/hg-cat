@@ -358,7 +358,9 @@ export default function Artworks() {
   const [uploading, setUploading] = useState(false)
   const [page, setPage] = useState(0)
   const PER_PAGE = 30
-  // Price on printed labels — on by default, ?view=hide leaves it off
+  // Whether a label's QR opens the page in gallery view, where the price is
+  // shown. The label itself never prints a price. On by default; ?view=hide
+  // leaves it off.
   const [labelShowPrice, setLabelShowPrice] = useState(
     () => new URLSearchParams(window.location.search).get('view') !== 'hide'
   )
@@ -712,14 +714,14 @@ export default function Artworks() {
           🖨 Print list
         </button>
         <label
-          title="Show the price on printed labels and on the page the QR code opens"
+          title="Show the price on the page a label's QR code opens. The printed label never shows a price."
           style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, cursor:'pointer',
             padding:'6px 12px', borderRadius:3, border:'1px solid',
             borderColor: labelShowPrice ? 'var(--ink)' : 'var(--line)',
             background: labelShowPrice ? 'var(--ink)' : 'var(--white)',
             color: labelShowPrice ? 'var(--white)' : 'var(--muted)', whiteSpace:'nowrap' }}>
           <input type="checkbox" checked={labelShowPrice} onChange={e => setLabelShowPrice(e.target.checked)} style={{ margin:0 }} />
-          Price on labels
+          Price on scan
         </label>
       </div>
 
@@ -1203,42 +1205,8 @@ export default function Artworks() {
   )
 }
 
-const LABEL_CURRENCY_SYMBOLS = { NGN:'₦', USD:'$', GBP:'£', EUR:'€' }
-
-// Price for a printed label / gallery view, in the currency the work was
-// quoted in (price_currency). retail_price is always the NGN conversion, so
-// it can only speak for NGN-priced works; for USD/GBP/EUR the amount as
-// entered survives in the free-text display price ("$1,500", "POA").
-function artworkLabelPrice(w) {
-  const cur = String(w.price_currency || 'NGN').toUpperCase()
-  const sym = LABEL_CURRENCY_SYMBOLS[cur] || LABEL_CURRENCY_SYMBOLS.NGN
-  const retail = Number(w.retail_price)
-  const hasRetail = w.retail_price != null && w.retail_price !== '' && !isNaN(retail) && retail > 0
-
-  const raw = String(w.price == null ? '' : w.price).trim()
-  const m = raw ? raw.match(/([₦$£€]|NGN|USD|GBP|EUR)?\s*(\d[\d,]*(?:\.\d+)?)/i) : null
-  const n = m ? Number(m[2].replace(/,/g, '')) : NaN
-  const hasAmount = m && !isNaN(n) && n !== 0
-
-  // The display price wins whenever it names a currency of its own, or the
-  // work isn't quoted in naira — many works were priced in dollars long
-  // before price_currency existed, and that figure only survives here.
-  if (hasAmount && (m[1] || cur !== 'NGN')) {
-    const textSym = m[1] ? (LABEL_CURRENCY_SYMBOLS[m[1].toUpperCase()] || m[1]) : sym
-    const formatted = textSym + n.toLocaleString('en-US', { maximumFractionDigits: 2 })
-    return raw.slice(0, m.index) + formatted + raw.slice(m.index + m[0].length)
-  }
-
-  // retail_price is always the NGN conversion, so it can only ever print ₦
-  if (hasRetail) {
-    return LABEL_CURRENCY_SYMBOLS.NGN + retail.toLocaleString('en-US', { maximumFractionDigits: 0 })
-  }
-  if (hasAmount) {
-    return sym + n.toLocaleString('en-US', { maximumFractionDigits: 2 })
-  }
-  return raw   // "POA" / "Price on request", or '' when nothing is priced
-}
-
+// The printed label never carries a price — it shows the work's details and a
+// QR code, and the price lives on the page that code opens.
 async function printArtworkLabel(w, artistMap, showPrice = false) {
   // 4x2 inches at 200 DPI = 800 x 400 px
   const DPI = 200
@@ -1250,9 +1218,7 @@ async function printArtworkLabel(w, artistMap, showPrice = false) {
   // Font stack: Optima on Mac, Gill Sans on Windows, fallback to Trebuchet
   const FONT = 'Optima, "Gill Sans", "Gill Sans MT", Trebuchet MS, sans-serif'
 
-  const priceText = showPrice ? artworkLabelPrice(w) : ''
-
-  // ?view=gallery unlocks the price on the public artwork page too
+  // ?view=gallery unlocks the price on the public artwork page the QR opens
   const url = window.location.origin + '/artwork/' + w.id + (showPrice ? '?view=gallery' : '')
 
   // QR: 58% of height, vertically centered
@@ -1294,7 +1260,6 @@ async function printArtworkLabel(w, artistMap, showPrice = false) {
 
   const TITLE_SIZE = 30
   const DETAIL_SIZE = 26
-  const PRICE_SIZE = TITLE_SIZE
   const LINE_GAP = Math.round(DETAIL_SIZE * 1.8)
 
   const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
@@ -1306,13 +1271,11 @@ async function printArtworkLabel(w, artistMap, showPrice = false) {
     { text: w.year || '', size: DETAIL_SIZE, weight: '300' },
     { text: w.medium || '', size: DETAIL_SIZE, weight: '300' },
     { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: DETAIL_SIZE, weight: '300' },
-    // Price — sits below the details, at title size
-    { text: priceText, size: PRICE_SIZE, weight: '600', gapBefore: LINE_GAP + 10 },
   ].filter(l => l.text)
 
   // Calculate total text height for vertical centering relative to QR
   const totalTextH = textLines.reduce((acc, l, i) =>
-    acc + (i === 0 ? 0 : (l.gapBefore || LINE_GAP)), 0) + textLines[textLines.length - 1].size
+    acc + (i < textLines.length - 1 ? LINE_GAP : l.size), 0)
 
   // Center text block relative to QR code vertical extent
   const textBlockCenter = qrTop + qrSize / 2
@@ -1338,7 +1301,7 @@ async function printArtworkLabel(w, artistMap, showPrice = false) {
       }
     }
     if (cur) ctx.fillText(cur, textX, y)
-    if (i < textLines.length - 1) y += textLines[i + 1].gapBefore || LINE_GAP
+    if (i < textLines.length - 1) y += LINE_GAP
   }
 
   // Draw border LAST so it sits on top of everything
