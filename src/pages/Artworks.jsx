@@ -358,12 +358,6 @@ export default function Artworks() {
   const [uploading, setUploading] = useState(false)
   const [page, setPage] = useState(0)
   const PER_PAGE = 30
-  // Whether a label's QR opens the page in gallery view, where the price is
-  // shown. The label itself never prints a price. On by default; ?view=hide
-  // leaves it off.
-  const [labelShowPrice, setLabelShowPrice] = useState(
-    () => new URLSearchParams(window.location.search).get('view') !== 'hide'
-  )
 
   async function load() {
     const [a, w, l] = await Promise.all([
@@ -713,16 +707,6 @@ export default function Artworks() {
         >
           🖨 Print list
         </button>
-        <label
-          title="Show the price on the page a label's QR code opens. The printed label never shows a price."
-          style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, cursor:'pointer',
-            padding:'6px 12px', borderRadius:3, border:'1px solid',
-            borderColor: labelShowPrice ? 'var(--ink)' : 'var(--line)',
-            background: labelShowPrice ? 'var(--ink)' : 'var(--white)',
-            color: labelShowPrice ? 'var(--white)' : 'var(--muted)', whiteSpace:'nowrap' }}>
-          <input type="checkbox" checked={labelShowPrice} onChange={e => setLabelShowPrice(e.target.checked)} style={{ margin:0 }} />
-          Price on scan
-        </label>
       </div>
 
       {/* Table */}
@@ -806,7 +790,7 @@ export default function Artworks() {
                     <div style={{ display:'flex', gap:5 }}>
                       <button className="btn btn-ghost btn-sm" onClick={() => openEdit(w)}>Edit</button>
                       <button className="btn btn-ghost btn-sm" style={{ color:'var(--red)' }} onClick={() => handleDelete(w.id)}>Del</button>
-                      <button className="btn btn-ghost btn-sm" onClick={() => printArtworkLabel(w, artistMap, labelShowPrice)}>Label</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => printArtworkLabel(w, artistMap)}>Print Label</button>
                     </div>
                   </td>
                 </tr>
@@ -1207,7 +1191,7 @@ export default function Artworks() {
 
 // The printed label never carries a price — it shows the work's details and a
 // QR code, and the price lives on the page that code opens.
-async function printArtworkLabel(w, artistMap, showPrice = false) {
+async function printArtworkLabel(w, artistMap) {
   // 4x2 inches at 200 DPI = 800 x 400 px
   const DPI = 200
   const W = 4 * DPI   // 800px
@@ -1218,8 +1202,8 @@ async function printArtworkLabel(w, artistMap, showPrice = false) {
   // Font stack: Optima on Mac, Gill Sans on Windows, fallback to Trebuchet
   const FONT = 'Optima, "Gill Sans", "Gill Sans MT", Trebuchet MS, sans-serif'
 
-  // ?view=gallery unlocks the price on the public artwork page the QR opens
-  const url = window.location.origin + '/artwork/' + w.id + (showPrice ? '?view=gallery' : '')
+  // ?view=gallery is what shows the price on the page the QR opens
+  const url = window.location.origin + '/artwork/' + w.id + '?view=gallery'
 
   // QR: 58% of height, vertically centered
   const qrSize = Math.round(H * 0.58)
