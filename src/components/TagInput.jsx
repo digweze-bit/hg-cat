@@ -29,6 +29,21 @@ export const CLIENT_TAG_SUGGESTIONS = [
   'investment focused', 'passion collector',
 ]
 
+export const MEDIA_TAG_SUGGESTIONS = [
+  // Format
+  'reel', 'carousel', 'single image', 'video', 'story', 'behind the scenes',
+  'quote card', 'announcement',
+  // Subject
+  'artist feature', 'artwork feature', 'studio visit', 'new arrival',
+  'exhibition', 'opening', 'installation', 'framing', 'adire', 'textile',
+  'print', 'sculpture',
+  // Purpose
+  'sales push', 'awareness', 'education', 'collector story', 'testimonial',
+  'event invite', 'recap',
+  // Timing
+  'evergreen', 'seasonal', 'holiday', 'anniversary', 'end of month',
+]
+
 export default function TagInput({ tags = [], onChange, suggestions = [], placeholder = 'Add tag...' }) {
   const [input, setInput] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)

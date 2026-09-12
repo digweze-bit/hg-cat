@@ -11,6 +11,9 @@ const ACTION_LABELS = {
   'payment.deleted':   { label: 'Payment deleted',    color: 'var(--red,#c0392b)' },
   'artwork.collected': { label: 'Artwork collected',  color: 'var(--green,#27ae60)' },
   'client.created':    { label: 'Client created',     color: 'var(--green,#27ae60)' },
+  'media.created':     { label: 'Media stored',       color: 'var(--green,#27ae60)' },
+  'media.updated':     { label: 'Media updated',      color: 'var(--amber,#b8862a)' },
+  'media.deleted':     { label: 'Media deleted',      color: 'var(--red,#c0392b)' },
 }
 
 export default function AuditLog() {

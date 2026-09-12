@@ -24,6 +24,7 @@ const AuditLog = lazy(() => import('./pages/AuditLog'))
 const Settings = lazy(() => import('./pages/Settings'))
 const HR = lazy(() => import('./pages/HR'))
 const Search = lazy(() => import('./pages/Search'))
+const Media = lazy(() => import('./pages/Media'))
 
 const BackfillThumbnails = lazy(() => import('./pages/BackfillThumbnails'))
 const BatchUpload = lazy(() => import('./pages/BatchUpload'))
@@ -92,6 +93,7 @@ export default function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="hr" element={<HR />} />
                 <Route path="search" element={<Search />} />
+                <Route path="media" element={<Media />} />
 
                 <Route path="backfill-thumbnails" element={<BackfillThumbnails />} />
                 <Route path="batch-upload" element={<BatchUpload />} />

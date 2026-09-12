@@ -26,6 +26,8 @@ const NAV = [
   { path: '/admin/forms', label: 'Forms', icon: '\u25FB' },
   { path: '/admin/reports', label: 'Reports', icon: '\u25E7' },
   { path: '/admin/certificates', label: 'Certificates', icon: '\u25C7' },
+  { section: 'Media' },
+  { path: '/admin/media', label: 'Social & Newsletter', icon: '◱' },
   { section: 'Admin' },
   { path: '/admin/hr', label: 'Job Check', icon: '\uD83D\uDCCB' },
   { path: '/admin/settings', label: 'Settings', icon: '\u2699' },
@@ -99,6 +101,7 @@ export default function AdminLayout() {
              location.pathname.includes('loanees') ? 'Loanees' :
              location.pathname.includes('books') ? 'Books' :
              location.pathname.includes('forms') ? 'Forms' :
+             location.pathname.includes('media') ? 'Media' :
              location.pathname.includes('certificates') ? 'Certificates' :
              location.pathname.includes('users') ? 'Staff Users' : ''}
           </div>

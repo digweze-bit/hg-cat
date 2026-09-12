@@ -535,3 +535,73 @@ alter table public.invoice_items
 comment on column public.invoice_items.ownership is 'Snapshot of artwork ownership at time of invoice';
 comment on column public.invoice_items.commission_rate is 'Gallery commission % — null if gallery owned';
 comment on column public.invoice_items.consignor_name is 'Consignor name — for payment reconciliation';
+
+-- ── MEDIA ENTRIES ───────────────────────────────────────────
+-- Storage panel for social media and newsletter work: finished posts and
+-- issues are parked here, with or without a release date, and recalled by
+-- tag. brand keeps the two houses apart; channel says where a social post
+-- is headed and is null for newsletters.
+create table if not exists public.media_entries (
+  id            uuid default uuid_generate_v4() primary key,
+  brand         text not null default 'picturebox'
+                check (brand in ('picturebox','adire')),
+  kind          text not null default 'social'
+                check (kind in ('social','newsletter')),
+  channel       text check (channel in ('instagram','facebook','x','tiktok','linkedin','whatsapp')),
+  title         text not null,
+  caption       text,
+  preview_text  text,
+  assets        jsonb not null default '[]'::jsonb,
+  release_date  date,
+  release_time  text,
+  status        text not null default 'idea'
+                check (status in ('idea','draft','ready','scheduled','published')),
+  tags          text[] default '{}',
+  notes         text,
+  created_at    timestamptz default now(),
+  updated_at    timestamptz default now()
+);
+
+-- A social post must name its channel; a newsletter must not.
+alter table public.media_entries
+  drop constraint if exists media_entries_channel_matches_kind;
+alter table public.media_entries
+  add constraint media_entries_channel_matches_kind check (
+    (kind = 'social'     and channel is not null) or
+    (kind = 'newsletter' and channel is null)
+  );
+
+alter table public.media_entries enable row level security;
+drop policy if exists "Staff manage media" on public.media_entries;
+create policy "Staff manage media"
+  on public.media_entries for all using (
+    exists (select 1 from public.profiles where id = auth.uid() and approved = true)
+  );
+
+create index if not exists idx_media_brand   on public.media_entries(brand);
+create index if not exists idx_media_kind    on public.media_entries(kind);
+create index if not exists idx_media_release on public.media_entries(release_date);
+create index if not exists idx_media_tags    on public.media_entries using gin(tags);
+
+comment on column public.media_entries.brand is 'picturebox = Hourglass Picturebox; adire = Yellow Adire';
+comment on column public.media_entries.assets is 'Array of {url, thumb_url, file_name, mime_type, media_type, size} — images and video held for this entry';
+comment on column public.media_entries.release_date is 'Planned release; null means stored for future use and stays off the calendar';
+comment on column public.media_entries.preview_text is 'Newsletter preview/preheader line — unused for social posts';
+
+-- ── MEDIA FILES BUCKET ──────────────────────────────────────
+insert into storage.buckets (id, name, public, file_size_limit)
+  values ('media-files', 'media-files', true, 209715200)
+  on conflict (id) do update set file_size_limit = 209715200;
+
+create policy "Public read media files"
+  on storage.objects for select using (bucket_id = 'media-files');
+create policy "Staff upload media files"
+  on storage.objects for insert with check (
+    bucket_id = 'media-files' and
+    exists (select 1 from public.profiles where id = auth.uid() and approved = true)
+  );
+create policy "Staff delete media files"
+  on storage.objects for delete using (
+    bucket_id = 'media-files' and
+    exists (select 1 from public.profiles where id = auth.uid() and approved = true)
+  );
