@@ -4,10 +4,11 @@ import { cacheInvalidate } from '../lib/cache'
 import { auditLog } from '../lib/audit'
 import TagInput, { MEDIA_TAG_SUGGESTIONS } from '../components/TagInput'
 
-// The two houses. Everything stored here is filed under one of them.
+// The three houses. Everything stored here is filed under one of them.
 const BRANDS = [
-  { id:'picturebox', label:'Hourglass Picturebox', accent:'#1a3a5c' },
-  { id:'adire',      label:'Yellow Adire',         accent:'#b8883a' },
+  { id:'hourglass',  label:'Hourglass',    accent:'#1a1714' },
+  { id:'picturebox', label:'Picturebox',   accent:'#1a3a5c' },
+  { id:'adire',      label:'Yellow Adire', accent:'#b8883a' },
 ]
 const brandOf = id => BRANDS.find(b => b.id === id) || BRANDS[0]
 
@@ -37,7 +38,7 @@ const MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December']
 
 const EMPTY = {
-  brand:'picturebox', kind:'social', channel:'instagram', title:'', caption:'',
+  brand:'hourglass', kind:'social', channel:'instagram', title:'', caption:'',
   preview_text:'', assets:[], release_date:'', release_time:'', status:'idea',
   tags:[], notes:'',
 }
@@ -100,7 +101,7 @@ export default function Media() {
   const [loading, setLoading]     = useState(true)
   const [loadError, setLoadError] = useState(null)
 
-  const [brand, setBrand]   = useState('picturebox')  // brand id | 'all'
+  const [brand, setBrand]   = useState('hourglass')   // brand id | 'all'
   const [view, setView]     = useState('social')      // 'social' | 'newsletter' | 'calendar'
   const [search, setSearch] = useState('')
   const [filterChannel, setFilterChannel] = useState('')
@@ -521,7 +522,7 @@ export default function Media() {
             </span>
           </button>
         ))}
-        <button onClick={() => setBrand('all')} style={tabBtn(brand === 'all')}>Both</button>
+        <button onClick={() => setBrand('all')} style={tabBtn(brand === 'all')}>All three</button>
       </div>
 
       {/* ---- space tabs ---- */}

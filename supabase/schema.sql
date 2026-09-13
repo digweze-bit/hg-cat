@@ -539,12 +539,12 @@ comment on column public.invoice_items.consignor_name is 'Consignor name — for
 -- ── MEDIA ENTRIES ───────────────────────────────────────────
 -- Storage panel for social media and newsletter work: finished posts and
 -- issues are parked here, with or without a release date, and recalled by
--- tag. brand keeps the two houses apart; channel says where a social post
+-- tag. brand keeps the three houses apart; channel says where a social post
 -- is headed and is null for newsletters.
 create table if not exists public.media_entries (
   id            uuid default uuid_generate_v4() primary key,
-  brand         text not null default 'picturebox'
-                check (brand in ('picturebox','adire')),
+  brand         text not null default 'hourglass'
+                check (brand in ('hourglass','picturebox','adire')),
   kind          text not null default 'social'
                 check (kind in ('social','newsletter')),
   channel       text check (channel in ('instagram','facebook','x','tiktok','linkedin','whatsapp')),
@@ -583,7 +583,7 @@ create index if not exists idx_media_kind    on public.media_entries(kind);
 create index if not exists idx_media_release on public.media_entries(release_date);
 create index if not exists idx_media_tags    on public.media_entries using gin(tags);
 
-comment on column public.media_entries.brand is 'picturebox = Hourglass Picturebox; adire = Yellow Adire';
+comment on column public.media_entries.brand is 'hourglass = Hourglass; picturebox = Picturebox; adire = Yellow Adire';
 comment on column public.media_entries.assets is 'Array of {url, thumb_url, file_name, mime_type, media_type, size} — images and video held for this entry';
 comment on column public.media_entries.release_date is 'Planned release; null means stored for future use and stays off the calendar';
 comment on column public.media_entries.preview_text is 'Newsletter preview/preheader line — unused for social posts';
