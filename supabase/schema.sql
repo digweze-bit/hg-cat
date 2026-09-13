@@ -558,6 +558,7 @@ create table if not exists public.media_entries (
                 check (status in ('idea','draft','ready','scheduled','published')),
   tags          text[] default '{}',
   notes         text,
+  source_ref    text,
   created_at    timestamptz default now(),
   updated_at    timestamptz default now()
 );
@@ -584,14 +585,15 @@ create index if not exists idx_media_release on public.media_entries(release_dat
 create index if not exists idx_media_tags    on public.media_entries using gin(tags);
 
 comment on column public.media_entries.brand is 'hourglass = Hourglass; picturebox = Picturebox; adire = Yellow Adire';
-comment on column public.media_entries.assets is 'Array of {url, thumb_url, file_name, mime_type, media_type, size} — images and video held for this entry';
+comment on column public.media_entries.assets is 'Array of {url, thumb_url, file_name, mime_type, media_type, size, duration, stored} - downsized previews only. stored=false means only the poster frame is held and the clip must be posted from source.';
 comment on column public.media_entries.release_date is 'Planned release; null means stored for future use and stays off the calendar';
 comment on column public.media_entries.preview_text is 'Newsletter preview/preheader line — unused for social posts';
+comment on column public.media_entries.source_ref is 'Where the original files live (Drive link, folder, phone album) - the masters are not stored here';
 
 -- ── MEDIA FILES BUCKET ──────────────────────────────────────
 insert into storage.buckets (id, name, public, file_size_limit)
-  values ('media-files', 'media-files', true, 209715200)
-  on conflict (id) do update set file_size_limit = 209715200;
+  values ('media-files', 'media-files', true, 26214400)
+  on conflict (id) do update set file_size_limit = 26214400;
 
 create policy "Public read media files"
   on storage.objects for select using (bucket_id = 'media-files');

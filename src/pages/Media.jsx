@@ -40,7 +40,7 @@ const MONTHS = ['January','February','March','April','May','June',
 const EMPTY = {
   brand:'hourglass', kind:'social', channel:'instagram', title:'', caption:'',
   preview_text:'', assets:[], release_date:'', release_time:'', status:'idea',
-  tags:[], notes:'',
+  tags:[], notes:'', source_ref:'',
 }
 
 const BUCKET = 'media-files'
@@ -65,7 +65,18 @@ async function removeFiles(assets) {
   if (paths.length) await supabase.storage.from(BUCKET).remove(paths)
 }
 
-async function resizeImage(file, maxPx = 1600) {
+// Nothing here is a master. These are previews: big enough to recognise the
+// post and read the words on it, small enough that a month of them costs
+// nothing. The file that actually gets posted lives at source_ref.
+const PREVIEW_PX = 1200
+const THUMB_PX   = 480
+const PREVIEW_Q  = 0.7
+
+// A clip under this is worth holding so the edit can be watched back here.
+// Anything larger stays at source and we keep only its first frame.
+const CLIP_KEEP_MAX = 20 * 1024 * 1024
+
+async function resizeImage(file, maxPx = PREVIEW_PX, quality = PREVIEW_Q) {
   return new Promise(resolve => {
     const img = new Image()
     img.onload = () => {
@@ -73,10 +84,48 @@ async function resizeImage(file, maxPx = 1600) {
       const canvas = document.createElement('canvas')
       canvas.width = img.width * scale; canvas.height = img.height * scale
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
-      canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', 0.88)
+      canvas.toBlob(blob => resolve(blob || file), 'image/jpeg', quality)
     }
     img.onerror = () => resolve(file)
     img.src = URL.createObjectURL(file)
+  })
+}
+
+// Pull a still out of a video so a reel is something you can recognise in the
+// grid rather than a grey play glyph. Returns a null blob when the browser
+// cannot decode the file - an iPhone HEVC clip opened on a PC, typically.
+async function videoPoster(file) {
+  return new Promise(resolve => {
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.muted = true
+    video.playsInline = true
+    const objectUrl = URL.createObjectURL(file)
+    let settled = false
+    const finish = (blob, duration) => {
+      if (settled) return
+      settled = true
+      URL.revokeObjectURL(objectUrl)
+      // Screen recordings and some streamed files report Infinity here.
+      resolve({ blob, duration: Number.isFinite(duration) ? Math.round(duration) : 0 })
+    }
+    video.onloadedmetadata = () => {
+      // A second in is usually past the fade-up; halve it for very short clips.
+      video.currentTime = Math.min(1, (video.duration || 0) / 2)
+    }
+    video.onseeked = () => {
+      if (!video.videoWidth) return finish(null, video.duration)
+      const scale = Math.min(1, PREVIEW_PX / Math.max(video.videoWidth, video.videoHeight))
+      const canvas = document.createElement('canvas')
+      canvas.width = video.videoWidth * scale
+      canvas.height = video.videoHeight * scale
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(blob => finish(blob, video.duration), 'image/jpeg', PREVIEW_Q)
+    }
+    video.onerror = () => finish(null, 0)
+    // An undecodable file never fires onseeked, so never hang waiting for it.
+    setTimeout(() => finish(null, video.duration), 8000)
+    video.src = objectUrl
   })
 }
 
@@ -95,6 +144,21 @@ function fmtSize(bytes) {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+function fmtDuration(seconds) {
+  if (!seconds) return ''
+  const m = Math.floor(seconds / 60)
+  return `${m}:${pad2(Math.round(seconds % 60))}`
+}
+
+const isLink = s => /^https?:\/\//i.test((s || '').trim())
+
+// Paths carry a timestamp and a random stub, so this is unique per upload
+// even when one of the two urls is missing.
+const assetKey = a => `${a.url || ''}|${a.thumb_url || ''}`
+
+// Video now carries a poster frame, so both kinds show a still in the grid.
+const cardStill = a => a?.thumb_url || (a?.media_type === 'image' ? a.url : null)
 
 export default function Media() {
   const [entries, setEntries]     = useState([])
@@ -198,6 +262,7 @@ export default function Media() {
       preview_text: entry.preview_text || '', assets: entry.assets || [],
       release_date: entry.release_date || '', release_time: entry.release_time || '',
       status: entry.status || 'idea', tags: entry.tags || [], notes: entry.notes || '',
+      source_ref: entry.source_ref || '',
     })
     setEditId(entry.id)
     setBaseAssets(entry.assets || [])
@@ -225,6 +290,7 @@ export default function Media() {
         status: form.status,
         tags: form.tags,
         notes: form.notes || null,
+        source_ref: form.source_ref || null,
         updated_at: new Date().toISOString(),
       }
       let saved
@@ -235,8 +301,9 @@ export default function Media() {
         saved = data
         setEntries(prev => prev.map(e => e.id === editId ? saved : e))
         // Files dropped during this edit are only cleared once the row is safe.
-        const kept = new Set((form.assets || []).map(a => a.url))
-        const dropped = baseAssets.filter(a => !kept.has(a.url))
+        // An unstored clip has no url, so identity is url plus poster.
+        const kept = new Set((form.assets || []).map(assetKey))
+        const dropped = baseAssets.filter(a => !kept.has(assetKey(a)))
         if (dropped.length) removeFiles(dropped).catch(() => {})
       } else {
         const { data, error } = await supabase.from('media_entries')
@@ -311,22 +378,43 @@ export default function Media() {
         const base = `media/${form.brand}/${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
         let asset
         if (isImage) {
-          const [full, thumb] = await Promise.all([resizeImage(file, 1600), resizeImage(file, 480)])
-          const fullPath = `${base}_full.jpg`
+          const [preview, thumb] = await Promise.all([
+            resizeImage(file, PREVIEW_PX), resizeImage(file, THUMB_PX),
+          ])
+          const previewPath = `${base}_preview.jpg`
           const thumbPath = `${base}_thumb.jpg`
           const [up, upThumb] = await Promise.all([
-            supabase.storage.from(BUCKET).upload(fullPath, full, { contentType:'image/jpeg' }),
+            supabase.storage.from(BUCKET).upload(previewPath, preview, { contentType:'image/jpeg' }),
             supabase.storage.from(BUCKET).upload(thumbPath, thumb, { contentType:'image/jpeg' }),
           ])
           if (up.error) throw up.error
           if (upThumb.error) throw upThumb.error
-          asset = { url: pubUrl(fullPath), thumb_url: pubUrl(thumbPath), media_type:'image' }
+          asset = { url: pubUrl(previewPath), thumb_url: pubUrl(thumbPath), media_type:'image', stored:true }
         } else {
-          const safe = file.name.replace(/[^\w.-]+/g, '_')
-          const path = `${base}_${safe}`
-          const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type })
-          if (error) throw error
-          asset = { url: pubUrl(path), thumb_url: null, media_type:'video' }
+          const { blob: poster, duration } = await videoPoster(file)
+          let thumbUrl = null
+          if (poster) {
+            const posterPath = `${base}_poster.jpg`
+            const { error } = await supabase.storage.from(BUCKET)
+              .upload(posterPath, poster, { contentType:'image/jpeg' })
+            if (error) throw error
+            thumbUrl = pubUrl(posterPath)
+          }
+          // Hold the clip only while it stays light. Past that the frame is
+          // enough to plan against and the master is posted from source.
+          let url = null, stored = false
+          if (file.size <= CLIP_KEEP_MAX) {
+            const safe = file.name.replace(/[^\w.-]+/g, '_')
+            const path = `${base}_${safe}`
+            const { error } = await supabase.storage.from(BUCKET)
+              .upload(path, file, { contentType: file.type })
+            if (error) throw error
+            url = pubUrl(path)
+            stored = true
+          } else {
+            toast(`${file.name} is ${fmtSize(file.size)} — kept the frame, post from source`)
+          }
+          asset = { url, thumb_url: thumbUrl, media_type:'video', duration, stored }
         }
         asset = { ...asset, file_name: file.name, mime_type: file.type, size: file.size }
         setForm(f => ({ ...f, assets: [...f.assets, asset] }))
@@ -411,8 +499,20 @@ export default function Media() {
       width: size, height: size, borderRadius: 3, flexShrink: 0,
       border: '1px solid var(--line)', objectFit: 'cover', background: 'var(--parchment)',
     }
-    if (first?.media_type === 'image' && (first.thumb_url || first.url)) {
-      return <img src={first.thumb_url || first.url} alt="" style={box} />
+    const still = first?.thumb_url || (first?.media_type === 'image' ? first.url : null)
+    if (still) {
+      return (
+        <div style={{ position:'relative', width:size, height:size, flexShrink:0 }}>
+          <img src={still} alt="" style={{ ...box, width:'100%', height:'100%' }} />
+          {first.media_type === 'video' && (
+            <span style={{ position:'absolute', inset:0, display:'flex', alignItems:'center',
+                           justifyContent:'center', color:'#fff', fontSize:size / 3,
+                           textShadow:'0 1px 4px rgba(0,0,0,.7)' }}>
+              {'▶'}
+            </span>
+          )}
+        </div>
+      )
     }
     if (first?.media_type === 'video') {
       return (
@@ -726,15 +826,23 @@ export default function Media() {
                     onClick={() => openView(e)}>
                     <div style={{ position:'relative', aspectRatio:'4 / 3', background:'var(--parchment)',
                                   borderBottom:'1px solid var(--line-soft)', overflow:'hidden' }}>
-                      {first?.media_type === 'image' && (
-                        <img src={first.thumb_url || first.url} alt=""
+                      {cardStill(first) && (
+                        <img src={cardStill(first)} alt=""
                           style={{ width:'100%', height:'100%', objectFit:'cover' }} />
                       )}
                       {first?.media_type === 'video' && (
-                        <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center',
-                                      justifyContent:'center', fontSize:30, color:'var(--muted)' }}>
+                        <span style={{ position:'absolute', inset:0, display:'flex', alignItems:'center',
+                                       justifyContent:'center', fontSize:30,
+                                       color: cardStill(first) ? '#fff' : 'var(--muted)',
+                                       textShadow: cardStill(first) ? '0 2px 8px rgba(0,0,0,.6)' : 'none' }}>
                           {'▶'}
-                        </div>
+                        </span>
+                      )}
+                      {first?.media_type === 'video' && first.duration > 0 && (
+                        <span style={{ position:'absolute', bottom:8, left:8, fontSize:10, padding:'2px 6px',
+                                       borderRadius:3, background:'rgba(26,23,20,.8)', color:'#fff' }}>
+                          {fmtDuration(first.duration)}
+                        </span>
                       )}
                       {!first && (
                         <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center',
@@ -828,11 +936,31 @@ export default function Media() {
                 <div style={{ display:'grid', gap:10 }}>
                   {(active.assets || []).map((a, i) => (
                     <div key={i}>
-                      {a.media_type === 'video' ? (
-                        <video src={a.url} controls
+                      {a.media_type === 'video' && a.url && (
+                        <video src={a.url} controls poster={a.thumb_url || undefined}
                           style={{ width:'100%', borderRadius:3, border:'1px solid var(--line)',
                                    background:'#000' }} />
-                      ) : (
+                      )}
+                      {a.media_type === 'video' && !a.url && (
+                        // Too heavy to hold. The frame stands in for it here and
+                        // the clip itself is posted from wherever it was cut.
+                        <div style={{ position:'relative' }}>
+                          {a.thumb_url
+                            ? <img src={a.thumb_url} alt="" onClick={() => setLightbox({ url:a.thumb_url })}
+                                style={{ width:'100%', borderRadius:3, border:'1px solid var(--line)',
+                                         cursor:'zoom-in' }} />
+                            : <div style={{ padding:34, textAlign:'center', fontSize:12,
+                                            color:'var(--muted)', border:'1px dashed var(--line)',
+                                            borderRadius:3 }}>
+                                {'▶'} {a.file_name}
+                              </div>}
+                          <span style={{ position:'absolute', top:8, left:8, fontSize:10, padding:'3px 8px',
+                                         borderRadius:3, background:'rgba(26,23,20,.82)', color:'#fff' }}>
+                            {'▶'} Frame only {'·'} post from source
+                          </span>
+                        </div>
+                      )}
+                      {a.media_type !== 'video' && (
                         <img src={a.url} alt="" onClick={() => setLightbox(a)}
                           style={{ width:'100%', borderRadius:3, border:'1px solid var(--line)',
                                    cursor:'zoom-in' }} />
@@ -843,9 +971,9 @@ export default function Media() {
                           {a.file_name}
                         </span>
                         <span style={{ flexShrink:0 }}>
-                          {fmtSize(a.size)}
-                          {' '}<a href={a.url} target="_blank" rel="noreferrer"
-                                 style={{ color:'var(--muted)' }}>open</a>
+                          {a.duration > 0 ? `${fmtDuration(a.duration)} · ` : ''}{fmtSize(a.size)}
+                          {a.url && <>{' '}<a href={a.url} target="_blank" rel="noreferrer"
+                                 style={{ color:'var(--muted)' }}>open</a></>}
                         </span>
                       </div>
                     </div>
@@ -921,6 +1049,19 @@ export default function Media() {
                   </div>
                 )}
 
+                <div>
+                  <div className="form-label" style={{ marginBottom:4 }}>Where the files live</div>
+                  {active.source_ref
+                    ? (isLink(active.source_ref)
+                        ? <a href={active.source_ref} target="_blank" rel="noreferrer"
+                            style={{ fontSize:12, wordBreak:'break-all' }}>{active.source_ref}</a>
+                        : <div style={{ fontSize:12 }}>{active.source_ref}</div>)
+                    : <div style={{ fontSize:12, color:'var(--muted)' }}>
+                        Not recorded {'—'} only previews are held here, so add where the
+                        originals sit before this goes out.
+                      </div>}
+                </div>
+
                 {active.notes && (
                   <div>
                     <div className="form-label" style={{ marginBottom:4 }}>Notes</div>
@@ -995,7 +1136,9 @@ export default function Media() {
                   <input ref={fileRef} type="file" accept="image/*,video/*" multiple
                     onChange={handleFiles} style={{ fontSize:12 }} />
                   <div style={{ fontSize:10, color:'var(--muted)' }}>
-                    Images are resized for storage. Video is kept as uploaded, up to 200MB a file.
+                    Previews only {'—'} pictures are downsized and a clip over{' '}
+                    {fmtSize(CLIP_KEEP_MAX)} keeps just its first frame. Post from the
+                    original files, and say below where they live.
                   </div>
                   {pending > 0 && (
                     <div style={{ fontSize:12, color:'var(--gold)' }}>
@@ -1007,16 +1150,25 @@ export default function Media() {
                 {form.assets.length > 0 && (
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     {form.assets.map((a, i) => (
-                      <div key={a.url} style={{ display:'flex', gap:10, alignItems:'center',
+                      <div key={assetKey(a) + i} style={{ display:'flex', gap:10, alignItems:'center',
                                                 border:'1px solid var(--line-soft)', borderRadius:3,
                                                 padding:6 }}>
-                        {a.media_type === 'image'
-                          ? <img src={a.thumb_url || a.url} alt=""
-                              style={{ width:52, height:52, objectFit:'cover', borderRadius:2,
-                                       border:'1px solid var(--line)' }} />
+                        {cardStill(a)
+                          ? <div style={{ position:'relative', width:52, height:52, flexShrink:0 }}>
+                              <img src={cardStill(a)} alt=""
+                                style={{ width:52, height:52, objectFit:'cover', borderRadius:2,
+                                         border:'1px solid var(--line)' }} />
+                              {a.media_type === 'video' && (
+                                <span style={{ position:'absolute', inset:0, display:'flex',
+                                               alignItems:'center', justifyContent:'center', color:'#fff',
+                                               fontSize:16, textShadow:'0 1px 4px rgba(0,0,0,.7)' }}>
+                                  {'▶'}
+                                </span>
+                              )}
+                            </div>
                           : <div style={{ width:52, height:52, borderRadius:2, border:'1px solid var(--line)',
                                           display:'flex', alignItems:'center', justifyContent:'center',
-                                          background:'var(--parchment)', color:'var(--muted)' }}>
+                                          background:'var(--parchment)', color:'var(--muted)', flexShrink:0 }}>
                               {'▶'}
                             </div>}
                         <div style={{ flex:1, minWidth:0 }}>
@@ -1026,8 +1178,14 @@ export default function Media() {
                           </div>
                           <div style={{ fontSize:10, color:'var(--muted)' }}>
                             {i === 0 ? 'First in the set' : `Position ${i + 1}`}
+                            {a.duration > 0 ? ` · ${fmtDuration(a.duration)}` : ''}
                             {a.size ? ` · ${fmtSize(a.size)}` : ''}
                           </div>
+                          {a.media_type === 'video' && !a.url && (
+                            <div style={{ fontSize:10, color:'var(--amber)' }}>
+                              Frame only {'—'} post the clip from source
+                            </div>
+                          )}
                         </div>
                         <div style={{ display:'flex', gap:2 }}>
                           <button className="btn btn-ghost btn-sm" disabled={i === 0}
@@ -1120,6 +1278,16 @@ export default function Media() {
                   <label className="form-label">Tags</label>
                   <TagInput tags={form.tags} onChange={t => setForm(f => ({ ...f, tags:t }))}
                     suggestions={MEDIA_TAG_SUGGESTIONS} placeholder="e.g. studio visit, reel..." />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Where the files live</label>
+                  <input className="form-input" value={form.source_ref}
+                    onChange={e => setForm(f => ({ ...f, source_ref:e.target.value }))}
+                    placeholder="Drive link, folder, phone album…" />
+                  <div style={{ fontSize:10, color:'var(--muted)' }}>
+                    Only previews are held here, so whoever posts needs to find the originals.
+                  </div>
                 </div>
 
                 <div className="form-group">
