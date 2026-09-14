@@ -93,6 +93,19 @@ export default function Sales() {
 
   const artistMap = useMemo(() => Object.fromEntries(artists.map(a => [a.id, a])), [artists])
 
+  // Artworks for the invoice picker, loaded lazily when an invoice modal opens.
+  // Paged by id, not title: offset paging over a non-unique sort (hundreds of
+  // "Untitled") lets rows slip between pages. Sorted by title client-side.
+  function loadInvoicePickerData() {
+    Promise.all([
+      fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,thumbnail_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', order:'id', cache:false }),
+      fetchAll('artists', { order:'name' }),
+    ]).then(([w, a]) => {
+      setArtworks(w.sort((x, y) => (x.title || '').localeCompare(y.title || '')))
+      setArtists(a)
+    })
+  }
+
   // Open pending invoice from dashboard click once invoices are loaded
   useEffect(() => {
     if (!pendingInvoiceId || invoices.length === 0) return
@@ -120,10 +133,7 @@ export default function Sales() {
           <button className="btn btn-primary" onClick={() => {
           // Open modal immediately \u2014 load artworks in background
           setModal('invoice')
-          Promise.all([
-            fetchAll('artworks', { select:'id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category,ownership,consignment_price,consignor_name,commission_rate', order:'title', cache:false }),
-            fetchAll('artists', { order:'name' }),
-          ]).then(([w, a]) => { setArtworks(w); setArtists(a) })
+          loadInvoicePickerData()
         }}>+ Invoice</button>
         </div>
       </div>
@@ -181,6 +191,7 @@ export default function Sales() {
           clients={clients}
           artworks={artworks}
             books={books}
+          artists={artists}
           artistMap={artistMap}
           rates={rates}
           userId={user?.id}
@@ -191,7 +202,7 @@ export default function Sales() {
       )}
       {editingInvoice && (
         <InvoiceModal
-          clients={clients} artworks={artworks} artistMap={artistMap}
+          clients={clients} artworks={artworks} artists={artists} artistMap={artistMap}
           books={books} rates={rates} userId={user?.id}
           bankAccounts={bankAccounts}
           editInvoice={editingInvoice}
@@ -208,7 +219,7 @@ export default function Sales() {
           userId={user?.id}
           onClose={() => { setModal(null); setActiveInvoice(null) }}
           onSave={async () => { await load(); setDetailKey(k => k + 1) }}
-          onEdit={(inv) => { setModal(null); setActiveInvoice(null); setEditingInvoice(inv) }}
+          onEdit={(inv) => { setModal(null); setActiveInvoice(null); setEditingInvoice(inv); if (artworks.length === 0) loadInvoicePickerData() }}
         />
       )}
     </div>
@@ -1112,7 +1123,7 @@ function PaymentList({ invoices, rates }) {
 
 // \u2500\u2500 CLIENT MODAL \u2014 shared with the Clients page, see components/ClientModal
 // \u2500\u2500 INVOICE MODAL (create new) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, bankAccounts = [], onClose, onSave, editInvoice=null }) {
+function InvoiceModal({ clients, artworks, artists = [], artistMap, books, rates, userId, bankAccounts = [], onClose, onSave, editInvoice=null }) {
   const isEdit = !!editInvoice
   const [bankAccts, setBankAccts] = useState([])
   useEffect(() => { supabase.from('bank_accounts').select('*').order('is_default',{ascending:false}).order('account_name').then(({data})=>setBankAccts(data||[])) }, [])
@@ -1137,6 +1148,7 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, bank
   })
   const [items, setItems] = useState([]) // { artwork_id, title, artist_name, year, medium, dimensions, unit_price, quantity:1, discount:0 }
   const [artworkSearch, setArtworkSearch] = useState('')
+  const [filterArtist, setFilterArtist] = useState('')
   const [bookSearch, setBookSearch] = useState('')
   const [clientSearch, setClientSearch] = useState('')
   const [saving, setSaving] = useState(false)
@@ -1314,15 +1326,23 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, bank
     }
   }
 
-  const filteredArtworks = artworks.filter(w => {
-    if (!artworkSearch) return false
+  // Every match is kept; only the rendered list is capped (see ARTWORK_RENDER_CAP)
+  const filteredArtworks = useMemo(() => {
+    if (!artworkSearch && !filterArtist) return []
     const q = artworkSearch.toLowerCase()
-    const artistName = (artistMap[w.artist_id]?.name || '').toLowerCase()
-    return w.title?.toLowerCase().includes(q) ||
-      artistName.includes(q) ||
-      w.hg_code?.toLowerCase().includes(q) ||
-      w.medium?.toLowerCase().includes(q)
-  }).slice(0, 100)
+    return artworks.filter(w => {
+      if (w.availability !== 'Available' && w.availability !== 'Reserved') return false
+      if (filterArtist && w.artist_id !== filterArtist) return false
+      if (!q) return true
+      const artistName = (artistMap[w.artist_id]?.name || '').toLowerCase()
+      return w.title?.toLowerCase().includes(q) ||
+        artistName.includes(q) ||
+        w.hg_code?.toLowerCase().includes(q) ||
+        w.medium?.toLowerCase().includes(q)
+    })
+  }, [artworks, artistMap, artworkSearch, filterArtist])
+  const ARTWORK_RENDER_CAP = 500
+  const shownArtworks = filteredArtworks.slice(0, ARTWORK_RENDER_CAP)
 
   return (
     <div className="modal-overlay">
@@ -1355,30 +1375,54 @@ function InvoiceModal({ clients, artworks, artistMap, books, rates, userId, bank
                 </div>
               ))}
               <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginTop:10, marginBottom:8 }}>Artworks</div>
+              <select className="form-select" value={filterArtist} onChange={e => setFilterArtist(e.target.value)} style={{ marginBottom:6 }}>
+                <option value="">All artists</option>
+                {artists.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
               <input
                 className="form-input"
-                placeholder="Search artworks by title or artist..."
+                placeholder={filterArtist ? `Search works by ${artistMap[filterArtist]?.name || 'this artist'}...` : 'Search artworks by title or artist...'}
                 value={artworkSearch}
                 onChange={e=>setArtworkSearch(e.target.value)}
               />
-              {artworkSearch && filteredArtworks.length > 0 && (
-                <div style={{ border:'1px solid var(--line)', borderTop:'none', borderRadius:'0 0 3px 3px', background:'var(--white)', maxHeight:220, overflowY:'auto' }}>
-                  {filteredArtworks.map(w => (
+              {(artworkSearch || filterArtist) && artworks.length === 0 && (
+                <div style={{ fontSize:12, color:'var(--muted)', padding:'8px 2px' }}>Loading artworks...</div>
+              )}
+              {(artworkSearch || filterArtist) && artworks.length > 0 && (
+                <div style={{ fontSize:11, color:'var(--muted)', padding:'6px 2px' }}>
+                  {filteredArtworks.length === 0
+                    ? 'No available or reserved artworks match'
+                    : filteredArtworks.length > shownArtworks.length
+                      ? `Showing first ${shownArtworks.length} of ${filteredArtworks.length} results \u2014 refine the search or filter by artist`
+                      : `${filteredArtworks.length} result${filteredArtworks.length !== 1 ? 's' : ''}`}
+                </div>
+              )}
+              {shownArtworks.length > 0 && (
+                <div style={{ border:'1px solid var(--line)', borderRadius:3, background:'var(--white)', maxHeight:360, overflowY:'auto' }}>
+                  {shownArtworks.map(w => {
+                    const added = items.some(i => i.artwork_id === w.id)
+                    const thumb = w.thumbnail_url || w.image_url
+                    return (
                     <div key={w.id}
-                      style={{ padding:'9px 12px', cursor:'pointer', borderBottom:'1px solid var(--line-soft)', display:'flex', gap:10, alignItems:'center' }}
+                      style={{ padding:'9px 12px', cursor: added ? 'default' : 'pointer', opacity: added ? 0.5 : 1, borderBottom:'1px solid var(--line-soft)', display:'flex', gap:10, alignItems:'center' }}
                       onClick={() => addArtwork(w)}
                     >
-                      {w.image_url && <img src={w.image_url} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:2 }} />}
-                      <div>
+                      {thumb
+                        ? <img src={thumb} alt="" loading="lazy" style={{ width:36, height:36, objectFit:'cover', borderRadius:2, flexShrink:0 }} />
+                        : <div style={{ width:36, height:36, background:'var(--parchment-2)', borderRadius:2, flexShrink:0 }} />}
+                      <div style={{ minWidth:0 }}>
                         <div style={{ fontSize:13, fontWeight:500 }}>{w.title}</div>
-                        <div style={{ fontSize:11, color:'var(--muted)' }}>{artistMap[w.artist_id]?.name} {'\u00B7'} {w.year}</div>
+                        <div style={{ fontSize:11, color:'var(--muted)' }}>
+                          {[artistMap[w.artist_id]?.name, w.year, w.medium].filter(Boolean).join(' \u00B7 ')}
+                        </div>
                       </div>
-                      <div style={{ marginLeft:'auto', textAlign:'right' }}>
+                      <div style={{ marginLeft:'auto', textAlign:'right', flexShrink:0 }}>
                       {w.price && <div style={{ fontSize:12, color:'var(--green)' }}>{w.price}</div>}
+                      <div style={{ fontSize:10, color: w.availability === 'Reserved' ? 'var(--amber)' : 'var(--muted)' }}>{added ? 'Added' : w.availability}</div>
                       {w.ownership === 'consignment' && <div style={{ fontSize:10, color:'var(--amber)' }}>Consignment {'\u00B7'} {w.commission_rate||40}% comm.</div>}
                     </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>
