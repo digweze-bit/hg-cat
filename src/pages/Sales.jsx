@@ -40,7 +40,7 @@ export default function Sales() {
         (async () => {
         const PAGE = 500; let all = [], offset = 0
         while (true) {
-          const { data } = await supabase.from('invoices').select('*, clients(name), invoice_items(id,delivered)').order('created_at', { ascending: false }).range(offset, offset + PAGE - 1)
+          const { data } = await supabase.from('invoices').select('*, clients(name), invoice_items(id,delivered,item_type,title,artist_name)').order('created_at', { ascending: false }).range(offset, offset + PAGE - 1)
           if (!data || data.length === 0) break
           all = all.concat(data)
           if (data.length < PAGE) break
@@ -165,6 +165,7 @@ export default function Sales() {
         <ClientList
           clients={clients}
           invoices={invoices}
+          onOpenInvoice={inv => { setActiveInvoice(inv); setModal('invoice-detail') }}
           onRefresh={load}
           onRefreshClients={refreshClients}
           onEditClient={c => setEditingClient(c)}
@@ -334,6 +335,16 @@ function PendingCollection({ invoices, onOpen, onRefresh }) {
   )
 }
 
+// The line items on an invoice that the search text matched, listed under the
+// client name. Empty when the search matched only the number or the client.
+function matchedItems(inv, search, cap = 4) {
+  if (!search) return []
+  const q = search.toLowerCase()
+  return (inv.invoice_items || []).filter(it =>
+    it.title?.toLowerCase().includes(q) || it.artist_name?.toLowerCase().includes(q)
+  ).slice(0, cap)
+}
+
 function InvoiceList({ invoices, onOpen, onRefresh }) {
   const [search, setSearch]           = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -356,7 +367,9 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
       if (search) {
         const q = search.toLowerCase()
         return i.invoice_number?.toLowerCase().includes(q) ||
-          i.clients?.name?.toLowerCase().includes(q)
+          i.clients?.name?.toLowerCase().includes(q) ||
+          i.invoice_items?.some(it => it.title?.toLowerCase().includes(q) ||
+            it.artist_name?.toLowerCase().includes(q))
       }
       return true
     })
@@ -384,7 +397,7 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
   return (
     <div>
       <div style={{ display:'flex', gap:8, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
-        <input className="form-input" style={{ width:220 }} placeholder="Search invoices..." value={search} onChange={e=>setSearch(e.target.value)} />
+        <input className="form-input" style={{ width:300 }} placeholder="Search invoice no, client, artist, artwork..." value={search} onChange={e=>setSearch(e.target.value)} />
         <select className="form-select" style={{ width:140 }} value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}>
           <option value="">All status</option>
           <option value="open">All open</option>
@@ -429,7 +442,14 @@ function InvoiceList({ invoices, onOpen, onRefresh }) {
                     {inv.status==='paid' && inv.invoice_items?.some(it=>it.item_type==='artwork'&&!it.delivered) &&
                       <span title="Pending collection" style={{ marginLeft:6, color:'var(--amber)' }}>{'\u25CF'}</span>}
                   </td>
-                  <td>{inv.clients?.name || '\u2014'}</td>
+                  <td>
+                    {inv.clients?.name || '\u2014'}
+                    {matchedItems(inv, search).map((it, n) => (
+                      <div key={n} style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>
+                        {[it.title, it.artist_name].filter(Boolean).join(' \u00B7 ')}
+                      </div>
+                    ))}
+                  </td>
                   <td style={{ fontVariantNumeric:'tabular-nums' }}>{formatAmount(inv.total, inv.currency)}</td>
                   <td style={{ color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{formatAmount(inv.amount_paid || 0, inv.currency)}</td>
                   <td style={{ color: inv.balance_due > 0 ? 'var(--amber)' : 'var(--muted)', fontVariantNumeric:'tabular-nums' }}>
@@ -610,7 +630,7 @@ ${invoiceCopies}
 }
 
 
-function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClient }) {
+function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClient, onOpenInvoice }) {
   const [selected, setSelected] = useState(null)  // client being viewed/edited
   const [showReport, setShowReport] = useState(false)
   const [reportOpts, setReportOpts] = useState({ dateFrom:'', dateTo:'', showAll:true, attachInvoices:false })
@@ -618,6 +638,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
   const [modal, setModal] = useState(false)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [invSearch, setInvSearch] = useState('')
 
   const clientInvoiceCount = useMemo(() => {
     const counts = {}
@@ -625,10 +646,22 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
     return counts
   }, [invoices])
 
-  const clientInvoices = useMemo(() => {
+  const allClientInvoices = useMemo(() => {
     if (!selected) return []
     return invoices.filter(i => i.client_id === selected.id)
   }, [selected, invoices])
+
+  // Number, status, date, and the artists and works billed on it
+  const clientInvoices = useMemo(() => {
+    if (!invSearch) return allClientInvoices
+    const q = invSearch.toLowerCase()
+    return allClientInvoices.filter(i =>
+      i.invoice_number?.toLowerCase().includes(q) ||
+      i.status?.toLowerCase().includes(q) ||
+      i.issue_date?.includes(q) ||
+      i.invoice_items?.some(it => it.title?.toLowerCase().includes(q) ||
+        it.artist_name?.toLowerCase().includes(q)))
+  }, [allClientInvoices, invSearch])
 
   const [visits, setVisits] = useState([])
   const [interests, setInterests] = useState([])
@@ -636,6 +669,8 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
   const [interestForm, setInterestForm] = useState({ artist_name:'', medium:'', budget_range:'', notes:'', follow_up_date:'' })
   const [showVisitForm, setShowVisitForm] = useState(false)
   const [showInterestForm, setShowInterestForm] = useState(false)
+
+  useEffect(() => { setInvSearch('') }, [selected?.id])
 
   useEffect(() => {
     if (!selected) { setVisits([]); setInterests([]); return }
@@ -972,17 +1007,31 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
           </div>
 
           {/* Invoice history */}
-          <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:8 }}>
-            Invoice history ({clientInvoices.length})
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+            <div style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)' }}>
+              Invoice history ({invSearch ? clientInvoices.length + ' of ' + allClientInvoices.length : allClientInvoices.length})
+            </div>
+            {allClientInvoices.length > 0 && (
+              <input className="form-input" style={{ width:260, marginLeft:'auto' }}
+                placeholder="Search this client's invoices..."
+                value={invSearch} onChange={e=>setInvSearch(e.target.value)} />
+            )}
           </div>
           <div className="card" style={{ padding:0 }}>
             {clientInvoices.length === 0
-              ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>No invoices yet</div>
+              ? <div style={{ padding:24, textAlign:'center', color:'var(--muted)', fontSize:13 }}>{invSearch ? 'No invoices match' : 'No invoices yet'}</div>
               : clientInvoices.map(inv => (
-                <div key={inv.id} style={{ padding:'11px 16px', borderBottom:'1px solid var(--line-soft)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div key={inv.id} title="Open invoice"
+                  onClick={() => onOpenInvoice && requestAnimationFrame(() => onOpenInvoice(inv))}
+                  style={{ padding:'11px 16px', borderBottom:'1px solid var(--line-soft)', display:'flex', justifyContent:'space-between', alignItems:'center', cursor: onOpenInvoice ? 'pointer' : 'default' }}>
                   <div>
                     <div style={{ fontSize:13, fontWeight:500 }}>{inv.invoice_number}</div>
                     <div style={{ fontSize:11, color:'var(--muted)' }}>{inv.issue_date}</div>
+                    {matchedItems(inv, invSearch).map((it, n) => (
+                      <div key={n} style={{ fontSize:11, color:'var(--muted)', marginTop:2 }}>
+                        {[it.title, it.artist_name].filter(Boolean).join(' \u00B7 ')}
+                      </div>
+                    ))}
                   </div>
                   <div style={{ textAlign:'right' }}>
                     <div style={{ fontSize:13 }}>{'\u20A6'}{Number(inv.total_ngn||inv.total||0).toLocaleString()}</div>
