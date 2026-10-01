@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import TagInput, { ARTWORK_TAG_SUGGESTIONS } from '../components/TagInput'
 import { auditLog } from '../lib/audit'
-import QRCode from 'qrcode'
+import { downloadQrLabel } from '../lib/labels'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
@@ -1191,116 +1191,20 @@ export default function Artworks() {
 
 // The printed label never carries a price — it shows the work's details and a
 // QR code, and the price lives on the page that code opens.
-async function printArtworkLabel(w, artistMap) {
-  // 4x2 inches at 200 DPI = 800 x 400 px
-  const DPI = 200
-  const W = 4 * DPI   // 800px
-  const H = 2 * DPI   // 400px
-  const PAD = 28
-  const BORDER = 2
-
-  // Font stack: Optima on Mac, Gill Sans on Windows, fallback to Trebuchet
-  const FONT = 'Optima, "Gill Sans", "Gill Sans MT", Trebuchet MS, sans-serif'
-
-  // ?view=gallery is what shows the price on the page the QR opens
-  const url = window.location.origin + '/artwork/' + w.id + '?view=gallery'
-
-  // QR: 58% of height, vertically centered
-  const qrSize = Math.round(H * 0.58)
-  const qrLeft = PAD
-  const qrTop = Math.round((H - qrSize) / 2)
-
-  const qrDataUrl = await QRCode.toDataURL(url, {
-    width: qrSize,
-    margin: 1,
-    color: { dark: '#000000', light: '#ffffff' },
+function printArtworkLabel(w, artistMap) {
+  return downloadQrLabel({
+    // ?view=gallery is what shows the price on the page the QR opens
+    url: window.location.origin + '/artwork/' + w.id + '?view=gallery',
+    lines: [
+      w.title,
+      artistMap[w.artist_id] ? artistMap[w.artist_id].name : '',
+      w.year,
+      w.medium,
+      w.dimensions ? w.dimensions + ' ' + (w.dimension_unit === 'cm' ? 'cm' : 'in') : '',
+    ],
+    filename: w.title,
   })
-
-  const canvas = document.createElement('canvas')
-  canvas.width = W
-  canvas.height = H
-  const ctx = canvas.getContext('2d')
-
-  // White background
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, W, H)
-
-  // Black border — drawn LAST so it's always visible
-  // (draw content first, border on top)
-
-  // Draw QR code
-  await new Promise(res => {
-    const qrImg = new Image()
-    qrImg.onload = () => {
-      ctx.drawImage(qrImg, qrLeft, qrTop, qrSize, qrSize)
-      res()
-    }
-    qrImg.src = qrDataUrl
-  })
-
-  // Text area
-  const textX = qrLeft + qrSize + PAD * 1.5
-  const textMaxW = W - textX - PAD
-
-  const TITLE_SIZE = 30
-  const DETAIL_SIZE = 26
-  const LINE_GAP = Math.round(DETAIL_SIZE * 1.8)
-
-  const artistName = artistMap[w.artist_id] ? artistMap[w.artist_id].name : ''
-  const dimUnit = w.dimension_unit === 'cm' ? 'cm' : 'in'
-
-  const textLines = [
-    { text: w.title || '', size: TITLE_SIZE, weight: '700' },
-    { text: artistName, size: DETAIL_SIZE, weight: '300' },
-    { text: w.year || '', size: DETAIL_SIZE, weight: '300' },
-    { text: w.medium || '', size: DETAIL_SIZE, weight: '300' },
-    { text: w.dimensions ? w.dimensions + ' ' + dimUnit : '', size: DETAIL_SIZE, weight: '300' },
-  ].filter(l => l.text)
-
-  // Calculate total text height for vertical centering relative to QR
-  const totalTextH = textLines.reduce((acc, l, i) =>
-    acc + (i < textLines.length - 1 ? LINE_GAP : l.size), 0)
-
-  // Center text block relative to QR code vertical extent
-  const textBlockCenter = qrTop + qrSize / 2
-  let y = Math.round(textBlockCenter - totalTextH / 2) + textLines[0].size
-
-  ctx.fillStyle = '#1a1714'
-
-  for (let i = 0; i < textLines.length; i++) {
-    const line = textLines[i]
-    ctx.font = line.weight + ' ' + line.size + 'px ' + FONT
-    ctx.letterSpacing = line.weight === '300' ? '1px' : '0px'
-
-    const words = line.text.split(' ')
-    let cur = ''
-    for (const word of words) {
-      const test = cur ? cur + ' ' + word : word
-      if (ctx.measureText(test).width > textMaxW && cur) {
-        ctx.fillText(cur, textX, y)
-        y += line.size + 4
-        cur = word
-      } else {
-        cur = test
-      }
-    }
-    if (cur) ctx.fillText(cur, textX, y)
-    if (i < textLines.length - 1) y += LINE_GAP
-  }
-
-  // Draw border LAST so it sits on top of everything
-  ctx.strokeStyle = '#000000'
-  ctx.lineWidth = BORDER
-  ctx.strokeRect(BORDER / 2, BORDER / 2, W - BORDER, H - BORDER)
-
-  // Download PNG
-  const safeTitle = (w.title || 'label').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40)
-  const link = document.createElement('a')
-  link.download = safeTitle + '_label.png'
-  link.href = canvas.toDataURL('image/png')
-  link.click()
 }
-
 
 function printArtworkList(artworks, artistMap, filters) {
   const title = filters.location

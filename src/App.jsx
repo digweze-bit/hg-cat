@@ -36,6 +36,7 @@ const Reports      = lazy(() => import('./pages/Reports'))
 const Certificates = lazy(() => import('./pages/Certificates'))
 const Users        = lazy(() => import('./pages/Users'))
 const ArtworkPage  = lazy(() => import('./pages/ArtworkPage'))
+const BookPage     = lazy(() => import('./pages/BookPage'))
 const FormSign     = lazy(() => import('./pages/FormSign'))
 const CatalogueBuilder = lazy(() => import('./pages/CatalogueBuilder'))
 
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/" element={<Catalogue />} />
             <Route path="/artist/:artistId" element={<Catalogue />} />
             <Route path="/artwork/:id" element={<ArtworkPage />} />
+            <Route path="/book/:id" element={<BookPage />} />
             <Route path="/sign/:token" element={<FormSign />} />
             {/* Auth lives here and nowhere else: public routes above never
                 mount AuthProvider, so they never start a token refresh. */}

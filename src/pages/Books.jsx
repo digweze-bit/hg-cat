@@ -2,6 +2,7 @@
 import { supabase } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
 import { useAuth } from '../components/AuthProvider'
+import { downloadQrLabel } from '../lib/labels'
 
 const FORMATS = ['Hardcover','Paperback','Limited Edition','Artists Book','Catalogue','Journal','Other']
 const SUBJECTS = ['African Art','Contemporary Art','Photography','Architecture','Design','Art History','Criticism','Poetry','Fiction','Other']
@@ -206,7 +207,7 @@ export default function Books() {
                 <th>Price</th>
                 <th>Stock</th>
                 <th>Visible</th>
-                <th style={{width:140}}>Actions</th>
+                <th style={{width:190}}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -246,6 +247,7 @@ export default function Books() {
                       <div style={{display:'flex', gap:4}}>
                         <button className="btn btn-ghost btn-sm" onClick={()=>openEdit(b)}>Edit</button>
                         <button className="btn btn-ghost btn-sm" onClick={()=>openStock(b)} title="Manage stock">Stock</button>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>printBookLabel(b)} title={b.visible ? 'Download QR label' : 'Hidden books only open for signed-in staff'}>QR code</button>
                         <button className="btn btn-ghost btn-sm" style={{color:'var(--red)'}} onClick={()=>handleDelete(b.id)}>{'\u2715'}</button>
                       </div>
                     </td>
@@ -451,4 +453,19 @@ export default function Books() {
       )}
     </div>
   )
+}
+
+// Same QR label as artworks; the code opens the public book page, whose
+// gallery view shows the price.
+function printBookLabel(b) {
+  return downloadQrLabel({
+    url: window.location.origin + '/book/' + b.id + '?view=gallery',
+    lines: [
+      b.title,
+      b.author,
+      [b.publisher, b.year].filter(Boolean).join(', '),
+      b.format,
+    ],
+    filename: b.title,
+  })
 }
