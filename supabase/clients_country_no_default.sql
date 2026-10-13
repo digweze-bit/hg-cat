@@ -4,9 +4,7 @@
 alter table public.clients alter column country drop default;
 
 -- Clear the defaulted 'Nigeria' from clients that have no other address details.
--- The affected rows are kept in a backup table so this can be undone:
---   update public.clients c set country = b.country
---     from public.clients_country_backup_20261013 b where c.id = b.id;
+-- Applied 2026-10-13 (413 rows). The backup table was dropped afterwards.
 create table public.clients_country_backup_20261013 as
   select id, country from public.clients
   where country = 'Nigeria'
