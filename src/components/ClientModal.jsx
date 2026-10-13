@@ -9,7 +9,7 @@ const PREFIXES = ['Mr','Mrs','Ms','Dr','Prof','Chief','Alhaji','Alhaja','Sir']
 const BLANK = {
   name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'',
   email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'',
-  suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'', tags:[],
+  suburb:'', city:'', state:'', postcode:'', country:'', notes:'', tags:[],
 }
 
 // Shared by the Clients page and the Clients tab in Sales & Invoices, so a
@@ -24,7 +24,7 @@ export default function ClientModal({ onClose, onSave, existingClients = [], edi
         suburb: editClient.suburb || '',
         state: editClient.state || '',
         postcode: editClient.postcode || '',
-        country: editClient.country || 'Nigeria',
+        country: editClient.country || '',
         tags: editClient.tags || [],
       }
     : { ...BLANK })

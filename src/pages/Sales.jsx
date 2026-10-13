@@ -36,7 +36,7 @@ export default function Sales() {
     // Load core data and exchange rates in parallel \u2014 rates won't block the page
     const [[c, inv, bks], r] = await Promise.all([
       Promise.all([
-        fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name' }),
+        fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,street,address,suburb,city,state,postcode,country,prefix', order: 'name' }),
         (async () => {
         const PAGE = 500; let all = [], offset = 0
         while (true) {
@@ -59,7 +59,7 @@ export default function Sales() {
   }
 
   async function refreshClients() {
-    const c = await fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,city,prefix', order: 'name', cache:false })
+    const c = await fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,street,address,suburb,city,state,postcode,country,prefix', order: 'name', cache:false })
     setClients(c)
   }
 
@@ -720,7 +720,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
   , [clients, search])
 
   function openAdd() {
-    setForm({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'Nigeria', notes:'' })
+    setForm({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'', notes:'' })
     setModal('add')
   }
 
@@ -2142,6 +2142,16 @@ async function buildInvoiceHTML(inv, client, items, payments, logoB64, bankAccou
       return it
     }
   }))
+  // Postal address only — no phone numbers on the invoice. Country alone (it defaults to Nigeria) isn't an address.
+  const addressLines = []
+  if (client) {
+    const street = client.street || client.address
+    const region = [client.city, [client.state, client.postcode].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+    if (street) addressLines.push(street)
+    if (client.suburb) addressLines.push(client.suburb)
+    if (region) addressLines.push(region)
+    if (addressLines.length && client.country) addressLines.push(client.country)
+  }
   const logoHtml = logoB64
     ? `<img src='${logoB64}' style='height:28px;object-fit:contain;display:block;'>`
     : `<div style="font-size:15px;font-weight:300;letter-spacing:.04em">HOURGLASS GALLERY</div>`
@@ -2172,7 +2182,7 @@ td{padding:13px 8px;border-bottom:1px solid #ece8e1;vertical-align:middle}
     ${inv.status==='partial'?'<div class="status-badge" style="color:#b8862a">Partial payment</div>':''}
   </div>
 </div>
-${client?`<div style="margin-bottom:24px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:5px">Invoice to</div><div style="font-weight:600;font-size:12px">${e(client.name)}</div>${client.company?`<div style="font-size:11px;color:#6b6760">${e(client.company)}</div>`:''}${client.email?`<div style="font-size:11px;color:#6b6760">${e(client.email)}</div>`:''}${client.phone||client.phone_mobile?`<div style="font-size:11px;color:#6b6760">${e(client.phone||client.phone_mobile)}</div>`:''}</div>`:''}
+${client?`<div style="margin-bottom:24px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:5px">Invoice to</div><div style="font-weight:600;font-size:12px">${e(client.name)}</div>${client.company?`<div style="font-size:11px;color:#6b6760">${e(client.company)}</div>`:''}${client.email?`<div style="font-size:11px;color:#6b6760">${e(client.email)}</div>`:''}${addressLines.map(l=>`<div style="font-size:11px;color:#6b6760">${e(l)}</div>`).join('')}</div>`:''}
 <table><tbody>
 ${itemsWithImages.map(it=>`<tr>
   <td class="td-img">${it._imgData?`<img src="${it._imgData}" class="art-img" alt="">`:'<div class="art-placeholder"></div>'}</td>
