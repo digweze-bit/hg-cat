@@ -2191,7 +2191,7 @@ ${payments.length>0?`<tr><td></td><td style="text-align:right;color:#2d6a4f;font
 ${bal>0?`<tr><td></td><td style="text-align:right;font-weight:600">Balance due</td><td class="td-amt" style="font-weight:600;color:#92600a">${formatAmount(bal,inv.currency)}</td></tr>`:''}
 </tbody></table>
 ${inv.notes?`<div style="margin-top:18px;font-size:11px;color:#6b6760;padding:10px 12px;background:#f8f7f5;border-radius:3px;">${e(inv.notes)}</div>`:''}
-${payments.length>0?`<div style="margin-top:24px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #ece8e1;font-size:11px"><span style="color:#6b6760">${e(p.method)}${p.reference?' &middot; '+e(p.reference):''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
+${payments.length>0?`<div style="margin-top:24px"><div style="font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:8px">Payment history</div>${payments.map(p=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #ece8e1;font-size:11px"><span style="color:#6b6760">${p.paid_at?e(p.paid_at)+' &middot; ':''}${e(p.method)}${p.reference?' &middot; '+e(p.reference):''}</span><span>${formatAmount(p.amount,p.currency)}</span></div>`).join('')}</div>`:''}
 ${(() => {
   const bank = bankAccount || null
   if (!bank) return ''
