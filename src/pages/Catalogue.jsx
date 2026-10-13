@@ -299,7 +299,7 @@ export default function Catalogue() {
       {/* Footer */}
       <div style={{ background:'#1a1714', color:'rgba(255,255,255,.4)', padding:'24px 40px', textAlign:'center', fontSize:11 }}>
         <div style={{ fontFamily:'Georgia,serif', fontSize:'0.95rem', color:'rgba(255,255,255,.7)', marginBottom:4 }}>Hourglass Gallery</div>
-        <div>298A Akin Olugbade Street, Victoria Island, Lagos</div>
+        <div>298C Akin Olugbade Street, Victoria Island, Lagos</div>
       </div>
     </div>
   )

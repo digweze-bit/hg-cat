@@ -758,7 +758,7 @@ export default function Forms() {
                         <div>
                           <div style={{ fontSize:9, letterSpacing:'.1em', textTransform:'uppercase', color:'#999', marginBottom:3 }}>Gallery</div>
                           <div style={{ fontWeight:600, fontSize:13 }}>Hourglass Gallery</div>
-                          <div style={{ fontSize:11, color:'#666' }}>298A Akin Olugbade St, Victoria Island, Lagos</div>
+                          <div style={{ fontSize:11, color:'#666' }}>298C Akin Olugbade St, Victoria Island, Lagos</div>
                         </div>
                         <div>
                           <div style={{ fontSize:9, letterSpacing:'.1em', textTransform:'uppercase', color:'#999', marginBottom:3 }}>Recipient</div>

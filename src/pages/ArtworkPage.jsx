@@ -350,7 +350,7 @@ export default function ArtworkPage() {
           {/* Footer */}
           <div style={{ marginTop:32, paddingTop:20, borderTop:'1px solid #e8e3db', display:'flex', flexDirection:'column', gap:6, alignItems:'center', textAlign:'center' }}>
             <div style={{ fontSize:11, color:'#9a9490' }}>
-              Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos
+              Hourglass Gallery · 298C Akin Olugbade Street, Victoria Island, Lagos
             </div>
             <a href="/" style={{ fontSize:11, color:'#9a9490', textDecoration:'none' }}>&larr; Back to catalogue</a>
           </div>

@@ -1266,7 +1266,7 @@ tr:nth-child(even) td{background:#faf9f7;}
   <thead><tr><th>#</th><th></th><th>Title</th>${hideArtistCol ? '' : '<th>Artist</th>'}<th>Year</th><th>Medium</th><th>Dimensions</th>${hideLocationCol ? '' : '<th>Location</th>'}<th>Status</th><th>Price</th></tr></thead>
   <tbody>${rows}</tbody>
 </table>
-<div class="footer">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
+<div class="footer">Hourglass Gallery · 298C Akin Olugbade Street, Victoria Island, Lagos</div>
 </body></html>`
 
   const w = window.open('', '_blank', 'width=1100,height=750')
@@ -1397,7 +1397,7 @@ function ConsignmentReport({ artworks, artists }) {
     const html = '<!DOCTYPE html><html><head><title>Consignment Report</title><style>@media print{@page{margin:12mm;size:A4 landscape}body{padding:0}}body{font-family:-apple-system,sans-serif;padding:20px;color:#1a1714}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px;border-bottom:2px solid #1a1714;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#999}</style></head><body>' +
       '<div style="display:flex;justify-content:space-between;margin-bottom:16px"><div><div style="font-size:18px;font-weight:600">Consignment Report</div><div style="font-size:12px;color:#999">Hourglass Gallery \u00B7 '+new Date().toLocaleDateString('en-GB')+'</div></div><div style="font-size:12px;color:#999">'+filtered.length+' works</div></div>' +
       '<table><thead><tr><th></th><th>Artwork</th><th>Consignor</th><th style="text-align:right">Price</th><th style="text-align:center">Comm.</th><th style="text-align:right">Gallery</th><th style="text-align:right">Owner</th><th style="text-align:center">Status</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      '<div style="margin-top:24px;text-align:center;font-size:10px;color:#999;border-top:1px solid #e8e3db;padding-top:12px">Hourglass Gallery \u00B7 298A Akin Olugbade Street, Victoria Island, Lagos</div></body></html>'
+      '<div style="margin-top:24px;text-align:center;font-size:10px;color:#999;border-top:1px solid #e8e3db;padding-top:12px">Hourglass Gallery \u00B7 298C Akin Olugbade Street, Victoria Island, Lagos</div></body></html>'
 
     const w = window.open('', '_blank', 'width=1100,height=700')
     if (!w) { alert('Allow popups'); setPrinting(false); return }

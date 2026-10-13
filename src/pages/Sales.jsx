@@ -617,7 +617,7 @@ ${filtered.length === 0
 ${invoiceCopies}
 <div style='margin-top:36px;padding-top:14px;border-top:1px solid #e8e3db;font-size:9px;color:#999;line-height:1.8'>
   <div>Hourglass Gallery</div>
-  <div>298A Akin Olugbade Street, Victoria Island, Lagos</div>
+  <div>298C Akin Olugbade Street, Victoria Island, Lagos</div>
   <div>info@hourglassgallery.com</div>
   <div style='margin-top:4px'>Generated: ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
 </div>
@@ -2216,6 +2216,6 @@ ${(() => {
   h += '</div>'
   return h
 })()}
-<div class="footer"><div>Hourglass Gallery</div><div>298A Akin Olugbade Street, Victoria Island, Lagos</div><div>info@hourglassgallery.com</div></div>
+<div class="footer"><div>Hourglass Gallery</div><div>298C Akin Olugbade Street, Victoria Island, Lagos</div><div>info@hourglassgallery.com</div></div>
 </body></html>`
 }

@@ -138,7 +138,7 @@ export default function FormSign() {
     doc.text('Hourglass Gallery', lx + 4, y + 11)
     doc.text(form.recipient_name || '\u2014', pw/2 + 2, y + 11)
     setFont(8, 'normal', MUTED)
-    doc.text('298A Akin Olugbade St, Victoria Island, Lagos', lx + 4, y + 16)
+    doc.text('298C Akin Olugbade St, Victoria Island, Lagos', lx + 4, y + 16)
     if (form.recipient_email) doc.text(form.recipient_email, pw/2 + 2, y + 16)
     y += 24
 
@@ -297,7 +297,7 @@ export default function FormSign() {
     doc.setLineWidth(0.2)
     doc.line(lx, ph - 14, pw - margin, ph - 14)
     setFont(7, 'normal', MUTED)
-    doc.text('Hourglass Gallery  \u00B7  298A Akin Olugbade Street, Victoria Island, Lagos', pw/2, ph - 9, { align:'center' })
+    doc.text('Hourglass Gallery  \u00B7  298C Akin Olugbade Street, Victoria Island, Lagos', pw/2, ph - 9, { align:'center' })
 
     // Save to Supabase storage
     const pdfBlob = doc.output('blob')
@@ -389,7 +389,7 @@ export default function FormSign() {
           <div>
             <div style={{ fontSize:9, letterSpacing:'.12em', textTransform:'uppercase', color:'#999', marginBottom:4 }}>Gallery</div>
             <div style={{ fontWeight:600, fontSize:14 }}>Hourglass Gallery</div>
-            <div style={{ fontSize:12, color:'#666' }}>298A Akin Olugbade St, Victoria Island, Lagos</div>
+            <div style={{ fontSize:12, color:'#666' }}>298C Akin Olugbade St, Victoria Island, Lagos</div>
           </div>
           <div>
             <div style={{ fontSize:9, letterSpacing:'.12em', textTransform:'uppercase', color:'#999', marginBottom:4 }}>Recipient</div>

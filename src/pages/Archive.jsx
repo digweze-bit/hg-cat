@@ -1767,7 +1767,7 @@ ${incEntries.map(ev => `<div class="ev-item">
 </div>`).join('')}` : ''}
 
 <div class="footer">
-  Prepared by Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos<br>
+  Prepared by Hourglass Gallery · 298C Akin Olugbade Street, Victoria Island, Lagos<br>
   This document is compiled from gallery research records and is provided for provenance, due diligence, insurance, and reference purposes.<br>
   It does not constitute a warranty of title or authenticity.
 </div>

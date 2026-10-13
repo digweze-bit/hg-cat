@@ -808,7 +808,7 @@ function printReport(report) {
 ${report.stats?.length ? `<div class="stat-row">${report.stats.map(s => `<div class="stat"><div class="stat-n">${e(s.n)}</div><div class="stat-l">${e(s.l)}</div></div>`).join('')}</div>` : ''}
 ${body}
 ${report.note ? `<div class="note">${e(report.note)}</div>` : ''}
-<div class="footer">Hourglass Gallery · 298A Akin Olugbade Street, Victoria Island, Lagos</div>
+<div class="footer">Hourglass Gallery · 298C Akin Olugbade Street, Victoria Island, Lagos</div>
 </body></html>`
 
   const w = window.open('', '_blank', 'width=1100,height=750')
