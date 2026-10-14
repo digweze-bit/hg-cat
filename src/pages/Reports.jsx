@@ -45,7 +45,7 @@ const GROUPS = [
     reports: [
       { id: 'sold',       label: 'Artworks sold',            period: true  },
       { id: 'collection', label: 'Collection report',        period: true  },
-      { id: 'pending',    label: 'Pending collection',       period: false },
+      { id: 'pending',    label: 'Pending collection',       period: false, client: true, sort: 'pending' },
       { id: 'received',   label: 'Acquired / consigned',     period: true  },
       { id: 'loaned',     label: 'Works on loan',            period: false, loanee: true },
     ],
@@ -53,6 +53,16 @@ const GROUPS = [
 ]
 
 const DASH = '—'
+
+// Sort options for the pending collection report
+const PENDING_SORTS = [
+  { id: 'date_desc',   label: 'Invoice date (newest)' },
+  { id: 'date_asc',    label: 'Invoice date (oldest)' },
+  { id: 'client',      label: 'Client (A–Z, grouped)' },
+  { id: 'artist',      label: 'Artist (A–Z)' },
+  { id: 'title',       label: 'Artwork (A–Z)' },
+  { id: 'value_desc',  label: 'Value (highest)' },
+]
 
 // Three receiving routes for artworks.
 const OWNERSHIP_LABEL = {
@@ -91,6 +101,8 @@ export default function Reports() {
   const [consignors, setConsignors] = useState([])
   const [loanees, setLoanees]   = useState([])
   const [loaneeId, setLoaneeId] = useState('')
+  const [clientId, setClientId] = useState('')
+  const [pendingSort, setPendingSort] = useState('date_desc')
   const [loading, setLoading]   = useState(true)
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3)
@@ -141,7 +153,10 @@ export default function Reports() {
         ...it,
         invoice_number: inv.invoice_number,
         invoice_status: inv.status,
+        client_id: inv.client_id || null,
         client_name: inv.clients?.name || DASH,
+        client_email: inv.clients?.email || null,
+        client_phone: inv.clients?.phone || null,
         issue_date: inv.issue_date,
         currency: inv.currency,
         artist_id: aw?.artist_id || null,
@@ -162,6 +177,17 @@ export default function Reports() {
     return group.entity === 'artist' ? it.artist_id === entityId : it.consignor_label === entityId
   }
 
+  // Clients that currently have paid artworks awaiting collection
+  const pendingClients = useMemo(() => {
+    const map = {}
+    items.forEach(it => {
+      if (!isPending(it) || !it.client_id) return
+      if (!map[it.client_id]) map[it.client_id] = { id: it.client_id, name: it.client_name, count: 0 }
+      map[it.client_id].count++
+    })
+    return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
+  }, [items])
+
   const inPeriod    = d => d && d >= dateFrom && d <= dateTo
   const entityLabel = !entityId ? null
     : group.entity === 'artist' ? artistMap[entityId]?.name : entityId
@@ -172,9 +198,9 @@ export default function Reports() {
       groupId, subId, group, sub, entityLabel,
       artworks, items, invoices, artistMap,
       matchesEntity, itemMatchesEntity, inPeriod, dateFrom, dateTo,
-      loanees, loaneeId,
+      loanees, loaneeId, clientId, pendingSort,
     })
-  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId])
+  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId, clientId, pendingSort])
 
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'…'}</div>
 
@@ -240,6 +266,25 @@ export default function Reports() {
             <select className="form-select" style={{ width:220 }} value={loaneeId} onChange={e => setLoaneeId(e.target.value)}>
               <option value="">All loanees</option>
               {loanees.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+          </>
+        )}
+
+        {sub.client && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Client:</span>
+            <select className="form-select" style={{ width:240 }} value={clientId} onChange={e => setClientId(e.target.value)}>
+              <option value="">All clients</option>
+              {pendingClients.map(c => <option key={c.id} value={c.id}>{c.name} ({c.count})</option>)}
+            </select>
+          </>
+        )}
+
+        {sub.sort === 'pending' && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Sort by:</span>
+            <select className="form-select" style={{ width:200 }} value={pendingSort} onChange={e => setPendingSort(e.target.value)}>
+              {PENDING_SORTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
           </>
         )}
@@ -545,27 +590,73 @@ function collectionReport(ctx) {
   }
 }
 
+function isPending(it) {
+  return it.invoice_status === 'paid' && (it.item_type === 'artwork' || !it.item_type) && !it.delivered
+}
+
 function pendingReport(ctx) {
-  const { items } = ctx
-  const rows = items.filter(it =>
-    it.invoice_status === 'paid' && (it.item_type === 'artwork' || !it.item_type) && !it.delivered)
+  const { items, clientId, pendingSort } = ctx
+  const rows = items.filter(it => isPending(it) && (!clientId || it.client_id === clientId))
+
+  const byText = k => (a, b) => String(a[k] || '').localeCompare(String(b[k] || ''))
+  const byDateDesc = (a, b) => String(b.issue_date || '').localeCompare(String(a.issue_date || ''))
+  const cmp = {
+    date_desc:  byDateDesc,
+    date_asc:   (a, b) => byDateDesc(b, a),
+    client:     (a, b) => byText('client_name')(a, b) || byDateDesc(a, b),
+    artist:     (a, b) => byText('artist_label')(a, b) || byText('title')(a, b),
+    title:      byText('title'),
+    value_desc: (a, b) => Number(b.line_total || 0) - Number(a.line_total || 0),
+  }[pendingSort] || byDateDesc
+  rows.sort(cmp)
+
+  const client = clientId ? rows[0] : null
+  const grouped = !clientId && pendingSort === 'client'
+  const showClientCol = !clientId && !grouped
+  const columns = [THUMB_COL, 'Artwork', 'Artist', ...(showClientCol ? ['Client'] : []), 'Invoice', 'Invoice date', 'Value']
+  const row = it => [
+    itemThumb(it),
+    { text: it.title, bold: true },
+    { text: it.artist_label, muted: true },
+    ...(showClientCol ? [{ text: it.client_name }] : []),
+    { text: it.invoice_number },
+    { text: it.issue_date, muted: true },
+    { text: formatAmount(it.line_total, it.currency) },
+  ]
+
+  // Grouping by client gives one block per client, which prints as a
+  // ready-made collection list for each.
+  let sections = [{ columns, rows: rows.map(row) }]
+  if (grouped) {
+    const buckets = {}
+    rows.forEach(it => {
+      const k = it.client_id || it.client_name
+      if (!buckets[k]) buckets[k] = []
+      buckets[k].push(it)
+    })
+    sections = Object.values(buckets).map(its => {
+      const c = its[0]
+      const contact = [c.client_email, c.client_phone].filter(Boolean).join(' · ')
+      return {
+        heading: `${c.client_name} — ${its.length} work${its.length !== 1 ? 's' : ''}${contact ? `  (${contact})` : ''}`,
+        columns, rows: its.map(row),
+      }
+    })
+  }
+
+  const clientCount = new Set(rows.map(it => it.client_id || it.client_name)).size
 
   return {
     title: 'Pending collection',
-    stats: [{ n: rows.length, l: 'Awaiting collection', color: 'var(--amber)' }],
-    sections: [{
-      columns: [THUMB_COL, 'Artwork', 'Artist', 'Client', 'Invoice', 'Invoice date', 'Value'],
-      rows: rows.map(it => [
-        itemThumb(it),
-        { text: it.title, bold: true },
-        { text: it.artist_label, muted: true },
-        { text: it.client_name },
-        { text: it.invoice_number },
-        { text: it.issue_date, muted: true },
-        { text: formatAmount(it.line_total, it.currency) },
-      ]),
-    }],
-    empty: 'All artworks collected',
+    subtitle: client
+      ? [client.client_name, client.client_email, client.client_phone].filter(Boolean).join('  ·  ')
+      : 'All clients',
+    stats: [
+      { n: rows.length, l: 'Awaiting collection', color: 'var(--amber)' },
+      ...(clientId ? [] : [{ n: clientCount, l: 'Clients' }]),
+    ],
+    sections,
+    empty: clientId ? 'Nothing awaiting collection for this client' : 'All artworks collected',
   }
 }
 
