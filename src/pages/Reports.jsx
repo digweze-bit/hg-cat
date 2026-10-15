@@ -40,12 +40,13 @@ const GROUPS = [
   {
     id: 'artwork',
     label: 'Artwork Reports',
-    desc: 'Inventory movement — sold, collected, pending, received and on loan',
+    desc: 'Inventory movement — sold, collected, pending, received, on loan and in safekeeping',
     entity: null,
     reports: [
       { id: 'sold',       label: 'Artworks sold',            period: true  },
       { id: 'collection', label: 'Collection report',        period: true  },
       { id: 'pending',    label: 'Pending collection',       period: false, client: true, sort: 'pending' },
+      { id: 'safekeeping', label: 'Safekeeping',             period: false, client: true, sort: 'safekeeping' },
       { id: 'received',   label: 'Acquired / consigned',     period: true  },
       { id: 'loaned',     label: 'Works on loan',            period: false, loanee: true },
     ],
@@ -54,15 +55,32 @@ const GROUPS = [
 
 const DASH = '—'
 
-// Sort options for the pending collection report
-const PENDING_SORTS = [
-  { id: 'date_desc',   label: 'Invoice date (newest)' },
-  { id: 'date_asc',    label: 'Invoice date (oldest)' },
-  { id: 'client',      label: 'Client (A–Z, grouped)' },
-  { id: 'artist',      label: 'Artist (A–Z)' },
-  { id: 'title',       label: 'Artwork (A–Z)' },
-  { id: 'value_desc',  label: 'Value (highest)' },
-]
+// Sort options per report; the first entry is the default
+const SORTS = {
+  pending: [
+    { id: 'date_desc',   label: 'Invoice date (newest)' },
+    { id: 'date_asc',    label: 'Invoice date (oldest)' },
+    { id: 'client',      label: 'Client (A–Z, grouped)' },
+    { id: 'artist',      label: 'Artist (A–Z)' },
+    { id: 'title',       label: 'Artwork (A–Z)' },
+    { id: 'value_desc',  label: 'Value (highest)' },
+  ],
+  safekeeping: [
+    { id: 'received_desc', label: 'Date received (newest)' },
+    { id: 'received_asc',  label: 'Date received (oldest)' },
+    { id: 'return_asc',    label: 'Expected return (soonest)' },
+    { id: 'client',        label: 'Client (A–Z, grouped)' },
+    { id: 'artist',        label: 'Artist (A–Z)' },
+    { id: 'title',         label: 'Artwork (A–Z)' },
+    { id: 'value_desc',    label: 'Declared value (highest)' },
+  ],
+}
+
+const SAFEKEEPING_STATUS = {
+  in_storage: 'In storage',
+  overdue:    'Overdue',
+  returned:   'Returned',
+}
 
 // Three receiving routes for artworks.
 const OWNERSHIP_LABEL = {
@@ -102,7 +120,9 @@ export default function Reports() {
   const [loanees, setLoanees]   = useState([])
   const [loaneeId, setLoaneeId] = useState('')
   const [clientId, setClientId] = useState('')
-  const [pendingSort, setPendingSort] = useState('date_desc')
+  const [sorts, setSorts]       = useState(() => Object.fromEntries(Object.entries(SORTS).map(([k, v]) => [k, v[0].id])))
+  const [safekeeping, setSafekeeping] = useState([])
+  const [skStatus, setSkStatus] = useState('in_storage')
   const [loading, setLoading]   = useState(true)
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3)
@@ -112,7 +132,7 @@ export default function Reports() {
 
   useEffect(() => {
     async function load() {
-      const [a, w, inv, cons, loan] = await Promise.all([
+      const [a, w, inv, cons, loan, sk] = await Promise.all([
         fetchAll('artists', { order: 'name' }),
         fetchAll('artworks', { order: 'created_at' }),
         supabase.from('invoices')
@@ -122,8 +142,15 @@ export default function Reports() {
           .then(r => r.data || []),
         supabase.from('consignors').select('*').order('name').then(r => r.data || []),
         supabase.from('loanees').select('*').order('name').then(r => r.data || []),
+        supabase.from('safekeeping_items').select('*, clients(name, email, phone, phone_mobile)').order('received_at', { ascending: false }).then(r => r.data || []),
       ])
-      setArtists(a); setArtworks(w); setInvoices(inv); setConsignors(cons); setLoanees(loan)
+      // Overdue is derived, matching the Safekeeping page
+      const today = new Date().toISOString().split('T')[0]
+      const skRows = sk.map(x => ({
+        ...x,
+        status: x.status === 'in_storage' && x.expected_return && x.expected_return < today ? 'overdue' : x.status,
+      }))
+      setArtists(a); setArtworks(w); setInvoices(inv); setConsignors(cons); setLoanees(loan); setSafekeeping(skRows)
       setLoading(false)
     }
     load()
@@ -177,16 +204,19 @@ export default function Reports() {
     return group.entity === 'artist' ? it.artist_id === entityId : it.consignor_label === entityId
   }
 
-  // Clients that currently have paid artworks awaiting collection
-  const pendingClients = useMemo(() => {
+  // Clients offered in the client dropdown: only those with rows in the
+  // current report, with a count of their works
+  const reportClients = useMemo(() => {
     const map = {}
-    items.forEach(it => {
-      if (!isPending(it) || !it.client_id) return
-      if (!map[it.client_id]) map[it.client_id] = { id: it.client_id, name: it.client_name, count: 0 }
-      map[it.client_id].count++
-    })
+    const add = (id, name) => {
+      if (!id) return
+      if (!map[id]) map[id] = { id, name: name || DASH, count: 0 }
+      map[id].count++
+    }
+    if (sub.id === 'pending') items.forEach(it => { if (isPending(it)) add(it.client_id, it.client_name) })
+    if (sub.id === 'safekeeping') safekeeping.forEach(x => { if (skMatchesStatus(x, skStatus)) add(x.client_id, x.clients?.name) })
     return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
-  }, [items])
+  }, [sub.id, items, safekeeping, skStatus])
 
   const inPeriod    = d => d && d >= dateFrom && d <= dateTo
   const entityLabel = !entityId ? null
@@ -198,9 +228,10 @@ export default function Reports() {
       groupId, subId, group, sub, entityLabel,
       artworks, items, invoices, artistMap,
       matchesEntity, itemMatchesEntity, inPeriod, dateFrom, dateTo,
-      loanees, loaneeId, clientId, pendingSort,
+      loanees, loaneeId, clientId, sortId: sub.sort && sorts[sub.sort],
+      safekeeping, skStatus,
     })
-  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId, clientId, pendingSort])
+  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId, clientId, sorts, safekeeping, skStatus])
 
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'…'}</div>
 
@@ -208,6 +239,7 @@ export default function Reports() {
     setGroupId(g.id)
     setSubId(g.reports[0].id)
     setEntityId('')
+    setClientId('')
   }
 
   return (
@@ -236,7 +268,7 @@ export default function Reports() {
       {/* Controls: sub-report dropdown, entity picker, date range */}
       <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap', marginBottom:20, background:'var(--parchment)', padding:'12px 16px', borderRadius:3 }}>
         <span style={{ fontSize:13, color:'var(--muted)' }}>Report:</span>
-        <select className="form-select" style={{ width:200 }} value={sub.id} onChange={e => setSubId(e.target.value)}>
+        <select className="form-select" style={{ width:200 }} value={sub.id} onChange={e => { setSubId(e.target.value); setClientId('') }}>
           {group.reports.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
         </select>
 
@@ -275,16 +307,28 @@ export default function Reports() {
             <span style={{ fontSize:13, color:'var(--muted)' }}>Client:</span>
             <select className="form-select" style={{ width:240 }} value={clientId} onChange={e => setClientId(e.target.value)}>
               <option value="">All clients</option>
-              {pendingClients.map(c => <option key={c.id} value={c.id}>{c.name} ({c.count})</option>)}
+              {reportClients.map(c => <option key={c.id} value={c.id}>{c.name} ({c.count})</option>)}
             </select>
           </>
         )}
 
-        {sub.sort === 'pending' && (
+        {sub.id === 'safekeeping' && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Status:</span>
+            <select className="form-select" style={{ width:170 }} value={skStatus} onChange={e => { setSkStatus(e.target.value); setClientId('') }}>
+              <option value="in_storage">In storage</option>
+              <option value="overdue">Overdue only</option>
+              <option value="returned">Returned</option>
+              <option value="all">All</option>
+            </select>
+          </>
+        )}
+
+        {sub.sort && (
           <>
             <span style={{ fontSize:13, color:'var(--muted)' }}>Sort by:</span>
-            <select className="form-select" style={{ width:200 }} value={pendingSort} onChange={e => setPendingSort(e.target.value)}>
-              {PENDING_SORTS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            <select className="form-select" style={{ width:210 }} value={sorts[sub.sort]} onChange={e => setSorts(s => ({ ...s, [sub.sort]: e.target.value }))}>
+              {SORTS[sub.sort].map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
           </>
         )}
@@ -327,6 +371,7 @@ function buildReport(ctx) {
     if (subId === 'pending')    return pendingReport(ctx)
     if (subId === 'received')   return receivedReport(ctx)
     if (subId === 'loaned')     return loanedReport(ctx)
+    if (subId === 'safekeeping') return safekeepingReport(ctx)
   }
   return { title: 'Report', sections: [] }
 }
@@ -595,7 +640,7 @@ function isPending(it) {
 }
 
 function pendingReport(ctx) {
-  const { items, clientId, pendingSort } = ctx
+  const { items, clientId, sortId: pendingSort } = ctx
   const rows = items.filter(it => isPending(it) && (!clientId || it.client_id === clientId))
 
   const byText = k => (a, b) => String(a[k] || '').localeCompare(String(b[k] || ''))
@@ -752,6 +797,100 @@ function loanedReport(ctx) {
         }
       }),
     empty: loaneeId ? 'No works currently on loan to this loanee' : 'No works currently on loan',
+  }
+}
+
+// "In storage" includes overdue items, which are still in storage
+function skMatchesStatus(x, status) {
+  if (status === 'all') return true
+  if (status === 'in_storage') return x.status === 'in_storage' || x.status === 'overdue'
+  return x.status === status
+}
+
+function safekeepingReport(ctx) {
+  const { safekeeping, clientId, sortId, skStatus } = ctx
+  const rows = safekeeping.filter(x => skMatchesStatus(x, skStatus) && (!clientId || x.client_id === clientId))
+
+  const nameOf = x => x.clients?.name || ''
+  const byText = f => (a, b) => String(f(a) || '').localeCompare(String(f(b) || ''))
+  const byReceivedDesc = (a, b) => String(b.received_at || '').localeCompare(String(a.received_at || ''))
+  const cmp = {
+    received_desc: byReceivedDesc,
+    received_asc:  (a, b) => byReceivedDesc(b, a),
+    // Items with no expected return date go last
+    return_asc:    (a, b) => String(a.expected_return || '9999').localeCompare(String(b.expected_return || '9999')),
+    client:        (a, b) => byText(nameOf)(a, b) || byReceivedDesc(a, b),
+    artist:        (a, b) => byText(x => x.artist_name)(a, b) || byText(x => x.title)(a, b),
+    title:         byText(x => x.title),
+    value_desc:    (a, b) => Number(b.declared_value || 0) - Number(a.declared_value || 0),
+  }[sortId] || byReceivedDesc
+  rows.sort(cmp)
+
+  const grouped = !clientId && sortId === 'client'
+  const showClientCol = !clientId && !grouped
+  const showReturned = skStatus === 'returned' || skStatus === 'all'
+  const columns = [
+    THUMB_COL, 'Artwork', 'Artist', ...(showClientCol ? ['Client'] : []), 'Purpose', 'Received',
+    showReturned ? 'Expected / returned' : 'Expected return', 'Location', 'Status', 'Declared value',
+  ]
+  const row = x => {
+    const overdue = x.status === 'overdue'
+    return [
+      { img: x.image_url || null },
+      { text: x.title + (x.medium ? ` (${x.medium})` : ''), bold: true },
+      { text: x.artist_name || DASH, muted: true },
+      ...(showClientCol ? [{ text: nameOf(x) || DASH }] : []),
+      { text: x.purpose || DASH, muted: true },
+      { text: x.received_at || DASH, muted: true },
+      x.status === 'returned'
+        ? { text: `Returned ${x.returned_at || ''}${x.returned_to ? ` to ${x.returned_to}` : ''}`, muted: true }
+        : { text: (x.expected_return || DASH) + (overdue ? '  OVERDUE' : ''), color: overdue ? 'var(--red)' : undefined, bold: overdue, muted: !overdue },
+      { text: x.location || DASH, muted: true },
+      { text: SAFEKEEPING_STATUS[x.status] || x.status || DASH, color: overdue ? 'var(--red)' : x.status === 'returned' ? 'var(--green)' : 'var(--amber)' },
+      { text: x.declared_value ? formatAmount(x.declared_value, 'NGN') : DASH },
+    ]
+  }
+
+  // Grouping by client gives one block per client, which prints as a
+  // ready-made list for each.
+  let sections = [{ columns, rows: rows.map(row) }]
+  if (grouped) {
+    const buckets = {}
+    rows.forEach(x => {
+      const k = x.client_id || nameOf(x)
+      if (!buckets[k]) buckets[k] = []
+      buckets[k].push(x)
+    })
+    sections = Object.values(buckets).map(xs => {
+      const c = xs[0].clients || {}
+      const contact = [c.email, c.phone || c.phone_mobile].filter(Boolean).join(' · ')
+      return {
+        heading: `${c.name || 'Unknown client'} — ${xs.length} item${xs.length !== 1 ? 's' : ''}${contact ? `  (${contact})` : ''}`,
+        columns, rows: xs.map(row),
+      }
+    })
+  }
+
+  const c = clientId ? rows[0]?.clients : null
+  const statusLabel = { in_storage: 'In storage', overdue: 'Overdue', returned: 'Returned', all: 'All statuses' }[skStatus]
+  const totalValue = rows.reduce((s, x) => s + Number(x.declared_value || 0), 0)
+  const overdue = rows.filter(x => x.status === 'overdue').length
+
+  return {
+    title: 'Safekeeping',
+    subtitle: [
+      c ? [c.name, c.email, c.phone || c.phone_mobile].filter(Boolean).join('  ·  ') : 'All clients',
+      statusLabel,
+    ].join('  ·  '),
+    note: 'Client-owned works held by the gallery for safekeeping. These are not gallery stock. Declared values are as stated by the client.',
+    stats: [
+      { n: rows.length, l: skStatus === 'returned' ? 'Items returned' : 'Items', color: 'var(--amber)' },
+      ...(clientId ? [] : [{ n: new Set(rows.map(x => x.client_id)).size, l: 'Clients' }]),
+      ...(skStatus !== 'returned' ? [{ n: overdue, l: 'Overdue', color: overdue ? 'var(--red)' : undefined }] : []),
+      { n: formatAmount(totalValue, 'NGN'), l: 'Declared value' },
+    ],
+    sections,
+    empty: clientId ? 'No safekeeping items for this client' : 'No items in safekeeping',
   }
 }
 
