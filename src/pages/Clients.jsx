@@ -402,12 +402,12 @@ function ClientDetail({ client, entry, onClose, onEdit, onDelete, onVisitAdded }
   }
 
   const contact = [
-    ['Email', client.email],
-    ['Mobile', client.phone_mobile || client.phone],
-    ['Work', client.phone_work],
+    ['Address', client.street || client.address],
     ['City', [client.city, client.state].filter(Boolean).join(', ')],
     ['Country', client.country],
-    ['Address', client.street || client.address],
+    ['Mobile', client.phone_mobile || client.phone],
+    ['Work', client.phone_work],
+    ['Email', client.email],
   ].filter(([, v]) => v)
 
   return (
@@ -428,14 +428,6 @@ function ClientDetail({ client, entry, onClose, onEdit, onDelete, onVisitAdded }
         </div>
       </div>
 
-      {/* Account — one line per currency the client has been invoiced in */}
-      <CurrencyTotals
-        title="Account (all time)"
-        totals={entry.totals || []}
-        note={`${entry.paidCount || 0} paid · ${entry.openCount || 0} open · ${entry.visits.length} visit${entry.visits.length === 1 ? '' : 's'}`}
-        empty="No invoices raised for this client yet."
-      />
-
       {contact.length > 0 && (
         <div className="card" style={{ padding:'14px 16px', marginBottom:16, display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px,1fr))', gap:12 }}>
           {contact.map(([label, value]) => (
@@ -446,6 +438,14 @@ function ClientDetail({ client, entry, onClose, onEdit, onDelete, onVisitAdded }
           ))}
         </div>
       )}
+
+      {/* Account — one line per currency the client has been invoiced in */}
+      <CurrencyTotals
+        title="Account (all time)"
+        totals={entry.totals || []}
+        note={`${entry.paidCount || 0} paid · ${entry.openCount || 0} open · ${entry.visits.length} visit${entry.visits.length === 1 ? '' : 's'}`}
+        empty="No invoices raised for this client yet."
+      />
 
       {/* ── Sales figures by period ────────────────────────── */}
       <div className="card" style={{ padding:'16px 18px', marginBottom:16 }}>
