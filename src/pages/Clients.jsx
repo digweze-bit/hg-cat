@@ -88,7 +88,7 @@ export default function Clients() {
   const [selectedId, setSelectedId] = useState(null)
   const [modalClient, setModalClient] = useState(null)   // null | 'new' | client row
 
-  const CLIENT_COLUMNS = 'id,name,prefix,company,job_title,email,phone,phone_mobile,phone_work,city,state,country,street,address,suburb,postcode,notes,tags'
+  const CLIENT_COLUMNS = 'id,name,prefix,company,job_title,email,phone,phone_mobile,phone_work,city,state,country,street,address,suburb,postcode,phone_2,street_2,city_2,state_2,country_2,notes,tags'
 
   async function load() {
     const [c, inv, v, r] = await Promise.all([
@@ -407,6 +407,8 @@ function ClientDetail({ client, entry, onClose, onEdit, onDelete, onVisitAdded }
     ['Country', client.country],
     ['Mobile', client.phone_mobile || client.phone],
     ['Work', client.phone_work],
+    ['Second phone', client.phone_2],
+    ['Second address', [client.street_2, client.city_2, client.state_2, client.country_2].filter(Boolean).join(', ')],
     ['Email', client.email],
   ].filter(([, v]) => v)
 

@@ -36,7 +36,7 @@ export default function Sales() {
     // Load core data and exchange rates in parallel \u2014 rates won't block the page
     const [[c, inv, bks], r] = await Promise.all([
       Promise.all([
-        fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,street,address,suburb,city,state,postcode,country,prefix', order: 'name' }),
+        fetchAll('clients', { select:'id,name,email,phone,phone_mobile,phone_work,phone_2,company,street,address,suburb,city,state,postcode,country,street_2,city_2,state_2,country_2,prefix', order: 'name' }),
         (async () => {
         const PAGE = 500; let all = [], offset = 0
         while (true) {
@@ -59,7 +59,7 @@ export default function Sales() {
   }
 
   async function refreshClients() {
-    const c = await fetchAll('clients', { select:'id,name,email,phone,phone_mobile,company,street,address,suburb,city,state,postcode,country,prefix', order: 'name', cache:false })
+    const c = await fetchAll('clients', { select:'id,name,email,phone,phone_mobile,phone_work,phone_2,company,street,address,suburb,city,state,postcode,country,street_2,city_2,state_2,country_2,prefix', order: 'name', cache:false })
     setClients(c)
   }
 
@@ -720,7 +720,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
   , [clients, search])
 
   function openAdd() {
-    setForm({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'', notes:'' })
+    setForm({ name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'', email:'', phone:'', phone_mobile:'', phone_work:'', phone_2:'', address:'', street:'', suburb:'', city:'', state:'', postcode:'', country:'', street_2:'', city_2:'', state_2:'', country_2:'', notes:'' })
     setModal('add')
   }
 
@@ -743,6 +743,8 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
         suburb: form.suburb||null, city: form.city||null,
         state: form.state||null, postcode: form.postcode||null,
         country: form.country||null, notes: form.notes||null,
+        phone_2: form.phone_2||null, street_2: form.street_2||null, city_2: form.city_2||null,
+        state_2: form.state_2||null, country_2: form.country_2||null,
         tags: form.tags||[],
         updated_at: new Date().toISOString(),
       }
@@ -838,10 +840,12 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
               ['Email', selected.email],
               ['Mobile', selected.phone_mobile||selected.phone],
               ['Work phone', selected.phone_work],
+              ['Second phone', selected.phone_2],
               ['City', selected.city],
               ['State', selected.state],
               ['Country', selected.country],
               ['Address', selected.street||selected.address],
+              ['Second address', [selected.street_2, selected.city_2, selected.state_2, selected.country_2].filter(Boolean).join(', ')],
               ['Notes', selected.notes],
             ].filter(([,v]) => v).map(([label, value]) => (
               <div key={label}>
@@ -1097,6 +1101,10 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
                   <label className="form-label">Work phone</label>
                   <input className="form-input" value={form.phone_work||''} onChange={e=>setForm(f=>({...f,phone_work:e.target.value}))} />
                 </div>
+                <div className="form-group">
+                  <label className="form-label">Second phone</label>
+                  <input className="form-input" value={form.phone_2||''} onChange={e=>setForm(f=>({...f,phone_2:e.target.value}))} />
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Street address</label>
@@ -1120,6 +1128,24 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
                 <div className="form-group">
                   <label className="form-label">Country</label>
                   <input className="form-input" value={form.country||''} onChange={e=>setForm(f=>({...f,country:e.target.value}))} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Second address (optional)</label>
+                <input className="form-input" value={form.street_2||''} onChange={e=>setForm(f=>({...f,street_2:e.target.value}))} placeholder="House number, street name"/>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">City</label>
+                  <input className="form-input" value={form.city_2||''} onChange={e=>setForm(f=>({...f,city_2:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">State</label>
+                  <input className="form-input" value={form.state_2||''} onChange={e=>setForm(f=>({...f,state_2:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Country</label>
+                  <input className="form-input" value={form.country_2||''} onChange={e=>setForm(f=>({...f,country_2:e.target.value}))} />
                 </div>
               </div>
               <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} /></div>

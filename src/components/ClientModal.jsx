@@ -10,6 +10,7 @@ const BLANK = {
   name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'',
   email:'', phone:'', phone_mobile:'', phone_work:'', address:'', street:'',
   suburb:'', city:'', state:'', postcode:'', country:'', notes:'', tags:[],
+  phone_2:'', street_2:'', city_2:'', state_2:'', country_2:'',
 }
 
 // Shared by the Clients page and the Clients tab in Sales & Invoices, so a
@@ -28,6 +29,8 @@ export default function ClientModal({ onClose, onSave, existingClients = [], edi
         tags: editClient.tags || [],
       }
     : { ...BLANK })
+  const [showAddress2, setShowAddress2] = useState(() =>
+    !!(editClient?.street_2 || editClient?.city_2 || editClient?.state_2 || editClient?.country_2))
   const [saving, setSaving] = useState(false)
   const [dupWarning, setDupWarning] = useState([])
 
@@ -53,6 +56,11 @@ export default function ClientModal({ onClose, onSave, existingClients = [], edi
         state: form.state || null,
         postcode: form.postcode || null,
         country: form.country || null,
+        phone_2: form.phone_2 || null,
+        street_2: form.street_2 || null,
+        city_2: form.city_2 || null,
+        state_2: form.state_2 || null,
+        country_2: form.country_2 || null,
         notes: form.notes || null,
         tags: form.tags || [],
       }
@@ -132,6 +140,10 @@ export default function ClientModal({ onClose, onSave, existingClients = [], edi
               <label className="form-label">Work phone</label>
               <input className="form-input" value={form.phone_work||''} onChange={e=>setForm(f=>({...f,phone_work:e.target.value}))} />
             </div>
+            <div className="form-group">
+              <label className="form-label">Second phone</label>
+              <input className="form-input" value={form.phone_2||''} onChange={e=>setForm(f=>({...f,phone_2:e.target.value}))} />
+            </div>
           </div>
           <div className="form-row">
             <div className="form-group">
@@ -157,6 +169,32 @@ export default function ClientModal({ onClose, onSave, existingClients = [], edi
               <input className="form-input" value={form.country||''} onChange={e=>setForm(f=>({...f,country:e.target.value}))} />
             </div>
           </div>
+          {showAddress2 ? (
+            <>
+              <div className="form-group">
+                <label className="form-label">Second address</label>
+                <input className="form-input" value={form.street_2||''} onChange={e=>setForm(f=>({...f,street_2:e.target.value}))} placeholder="House number, street name" />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">City</label>
+                  <input className="form-input" value={form.city_2||''} onChange={e=>setForm(f=>({...f,city_2:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">State</label>
+                  <input className="form-input" value={form.state_2||''} onChange={e=>setForm(f=>({...f,state_2:e.target.value}))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Country</label>
+                  <input className="form-input" value={form.country_2||''} onChange={e=>setForm(f=>({...f,country_2:e.target.value}))} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddress2(true)}>+ Add second address</button>
+            </div>
+          )}
           <div className="form-group">
             <label className="form-label">Notes</label>
             <textarea className="form-textarea" rows={2} value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} />
