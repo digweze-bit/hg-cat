@@ -4,7 +4,7 @@ import { cacheInvalidate } from '../lib/cache'
 import { auditLog } from '../lib/audit'
 import TagInput, { CLIENT_TAG_SUGGESTIONS } from './TagInput'
 
-const PREFIXES = ['Mr','Mrs','Ms','Dr','Prof','Chief','Alhaji','Alhaja','Sir']
+const PREFIXES = ['Mr','Mrs','Ms','Miss','Dr','Prof','Chief','Alhaji','Alhaja','Sir']
 
 const BLANK = {
   name:'', prefix:'', first_name:'', last_name:'', company:'', job_title:'',

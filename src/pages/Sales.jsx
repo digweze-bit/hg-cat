@@ -1060,7 +1060,7 @@ function ClientList({ clients, invoices, onRefresh, onRefreshClients, onEditClie
                   <label className="form-label">Prefix</label>
                   <select className="form-select" value={form.prefix||''} onChange={e=>setForm(f=>({...f,prefix:e.target.value}))}>
                     <option value="">{'\u2014'}</option>
-                    {['Mr','Mrs','Ms','Dr','Prof','Chief','Alhaji','Alhaja','Sir'].map(p=><option key={p}>{p}</option>)}
+                    {['Mr','Mrs','Ms','Miss','Dr','Prof','Chief','Alhaji','Alhaja','Sir'].map(p=><option key={p}>{p}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
