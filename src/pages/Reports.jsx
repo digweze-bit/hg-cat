@@ -795,6 +795,23 @@ function outstandingReport(ctx) {
       inv.due_date ? `Due ${fmtDate(inv.due_date)}` : null,
     ].filter(Boolean).join('  ·  ')
     const pays = paysByInvoice[inv.id] || []
+    // Invoices moved over from Tessera carry only a paid-to-date total, with no
+    // payment records behind it. Show whatever amount_paid isn't covered by a
+    // dated payment as one undated line, converting the way the payment
+    // trigger does.
+    const recorded = pays.reduce((s, p) => s + Number(
+      p.currency === inv.currency ? p.amount
+        : inv.currency === 'NGN' ? p.amount_ngn
+        : p.amount_ngn / (Number(inv.exchange_rate) || 1)) || 0, 0)
+    const undated = Math.round((Number(inv.amount_paid || 0) - recorded) * 100) / 100
+    const undatedRow = undated > 0 ? [[
+      '',
+      { text: 'Not itemised', muted: true },
+      { text: '↳ Earlier payments received — dates not itemised', muted: true },
+      '',
+      { text: formatAmount(undated, inv.currency), color: 'var(--green)', muted: true },
+      '',
+    ]] : []
     return [
       [
         { text: inv.invoice_number, bold: true },
@@ -804,7 +821,8 @@ function outstandingReport(ctx) {
         { text: formatAmount(inv.amount_paid || 0, inv.currency), color: Number(inv.amount_paid) > 0 ? 'var(--green)' : undefined, muted: !(Number(inv.amount_paid) > 0) },
         { text: formatAmount(inv.balance_due, inv.currency) + (isOverdue ? '  OVERDUE' : ''), color: isOverdue ? 'var(--red)' : 'var(--amber)', bold: true },
       ],
-      ...(pays.length
+      ...undatedRow,
+      ...(pays.length || undatedRow.length
         ? pays.map(p => [
             '',
             { text: fmtDate(p.paid_at), muted: true },
