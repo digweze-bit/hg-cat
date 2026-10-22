@@ -758,8 +758,9 @@ function invoiceClient(ctx, clientId) {
 }
 
 function outstandingReport(ctx) {
-  const { invoices, payments, entityId } = ctx
+  const { invoices, payments, entityId, artworks, artistMap } = ctx
   const today = new Date().toISOString().split('T')[0]
+  const artworkArtist = Object.fromEntries(artworks.map(w => [w.id, artistMap[w.artist_id]?.name]))
   const open = invoices
     .filter(inv => isOpenInvoice(inv) && (!entityId || inv.client_id === entityId))
     .sort((a, b) => String(a.issue_date || '').localeCompare(String(b.issue_date || '')))
@@ -786,9 +787,11 @@ function outstandingReport(ctx) {
     const isOverdue = inv.due_date && inv.due_date < today
     const lines = (inv.invoice_items || [])
       .slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-      .map(it => it.title).filter(Boolean)
+      .filter(it => it.title)
+      // Title and artist, preferring the linked artwork's current artist
+      .map(it => [it.title, artworkArtist[it.artwork_id] || it.artist_name].filter(Boolean).join(' — '))
     const details = [
-      lines.length ? lines.join(', ') : null,
+      lines.length ? lines.join('; ') : null,
       inv.due_date ? `Due ${fmtDate(inv.due_date)}` : null,
     ].filter(Boolean).join('  ·  ')
     const pays = paysByInvoice[inv.id] || []
