@@ -1,6 +1,7 @@
-﻿import { useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../components/AuthProvider'
+import { supabase } from '../lib/supabase'
 
 const NAV = [
   { section: 'Catalogue' },
@@ -13,6 +14,7 @@ const NAV = [
   { path: '/admin/archive', label: 'Live Archive', icon: '\u25C8' },
   { section: 'Commerce' },
   { path: '/admin/sales', label: 'Sales & Invoices', icon: '\u25D1' },
+  { path: '/admin/shop', label: 'Online Shop', icon: '\u25A2', badge: 'shop' },
   { path: '/admin/safekeeping', label: 'Safekeeping', icon: '\u25C8' },
   { path: '/admin/crm', label: 'CRM', icon: '\u25C7' },
   { path: '/admin/audit-log', label: 'Activity log', icon: '\u25A6' },
@@ -39,6 +41,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
+  const shopCount = useShopCount()
 
   const isActive = (path) => {
     if (path === '/admin') return location.pathname === '/admin'
@@ -67,6 +70,10 @@ export default function AdminLayout() {
               >
                 <span style={{ fontSize:14, opacity:.8 }}>{item.icon}</span>
                 {item.label}
+                {item.badge === 'shop' && shopCount > 0 && (
+                  <span style={{ marginLeft:'auto', background:'#E05C2A', color:'#fff', borderRadius:10, fontSize:10, fontWeight:600, padding:'1px 7px' }}
+                    aria-label={`${shopCount} waiting`}>{shopCount}</span>
+                )}
               </div>
             )
           })}
@@ -97,6 +104,7 @@ export default function AdminLayout() {
              location.pathname.includes('artworks') ? 'Artworks' :
              location.pathname.includes('archive') ? 'Live Archive' :
              location.pathname.includes('sales') ? 'Sales & Invoices' :
+             location.pathname.includes('shop') ? 'Online Shop' :
              location.pathname.includes('consignors') ? 'Consignors' :
              location.pathname.includes('loanees') ? 'Loanees' :
              location.pathname.includes('books') ? 'Books' :
@@ -115,4 +123,26 @@ export default function AdminLayout() {
       </div>
     </div>
   )
+}
+
+// Buy requests, receipts to check, paid orders to post and new questions.
+function useShopCount() {
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    let alive = true
+    async function count() {
+      const head = { count: 'exact', head: true }
+      const res = await Promise.all([
+        supabase.from('shop_orders').select('id', head).in('status', ['requested', 'paid']),
+        supabase.from('shop_payments').select('id', head).eq('status', 'pending_review'),
+        supabase.from('shop_inquiries').select('id', head).eq('status', 'new'),
+      ])
+      if (alive) setN(res.reduce((s, r) => s + (r.count || 0), 0))
+    }
+    count()
+    const t = setInterval(count, 60000)
+    window.addEventListener('shop:changed', count)
+    return () => { alive = false; clearInterval(t); window.removeEventListener('shop:changed', count) }
+  }, [])
+  return n
 }

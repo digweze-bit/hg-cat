@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
+import CrmNotices from '../components/CrmNotices'
 
 const VISIT_TYPES = ['in-person', 'call', 'email', 'whatsapp', 'event', 'other']
 
@@ -14,6 +15,7 @@ export default function CRM() {
   const [artists, setArtists] = useState([])
   const [loading, setLoading] = useState(true)
 
+  const [view, setView] = useState('activity') // activity | notices
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState(null)
@@ -329,6 +331,28 @@ export default function CRM() {
   const engLabel = (s) => s >= 60 ? 'Hot' : s >= 30 ? 'Warm' : s > 0 ? 'Cool' : 'Cold'
   const engColor = (s) => s >= 60 ? '#2d6a4f' : s >= 30 ? '#b8862a' : s > 0 ? '#6b6760' : '#c0392b'
 
+  const viewTabs = (
+    <div style={{ display:'flex', borderBottom:'1px solid var(--line)', marginBottom:16 }}>
+      {[['activity','Activity'],['notices','Event notices']].map(([k, l]) => (
+        <button key={k} onClick={() => setView(k)}
+          style={{ padding:'8px 16px', fontSize:13, fontFamily:'inherit', cursor:'pointer', background:'none', border:'none', marginBottom:-1,
+            borderBottom: view===k ? '2px solid var(--ink)' : '2px solid transparent',
+            color: view===k ? 'var(--ink)' : 'var(--muted)', fontWeight: view===k ? 600 : 400 }}>
+          {l}
+        </button>
+      ))}
+    </div>
+  )
+
+  if (view === 'notices') return (
+    <div>
+      <div className="page-title">CRM</div>
+      <div className="page-subtitle" style={{ marginBottom:12 }}>Guest lists for events — track who was sent the notice and who replied</div>
+      {viewTabs}
+      <CrmNotices clients={clients} prospects={prospects} />
+    </div>
+  )
+
   return (
     <div style={{ display:'grid', gridTemplateColumns: activeClient ? '1fr 360px' : '1fr', gap:0, minHeight:'calc(100vh - 120px)' }}>
       <div style={{ padding: activeClient ? '0 20px 0 0' : 0 }}>
@@ -348,6 +372,8 @@ export default function CRM() {
             <button className="btn btn-primary btn-sm" onClick={() => setModal('interest')}>+ Interest</button>
           </div>
         </div>
+
+        {viewTabs}
 
         {/* ── Follow-up reminders banner ── */}
         {(overdueFollowUps.length > 0 || todayFollowUps.length > 0 || upcomingFollowUps.length > 0) && (

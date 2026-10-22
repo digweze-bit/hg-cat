@@ -509,6 +509,12 @@ comment on column public.artworks.consignor_name is 'Name of consigning owner';
 comment on column public.artworks.consignor_contact is 'Contact details for consignor';
 comment on column public.artworks.commission_rate is 'Gallery commission % on consignment sale';
 
+-- consignment_date: printed on consignment notes; falls back to created_at when null
+alter table public.artworks
+  add column if not exists consignment_date date;
+
+comment on column public.artworks.consignment_date is 'Date the work was consigned to the gallery (printed on consignment notes)';
+
 -- ── SALE PRICE CURRENCY (add to artworks) ───────────────────
 -- retail_price is always stored converted to NGN; price_currency records the
 -- currency the work was actually quoted in so labels and the public page can

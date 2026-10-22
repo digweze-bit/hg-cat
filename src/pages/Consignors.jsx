@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
+import { printConsignmentNote, consignedOn, DEFAULT_CONSIGNMENT_TERMS } from '../lib/consignmentNote'
 
 const CONSIGNOR_TYPES = ['Artist', 'Estate', 'Collector', 'Dealer', 'Institution', 'Other']
 const TERM_TYPES = ['commission', 'fixed']
@@ -17,6 +18,7 @@ export default function Consignors() {
   const [modal, setModal]           = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [saving, setSaving]         = useState(false)
+  const [note, setNote]             = useState(null)   // { consignorId, picked:Set, terms } while the note picker is open
 
   const blank = {
     name:'', type:'Collector', email:'', phone:'', address:'',
@@ -31,7 +33,7 @@ export default function Consignors() {
   async function load() {
     const [{ data: cons }, { data: aws }, { data: arts }] = await Promise.all([
       supabase.from('consignors').select('*').order('name'),
-      supabase.from('artworks').select('id,title,year,medium,availability,image_url,consignor_name,artist_id,ownership,consignment_price,commission_rate').eq('ownership','consignment'),
+      supabase.from('artworks').select('id,title,year,medium,dimensions,dimension_unit,availability,image_url,thumbnail_url,hg_code,consignor_name,artist_id,ownership,consignment_price,consignment_currency,commission_rate,consignment_date,created_at').in('ownership',['consignment','artist_owned']),
       supabase.from('artists').select('id,name'),
     ])
     setConsignors(cons || [])
@@ -109,6 +111,23 @@ export default function Consignors() {
     return `${c.commission_rate ?? 40}% commission`
   }
 
+  function worksFor(c) {
+    return c ? artworks.filter(w => w.consignor_name?.toLowerCase() === c.name?.toLowerCase()) : []
+  }
+
+  // Unsold works are ticked by default; sold ones can still be added
+  function openNote(c) {
+    const picked = new Set(worksFor(c).filter(w => w.availability !== 'Sold').map(w => w.id))
+    setNote({ consignorId: c?.id || '', picked, terms: DEFAULT_CONSIGNMENT_TERMS.join('\n') })
+  }
+
+  function printNote() {
+    const c = consignors.find(x => x.id === note.consignorId)
+    const works = worksFor(c).filter(w => note.picked.has(w.id))
+      .map(w => ({ ...w, artist_name: artistMap[w.artist_id] || '' }))
+    printConsignmentNote({ consignor: c, works, terms: note.terms.split('\n') })
+  }
+
   const saleTypeLabel = { primary:'Primary', secondary:'Secondary', both:'Primary & Secondary' }
 
   if (loading) return <div style={{color:'var(--muted)'}}>Loading{'\u2026'}</div>
@@ -123,7 +142,10 @@ export default function Consignors() {
             <div className="page-title">Consignors</div>
             <div className="page-subtitle">{consignors.length} on record</div>
           </div>
-          <button className="btn btn-primary" onClick={openNew}>+ Add consignor</button>
+          <div style={{display:'flex', gap:8}}>
+            <button className="btn btn-outline" onClick={()=>openNote(selected)}>Consignment note</button>
+            <button className="btn btn-primary" onClick={openNew}>+ Add consignor</button>
+          </div>
         </div>
 
         <input className="form-input" placeholder="Search consignors..." value={search}
@@ -173,7 +195,10 @@ export default function Consignors() {
               <div className="page-title">{selected.name}</div>
               <div className="page-subtitle">{selected.type} {'\u00B7'} {saleTypeLabel[selected.sale_type]} {'\u00B7'} {termSummary(selected)}</div>
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={()=>setSelected(null)}>{'\u2715'} Close</button>
+            <div style={{display:'flex', gap:8}}>
+              <button className="btn btn-outline btn-sm" onClick={()=>openNote(selected)} disabled={!consignorArtworks.length}>Print consignment note</button>
+              <button className="btn btn-ghost btn-sm" onClick={()=>setSelected(null)}>{'\u2715'} Close</button>
+            </div>
           </div>
 
           {/* Contact strip */}
@@ -237,6 +262,77 @@ export default function Consignors() {
           </div>
         </div>
       )}
+
+      {/* \u2500\u2500 MODAL \u2014 consignment note \u2500\u2500 */}
+      {note && (() => {
+        const c = consignors.find(x => x.id === note.consignorId)
+        const works = worksFor(c)
+        const allPicked = works.length > 0 && works.every(w => note.picked.has(w.id))
+        const toggle = id => setNote(n => {
+          const picked = new Set(n.picked)
+          if (picked.has(id)) picked.delete(id); else picked.add(id)
+          return { ...n, picked }
+        })
+        return (
+          <div className="modal-overlay">
+            <div className="modal" style={{maxWidth:720}}>
+              <div className="modal-header">
+                <div className="modal-title">Consignment note</div>
+                <button className="btn btn-ghost btn-icon" onClick={()=>setNote(null)}>{'\u2715'}</button>
+              </div>
+              <div className="modal-body" style={{display:'flex', flexDirection:'column', gap:14}}>
+                <div className="form-group">
+                  <label className="form-label">Consignor</label>
+                  <select className="form-select" value={note.consignorId}
+                    onChange={e => openNote(consignors.find(x => x.id === e.target.value) || null)}>
+                    <option value="">{'\u2014'} select consignor {'\u2014'}</option>
+                    {consignors.map(x => <option key={x.id} value={x.id}>{x.name}{x.type ? ` (${x.type})` : ''}</option>)}
+                  </select>
+                </div>
+
+                {c && (
+                  <div style={{border:'1px solid var(--line)', borderRadius:4, maxHeight:340, overflowY:'auto'}}>
+                    <label style={{display:'flex', alignItems:'center', gap:10, padding:'9px 12px', borderBottom:'1px solid var(--line-soft)', background:'var(--surface-0,#f8f7f5)', fontSize:12, fontWeight:600, cursor:'pointer', position:'sticky', top:0}}>
+                      <input type="checkbox" style={{width:'auto'}} checked={allPicked} disabled={!works.length}
+                        onChange={() => setNote(n => ({ ...n, picked: allPicked ? new Set() : new Set(works.map(w => w.id)) }))}/>
+                      Select all ({note.picked.size} of {works.length} selected)
+                    </label>
+                    {works.length === 0 && (
+                      <div style={{padding:24, textAlign:'center', color:'var(--muted)', fontSize:13}}>No artworks linked to this consignor.</div>
+                    )}
+                    {works.map(w => (
+                      <label key={w.id} style={{display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderBottom:'1px solid var(--line-soft)', cursor:'pointer'}}>
+                        <input type="checkbox" style={{width:'auto'}} checked={note.picked.has(w.id)} onChange={() => toggle(w.id)}/>
+                        {(w.thumbnail_url || w.image_url)
+                          ? <img src={w.thumbnail_url || w.image_url} alt="" style={{width:36, height:36, objectFit:'cover', borderRadius:2}}/>
+                          : <div style={{width:36, height:36, background:'var(--surface-1,#f0ece7)', borderRadius:2}}/>}
+                        <div style={{flex:1, minWidth:0}}>
+                          <div style={{fontSize:13, fontStyle:'italic'}}>{w.title}{w.year ? `, ${w.year}` : ''}</div>
+                          <div style={{fontSize:11, color:'var(--muted)'}}>{artistMap[w.artist_id] || '\u2014'} {'\u00b7'} consigned {consignedOn(w) || '\u2014'}</div>
+                        </div>
+                        <span style={{fontSize:11, color: w.availability === 'Sold' ? '#c0392b' : 'var(--muted)'}}>{w.availability}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {c && (
+                  <div className="form-group">
+                    <label className="form-label">Terms of consignment <span style={{textTransform:'none', letterSpacing:0, fontWeight:400}}>{'\u2014'} one per line; the commission / fixed terms are added automatically</span></label>
+                    <textarea className="form-textarea" rows={6} value={note.terms} onChange={e => setNote(n => ({ ...n, terms: e.target.value }))}/>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-outline" onClick={()=>setNote(null)}>Cancel</button>
+                <button className="btn btn-primary" onClick={printNote} disabled={!c || note.picked.size === 0}>
+                  Print note ({note.picked.size})
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* \u2500\u2500 MODAL \u2014 add / edit consignor \u2500\u2500 */}
       {modal && (

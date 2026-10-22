@@ -28,6 +28,16 @@ const GROUPS = [
     ],
   },
   {
+    id: 'client',
+    label: 'Client Reports',
+    desc: 'Purchases by client and statements of outstanding balances',
+    entity: 'client',
+    reports: [
+      { id: 'sales',       label: 'Sales by client',      period: true  },
+      { id: 'outstanding', label: 'Outstanding payments', period: false },
+    ],
+  },
+  {
     id: 'sales',
     label: 'Sales Reports',
     desc: 'Revenue and outstanding balances across all invoices',
@@ -122,6 +132,7 @@ export default function Reports() {
   const [clientId, setClientId] = useState('')
   const [sorts, setSorts]       = useState(() => Object.fromEntries(Object.entries(SORTS).map(([k, v]) => [k, v[0].id])))
   const [safekeeping, setSafekeeping] = useState([])
+  const [payments, setPayments] = useState([])
   const [skStatus, setSkStatus] = useState('in_storage')
   const [loading, setLoading]   = useState(true)
   const [dateFrom, setDateFrom] = useState(() => {
@@ -132,17 +143,19 @@ export default function Reports() {
 
   useEffect(() => {
     async function load() {
-      const [a, w, inv, cons, loan, sk] = await Promise.all([
+      const [a, w, inv, cons, loan, sk, pay] = await Promise.all([
         fetchAll('artists', { order: 'name' }),
         fetchAll('artworks', { order: 'created_at' }),
         supabase.from('invoices')
-          .select('*, clients(name, email, phone), invoice_items(id, artwork_id, title, artist_name, consignor_name, item_type, delivered, delivered_at, collected_by, line_total, sort_order, thumbnail_url, image_url, cover_url)')
+          .select('*, clients(name, prefix, company, email, phone, phone_mobile, street, address, city, state, country), invoice_items(id, artwork_id, title, artist_name, consignor_name, item_type, delivered, delivered_at, collected_by, line_total, sort_order, thumbnail_url, image_url, cover_url)')
           .order('created_at', { ascending: false })
           .limit(2000)
           .then(r => r.data || []),
         supabase.from('consignors').select('*').order('name').then(r => r.data || []),
         supabase.from('loanees').select('*').order('name').then(r => r.data || []),
         supabase.from('safekeeping_items').select('*, clients(name, email, phone, phone_mobile)').order('received_at', { ascending: false }).then(r => r.data || []),
+        // Statements go to clients, so never serve payments from cache
+        fetchAll('payments', { order: 'paid_at', cache: false }),
       ])
       // Overdue is derived, matching the Safekeeping page
       const today = new Date().toISOString().split('T')[0]
@@ -151,6 +164,7 @@ export default function Reports() {
         status: x.status === 'in_storage' && x.expected_return && x.expected_return < today ? 'overdue' : x.status,
       }))
       setArtists(a); setArtworks(w); setInvoices(inv); setConsignors(cons); setLoanees(loan); setSafekeeping(skRows)
+      setPayments(pay)
       setLoading(false)
     }
     load()
@@ -218,9 +232,24 @@ export default function Reports() {
     return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
   }, [sub.id, items, safekeeping, skStatus])
 
+  // Clients with issued invoices, for the Client Reports picker. The count
+  // shows open invoices on the outstanding report and issued invoices otherwise.
+  const invoiceClients = useMemo(() => {
+    const map = {}
+    invoices.forEach(inv => {
+      if (!inv.client_id || !ISSUED.includes(inv.status)) return
+      if (!map[inv.client_id]) map[inv.client_id] = { id: inv.client_id, name: inv.clients?.name || DASH, issued: 0, open: 0 }
+      map[inv.client_id].issued++
+      if (isOpenInvoice(inv)) map[inv.client_id].open++
+    })
+    return Object.values(map).sort((a, b) => a.name.localeCompare(b.name))
+  }, [invoices])
+
   const inPeriod    = d => d && d >= dateFrom && d <= dateTo
   const entityLabel = !entityId ? null
-    : group.entity === 'artist' ? artistMap[entityId]?.name : entityId
+    : group.entity === 'artist' ? artistMap[entityId]?.name
+    : group.entity === 'client' ? invoiceClients.find(c => c.id === entityId)?.name
+    : entityId
 
   const report = useMemo(() => {
     if (loading) return null
@@ -229,9 +258,9 @@ export default function Reports() {
       artworks, items, invoices, artistMap,
       matchesEntity, itemMatchesEntity, inPeriod, dateFrom, dateTo,
       loanees, loaneeId, clientId, sortId: sub.sort && sorts[sub.sort],
-      safekeeping, skStatus,
+      safekeeping, skStatus, payments, entityId,
     })
-  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId, clientId, sorts, safekeeping, skStatus])
+  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId, clientId, sorts, safekeeping, skStatus, payments])
 
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'…'}</div>
 
@@ -255,7 +284,7 @@ export default function Reports() {
       </div>
 
       {/* Group selector */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:16 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:10, marginBottom:16 }}>
         {GROUPS.map(g => (
           <div key={g.id} onClick={() => pickGroup(g)}
             style={{ padding:'14px 16px', border:`1px solid ${groupId===g.id?'var(--ink)':'var(--line)'}`, borderRadius:3, cursor:'pointer', background: groupId===g.id?'var(--ink)':'var(--white)', transition:'all 150ms' }}>
@@ -288,6 +317,20 @@ export default function Reports() {
             <select className="form-select" style={{ width:220 }} value={entityId} onChange={e => setEntityId(e.target.value)}>
               <option value="">All consignors</option>
               {consignorNames.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </>
+        )}
+
+        {group.entity === 'client' && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Client:</span>
+            <select className="form-select" style={{ width:260 }} value={entityId} onChange={e => setEntityId(e.target.value)}>
+              <option value="">All clients</option>
+              {invoiceClients
+                .filter(c => sub.id !== 'outstanding' || c.open > 0 || c.id === entityId)
+                .map(c => <option key={c.id} value={c.id}>
+                  {c.name} ({sub.id === 'outstanding' ? `${c.open} open` : c.issued})
+                </option>)}
             </select>
           </>
         )}
@@ -361,6 +404,10 @@ function buildReport(ctx) {
     if (subId === 'collection')  return entityCollectionReport(ctx)
     if (subId === 'returns')     return returnsReport(ctx)
   }
+  if (groupId === 'client') {
+    if (subId === 'sales')       return clientSalesReport(ctx)
+    if (subId === 'outstanding') return outstandingReport(ctx)
+  }
   if (groupId === 'sales') {
     if (subId === 'sales')      return soldReport(ctx)
     if (subId === 'receivable') return receivableReport(ctx)
@@ -377,7 +424,8 @@ function buildReport(ctx) {
 }
 
 function scopeLine(ctx) {
-  return ctx.entityLabel || (ctx.group.entity === 'artist' ? 'All artists' : ctx.group.entity === 'consignor' ? 'All consignors' : null)
+  const all = { artist: 'All artists', consignor: 'All consignors', client: 'All clients' }
+  return ctx.entityLabel || all[ctx.group.entity] || null
 }
 function periodLine(ctx) {
   return ctx.sub.period ? `Period: ${ctx.dateFrom} to ${ctx.dateTo}` : null
@@ -605,6 +653,194 @@ function receivableReport(ctx) {
       footer: ['', '', '', 'Subtotal', { text: formatAmount(g.total, g.currency), color: 'var(--amber)', bold: true }, '', ''],
     })),
     empty: 'No outstanding balances',
+  }
+}
+
+// ── CLIENT REPORTS ──────────────────────────────────────────────────────────
+
+// Invoices that count as a purchase: issued to the client, whether paid or not
+const ISSUED = ['sent', 'partial', 'paid']
+const PAY_STATUS = { sent: 'Unpaid', partial: 'Part paid', paid: 'Paid' }
+
+function isOpenInvoice(inv) {
+  return ['sent', 'partial'].includes(inv.status) && Number(inv.balance_due) > 0
+}
+
+// Client-facing dates, e.g. 4 Mar 2026
+function fmtDate(d) {
+  if (!d) return DASH
+  return new Date(String(d).slice(0, 10) + 'T00:00:00')
+    .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function clientName(c) {
+  if (!c) return 'Unknown client'
+  return [c.prefix, c.name].filter(Boolean).join(' ')
+}
+
+// Name, company, address and contact line for a statement heading
+function clientBlock(c) {
+  if (!c) return null
+  const address = [c.street || c.address, c.city, c.state, c.country].filter(Boolean).join(', ')
+  return [clientName(c), c.company, address, c.email, c.phone_mobile || c.phone].filter(Boolean).join('  ·  ')
+}
+
+// Splits rows into one bucket per client and currency, ordered by client name
+// then currency, so every section carries a single-currency total.
+function byClientAndCurrency(list, clientOf, currencyOf) {
+  const buckets = {}
+  list.forEach(x => {
+    const k = `${clientOf(x).key}|${currencyOf(x)}`
+    if (!buckets[k]) buckets[k] = { client: clientOf(x), currency: currencyOf(x), rows: [] }
+    buckets[k].rows.push(x)
+  })
+  return Object.values(buckets).sort((a, b) =>
+    a.client.name.localeCompare(b.client.name) || a.currency.localeCompare(b.currency))
+}
+
+function currencyTotals(list, cur, amount) {
+  const totals = {}
+  list.forEach(x => { totals[cur(x)] = (totals[cur(x)] || 0) + Number(amount(x) || 0) })
+  return Object.entries(totals).sort((a, b) => a[0].localeCompare(b[0]))
+}
+
+function clientSalesReport(ctx) {
+  const { items, inPeriod, entityId } = ctx
+  const rows = items
+    .filter(it => ISSUED.includes(it.invoice_status) && inPeriod(it.issue_date) && (!entityId || it.client_id === entityId))
+    .sort((a, b) =>
+      String(a.issue_date || '').localeCompare(String(b.issue_date || '')) ||
+      String(a.invoice_number).localeCompare(String(b.invoice_number)) ||
+      (a.sort_order || 0) - (b.sort_order || 0))
+
+  const cur = it => it.currency || 'NGN'
+  const totals = currencyTotals(rows, cur, it => it.line_total)
+  const invoiceCount = new Set(rows.map(it => it.invoice_number)).size
+  const clientOf = it => ({ key: it.client_id || it.client_name, name: it.client_name })
+
+  const sections = byClientAndCurrency(rows, clientOf, cur).map(b => {
+    const total = b.rows.reduce((s, it) => s + Number(it.line_total || 0), 0)
+    return {
+      heading: entityId
+        ? `${b.currency} purchases — ${formatAmount(total, b.currency)}`
+        : `${b.client.name} — ${b.currency} — ${b.rows.length} item${b.rows.length !== 1 ? 's' : ''}`,
+      columns: [THUMB_COL, 'Item', 'Artist', 'Invoice', 'Date', 'Payment', 'Price'],
+      rows: b.rows.map(it => [
+        itemThumb(it),
+        { text: it.title, bold: true },
+        { text: it.artist_label, muted: true },
+        { text: it.invoice_number },
+        { text: fmtDate(it.issue_date), muted: true },
+        { text: PAY_STATUS[it.invoice_status] || it.invoice_status, color: it.invoice_status === 'paid' ? 'var(--green)' : 'var(--amber)' },
+        { text: formatAmount(it.line_total, it.currency), bold: true },
+      ]),
+      footer: ['', '', '', '', '', 'Total', { text: formatAmount(total, b.currency), bold: true }],
+    }
+  })
+
+  return {
+    title: 'Sales by client',
+    subtitle: [entityId ? clientBlock(invoiceClient(ctx, entityId)) : 'All clients', periodLine(ctx)].filter(Boolean).join('  ·  '),
+    note: 'Covers every invoice issued in the period, paid or not; draft and cancelled invoices are excluded. Prices are line prices before any invoice-level discount or VAT, in the currency of each invoice.',
+    stats: [
+      { n: rows.length, l: 'Items purchased', color: 'var(--green)' },
+      { n: invoiceCount, l: 'Invoices' },
+      ...(entityId ? [] : [{ n: new Set(rows.map(it => it.client_id || it.client_name)).size, l: 'Clients' }]),
+      ...totals.map(([c, t]) => ({ n: formatAmount(t, c), l: `${c} total` })),
+    ],
+    sections,
+    empty: entityId ? 'No purchases by this client in this period' : 'No sales in this period',
+  }
+}
+
+function invoiceClient(ctx, clientId) {
+  return ctx.invoices.find(inv => inv.client_id === clientId)?.clients || null
+}
+
+function outstandingReport(ctx) {
+  const { invoices, payments, entityId } = ctx
+  const today = new Date().toISOString().split('T')[0]
+  const open = invoices
+    .filter(inv => isOpenInvoice(inv) && (!entityId || inv.client_id === entityId))
+    .sort((a, b) => String(a.issue_date || '').localeCompare(String(b.issue_date || '')))
+
+  const openIds = new Set(open.map(inv => inv.id))
+  const paysByInvoice = {}
+  payments.forEach(p => {
+    if (!openIds.has(p.invoice_id)) return
+    if (!paysByInvoice[p.invoice_id]) paysByInvoice[p.invoice_id] = []
+    paysByInvoice[p.invoice_id].push(p)
+  })
+  Object.values(paysByInvoice).forEach(ps => ps.sort((a, b) => String(a.paid_at || '').localeCompare(String(b.paid_at || ''))))
+
+  const cur = inv => inv.currency || 'NGN'
+  const totals = currencyTotals(open, cur, inv => inv.balance_due)
+  const overdue = open.filter(inv => inv.due_date && inv.due_date < today).length
+  const lastPayment = Object.values(paysByInvoice).flat()
+    .reduce((m, p) => (p.paid_at && p.paid_at > m ? p.paid_at : m), '')
+  const clientOf = inv => ({ key: inv.client_id || inv.clients?.name, name: clientName(inv.clients) })
+
+  // Each open invoice is followed by the payments received against it, so the
+  // client can see at a glance what is owed and what has already been paid.
+  const invoiceRows = inv => {
+    const isOverdue = inv.due_date && inv.due_date < today
+    const lines = (inv.invoice_items || [])
+      .slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      .map(it => it.title).filter(Boolean)
+    const details = [
+      lines.length ? lines.join(', ') : null,
+      inv.due_date ? `Due ${fmtDate(inv.due_date)}` : null,
+    ].filter(Boolean).join('  ·  ')
+    const pays = paysByInvoice[inv.id] || []
+    return [
+      [
+        { text: inv.invoice_number, bold: true },
+        { text: fmtDate(inv.issue_date) },
+        { text: details || DASH },
+        { text: formatAmount(inv.total, inv.currency) },
+        { text: formatAmount(inv.amount_paid || 0, inv.currency), color: Number(inv.amount_paid) > 0 ? 'var(--green)' : undefined, muted: !(Number(inv.amount_paid) > 0) },
+        { text: formatAmount(inv.balance_due, inv.currency) + (isOverdue ? '  OVERDUE' : ''), color: isOverdue ? 'var(--red)' : 'var(--amber)', bold: true },
+      ],
+      ...(pays.length
+        ? pays.map(p => [
+            '',
+            { text: fmtDate(p.paid_at), muted: true },
+            { text: ['↳ Payment received', p.method && p.method !== 'other' ? `by ${p.method}` : null, p.reference ? `ref ${p.reference}` : null].filter(Boolean).join('  ·  '), muted: true },
+            '',
+            { text: formatAmount(p.amount, p.currency || inv.currency), color: 'var(--green)', muted: true },
+            '',
+          ])
+        : [['', '', { text: '↳ No payments received yet', muted: true }, '', '', '']]),
+    ]
+  }
+
+  const sections = byClientAndCurrency(open, clientOf, cur).map(b => {
+    const total = b.rows.reduce((s, inv) => s + Number(inv.balance_due || 0), 0)
+    const n = b.rows.length
+    const summary = `${formatAmount(total, b.currency)} outstanding on ${n} invoice${n !== 1 ? 's' : ''}`
+    const contact = entityId ? '' : [b.rows[0].clients?.email, b.rows[0].clients?.phone_mobile || b.rows[0].clients?.phone].filter(Boolean).join(' · ')
+    return {
+      heading: entityId
+        ? `${b.currency} — ${summary}`
+        : `${b.client.name} — ${b.currency} — ${summary}${contact ? `  (${contact})` : ''}`,
+      columns: ['Invoice', 'Date', 'Details', 'Invoice total', 'Paid', 'Balance due'],
+      rows: b.rows.flatMap(invoiceRows),
+      footer: ['', '', '', '', 'Total due', { text: formatAmount(total, b.currency), color: 'var(--amber)', bold: true }],
+    }
+  })
+
+  return {
+    title: entityId ? 'Statement of outstanding balances' : 'Outstanding payments',
+    subtitle: [entityId ? clientBlock(invoiceClient(ctx, entityId)) : 'All clients', `As at ${fmtDate(today)}`].filter(Boolean).join('  ·  '),
+    note: 'Balances are shown in the currency of each invoice and are not converted. Each open invoice is followed by the payments received against it.',
+    stats: [
+      ...totals.map(([c, t]) => ({ n: formatAmount(t, c), l: `${c} outstanding`, color: 'var(--amber)' })),
+      { n: open.length, l: 'Open invoices' },
+      { n: overdue, l: 'Overdue', color: overdue ? 'var(--red)' : undefined },
+      ...(entityId ? [{ n: lastPayment ? fmtDate(lastPayment) : 'None', l: 'Last payment received' }] : [{ n: new Set(open.map(inv => inv.client_id)).size, l: 'Clients' }]),
+    ],
+    sections,
+    empty: entityId ? 'This client has no outstanding balances' : 'No outstanding balances',
   }
 }
 
@@ -954,7 +1190,7 @@ function ReportView({ report }) {
                   {sec.footer && (
                     <tfoot>
                       <tr>{sec.footer.map((c, ci) => (
-                        <td key={ci} style={{ ...cellStyle(c), fontWeight:600, borderTop:'2px solid var(--line)', textAlign: cellText(c) === 'Total' || cellText(c) === 'Subtotal' ? 'right' : 'left' }}>{cellText(c)}</td>
+                        <td key={ci} style={{ ...cellStyle(c), fontWeight:600, borderTop:'2px solid var(--line)', textAlign: /^(Total|Subtotal)/.test(cellText(c)) ? 'right' : 'left' }}>{cellText(c)}</td>
                       ))}</tr>
                     </tfoot>
                   )}

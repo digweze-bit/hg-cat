@@ -31,6 +31,7 @@ export default function ArtworkPage() {
   const [lightbox, setLightbox] = useState(false)
   const [siblings, setSiblings] = useState([])
   const [inquiryOpen, setInquiryOpen] = useState(false)
+  const [shopListingId, setShopListingId] = useState(null)
 
   useEffect(() => {
     setLoading(true)
@@ -39,7 +40,9 @@ export default function ArtworkPage() {
     setLightbox(false)
     setSiblings([])
     setInquiryOpen(false)
+    setShopListingId(null)
     window.scrollTo(0, 0)
+    supabase.rpc('shop_listing_for_artwork', { p_artwork_id: id }).then(({ data }) => setShopListingId(data || null))
 
     async function load() {
       // Read as anon by default so this page never holds an auth session — a
@@ -265,6 +268,16 @@ export default function ArtworkPage() {
               {artwork.availability}
             </span>
           </div>
+
+          {/* Listed in the online shop — link to its buy page */}
+          {shopListingId && (
+            <div className="no-print" style={{ marginTop:16, display:'flex', justifyContent:'center' }}>
+              <button onClick={() => navigate(`/shop/${shopListingId}`)}
+                style={{ padding:'9px 22px', borderRadius:3, border:'1px solid #1a1714', background:'#1a1714', color:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                Buy online
+              </button>
+            </div>
+          )}
 
           {/* Actions — Share / QR / Print / Inquire */}
           <div className="no-print" style={{ marginTop:16, display:'flex', gap:8, flexWrap:'wrap', justifyContent:'center' }}>

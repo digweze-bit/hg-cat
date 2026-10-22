@@ -39,6 +39,9 @@ const ArtworkPage  = lazy(() => import('./pages/ArtworkPage'))
 const BookPage     = lazy(() => import('./pages/BookPage'))
 const FormSign     = lazy(() => import('./pages/FormSign'))
 const CatalogueBuilder = lazy(() => import('./pages/CatalogueBuilder'))
+const Shop         = lazy(() => import('./pages/Shop'))
+const ShopListing  = lazy(() => import('./pages/ShopListing'))
+const ShopOrder    = lazy(() => import('./pages/ShopOrder'))
 
 function PageLoader() {
   return (
@@ -73,6 +76,8 @@ export default function App() {
             <Route path="/artwork/:id" element={<ArtworkPage />} />
             <Route path="/book/:id" element={<BookPage />} />
             <Route path="/sign/:token" element={<FormSign />} />
+            <Route path="/shop/order/:token" element={<ShopOrder />} />
+            <Route path="/shop/:listingId" element={<ShopListing />} />
             {/* Auth lives here and nowhere else: public routes above never
                 mount AuthProvider, so they never start a token refresh. */}
             <Route element={<AdminAuthLayout />}>
@@ -88,6 +93,7 @@ export default function App() {
                 <Route path="archive" element={<Archive />} />
 
                 <Route path="sales" element={<Sales />} />
+                <Route path="shop" element={<Shop />} />
                 <Route path="clients" element={<Clients />} />
                 <Route path="safekeeping" element={<Safekeeping />} />
                 <Route path="crm" element={<CRM />} />

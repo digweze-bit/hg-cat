@@ -6,13 +6,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
+import { printConsignmentNote } from '../lib/consignmentNote'
 
 const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS', 'Returned']
 const LOANEE_TYPES = ['Individual', 'Institution', 'Museum', 'Gallery', 'Corporate', 'Other']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
 const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
-const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', price_currency:'NGN', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'', loan_price:'', loan_commission_rate:0 }
+const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', price_currency:'NGN', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, consignment_date:'', is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'', loan_price:'', loan_commission_rate:0 }
 
 
 function convertDimensions(str, fromUnit, toUnit) {
@@ -362,7 +363,7 @@ export default function Artworks() {
   async function load() {
     const [a, w, l] = await Promise.all([
       fetchAll('artists', { order: 'name' }),
-      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,image_url,price,price_currency,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date,loan_price,loan_commission_rate', order: 'sort_order', onUpdate: w => setArtworks(w) }),
+      fetchAll('artworks', { select:'id,title,artist_id,year,medium,category,dimensions,dimension_unit,thumbnail_url,full_image_url,availability,ownership,notes,created_at,consignor_name,consignment_price,commission_rate,consignment_currency,consignment_date,image_url,price,price_currency,retail_price,inventory_price,valuation,hg_code,is_framed,frame_cost,tessera_id,location,tags,series,sort_order,visible,writeup,loaned_to,returned_at,loanee_id,loan_date,loan_due_date,loan_price,loan_commission_rate', order: 'sort_order', onUpdate: w => setArtworks(w) }),
       supabase.from('loanees').select('*').order('name').then(r => r.data || []),
     ])
     setArtists(a)
@@ -530,6 +531,7 @@ export default function Artworks() {
         consignor_name:    (form.ownership === 'consignment' || form.ownership === 'artist_owned') ? form.consignor_name || null : null,
         consignment_currency: (form.ownership === 'consignment' || form.ownership === 'artist_owned') ? form.consignment_currency || 'NGN' : null,
         commission_rate:   (form.ownership === 'consignment' || form.ownership === 'artist_owned') ? Number(form.commission_rate ?? 40) : null,
+        consignment_date:  (form.ownership === 'consignment' || form.ownership === 'artist_owned') ? form.consignment_date || null : null,
         tessera_id:        form.tessera_id || null,
         hg_code:           form.hg_code || null,
         loaned_to:         loanedToName,
@@ -592,6 +594,7 @@ export default function Artworks() {
       consignor_contact: artwork.consignor_contact || '',
       commission_rate: artwork.commission_rate ?? 40,
       consignment_currency: artwork.consignment_currency || 'NGN',
+      consignment_date: artwork.consignment_date || '',
       is_framed: artwork.is_framed || false,
       frame_cost: artwork.frame_cost || '',
       category: artwork.category || '',
@@ -1029,14 +1032,14 @@ export default function Artworks() {
                       </div>
                     </label>
                     <label style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', padding:'9px 12px', border:`1px solid ${form.ownership==='artist_owned'?'var(--green,#2d6a4f)':'var(--line)'}`, borderRadius:3, background: form.ownership==='artist_owned'?'#edf7f0':'var(--white)' }}>
-                      <input type="radio" name="ownership" value="artist_owned" checked={form.ownership==='artist_owned'} onChange={()=>setForm(f=>({...f,ownership:'artist_owned',consignor_name:artistMap[f.artist_id]?.name||f.consignor_name||''}))} style={{ width:'auto', accentColor:'var(--green,#2d6a4f)' }} />
+                      <input type="radio" name="ownership" value="artist_owned" checked={form.ownership==='artist_owned'} onChange={()=>setForm(f=>({...f,ownership:'artist_owned',consignor_name:artistMap[f.artist_id]?.name||f.consignor_name||'',consignment_date:f.consignment_date||new Date().toISOString().slice(0,10)}))} style={{ width:'auto', accentColor:'var(--green,#2d6a4f)' }} />
                       <div>
                         <div style={{ fontSize:12, fontWeight:500, color: form.ownership==='artist_owned'?'var(--green,#2d6a4f)':'var(--ink)' }}>Artist owned</div>
                         <div style={{ fontSize:10, color: form.ownership==='artist_owned'?'#2d6a4f':'var(--muted)' }}>Consigned directly by artist</div>
                       </div>
                     </label>
                     <label style={{ display:'flex', alignItems:'center', gap:7, cursor:'pointer', padding:'9px 12px', border:`1px solid ${form.ownership==='consignment'?'var(--amber)':'var(--line)'}`, borderRadius:3, background: form.ownership==='consignment'?'#fdf3e0':'var(--white)' }}>
-                      <input type="radio" name="ownership" value="consignment" checked={form.ownership==='consignment'} onChange={()=>setForm(f=>({...f,ownership:'consignment'}))} style={{ width:'auto', accentColor:'var(--amber)' }} />
+                      <input type="radio" name="ownership" value="consignment" checked={form.ownership==='consignment'} onChange={()=>setForm(f=>({...f,ownership:'consignment',consignment_date:f.consignment_date||new Date().toISOString().slice(0,10)}))} style={{ width:'auto', accentColor:'var(--amber)' }} />
                       <div>
                         <div style={{ fontSize:12, fontWeight:500, color: form.ownership==='consignment'?'var(--amber)':'var(--ink)' }}>Consignment</div>
                         <div style={{ fontSize:10, color: form.ownership==='consignment'?'#b8860b':'var(--muted)' }}>Owner retains title</div>
@@ -1054,6 +1057,10 @@ export default function Artworks() {
                         <div className="form-group">
                           <label className="form-label">Consignor contact</label>
                           <input className="form-input" value={form.consignor_contact||''} onChange={e=>setForm(f=>({...f,consignor_contact:e.target.value}))} placeholder="Phone or email" />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Date consigned</label>
+                          <input className="form-input" type="date" value={form.consignment_date||''} onChange={e=>setForm(f=>({...f,consignment_date:e.target.value}))} />
                         </div>
                       </div>
                       {/* Commission vs Fixed price */}
@@ -1090,6 +1097,12 @@ export default function Artworks() {
                           })() : null}
                         </div>}
                         {Number(form.commission_rate) === 0 && <div style={{ fontSize:10, color:'var(--amber)', marginTop:8 }}>Fixed price — gallery takes no commission</div>}
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                        <button type="button" className="btn btn-outline btn-sm" disabled={!form.consignor_name?.trim()}
+                          onClick={() => printSingleConsignmentNote(form, artistMap)}>
+                          Print consignment note
+                        </button>
                       </div>
                     </>
                   )}
@@ -1203,6 +1216,31 @@ function printArtworkLabel(w, artistMap) {
       w.dimensions ? w.dimensions + ' ' + (w.dimension_unit === 'cm' ? 'cm' : 'in') : '',
     ],
     filename: w.title,
+  })
+}
+
+// Consignment note for the work being edited — uses what's on the form, so it
+// prints straight after filling in the consignment, saved or not. The
+// consignor's terms and contact come from the Consignors list when the name matches.
+async function printSingleConsignmentNote(form, artistMap) {
+  const name = form.consignor_name.trim()
+  // Open before the lookup so the popup still counts as part of the click
+  const win = window.open('', '_blank', 'width=900,height=750')
+  if (!win) { alert('Please allow popups to print the consignment note'); return }
+  const { data } = await supabase.from('consignors').select('*')
+  const saved = (data || []).find(c => c.name?.toLowerCase() === name.toLowerCase())
+  const contact = form.consignor_contact?.trim() || ''
+  const consignor = saved || {
+    name,
+    email: contact.includes('@') ? contact : '',
+    phone: contact.includes('@') ? '' : contact,
+    term_type: Number(form.commission_rate) === 0 ? 'fixed' : 'commission',
+    commission_rate: Number(form.commission_rate ?? 40),
+  }
+  printConsignmentNote({
+    consignor,
+    works: [{ ...form, artist_name: artistMap[form.artist_id]?.name || '' }],
+    win,
   })
 }
 
