@@ -1244,6 +1244,16 @@ async function printSingleConsignmentNote(form, artistMap) {
   })
 }
 
+// Same rule as the on-screen table: the free-text price wins, otherwise the
+// stored retail_price with its quoted currency's symbol
+function listPrice(w) {
+  if (w.price) return w.price
+  const amount = Number(w.retail_price) || 0
+  if (!amount) return '—'
+  const cur = String(w.price_currency || 'NGN').toUpperCase()
+  return `${({NGN:'₦',USD:'$',GBP:'£',EUR:'€'})[cur] || ''}${amount.toLocaleString()}`
+}
+
 function printArtworkList(artworks, artistMap, filters) {
   const title = filters.location
     ? `Artwork List — ${filters.location}`
@@ -1272,7 +1282,7 @@ function printArtworkList(artworks, artistMap, filters) {
       <td>${w.dimensions ? escH(w.dimensions + ' ' + (w.dimension_unit === 'cm' ? 'cm' : 'in')) : '—'}</td>
       ${hideLocationCol ? '' : `<td>${escH(w.location || '—')}</td>`}
       <td style="color:${w.availability === 'Available' ? '#2d6a4f' : w.availability === 'Sold' ? '#8b1a1a' : '#92600a'};font-weight:500">${escH(w.availability || '—')}</td>
-      <td>${escH(w.price || '—')}</td>
+      <td>${escH(listPrice(w))}</td>
     </tr>`).join('')
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title}</title>
