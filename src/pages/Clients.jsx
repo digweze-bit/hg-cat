@@ -660,6 +660,7 @@ function CurrencyTotals({ title, totals, note, empty }) {
 
 
 function InvoiceTable({ title, invoices, empty, highlightOverdue = false, footer = null }) {
+  const [viewing, setViewing] = useState(null)
   return (
     <div className="card" style={{ padding:0, marginBottom:16 }}>
       <div style={{ padding:'14px 18px', borderBottom: invoices.length ? '1px solid var(--line)' : 'none',
@@ -684,8 +685,8 @@ function InvoiceTable({ title, invoices, empty, highlightOverdue = false, footer
                 {invoices.map(inv => {
                   const overdue = highlightOverdue && inv.due_date && inv.due_date < new Date().toISOString().split('T')[0]
                   return (
-                    <tr key={inv.id}>
-                      <td style={{ fontSize:12, fontWeight:500 }}>
+                    <tr key={inv.id} onClick={() => setViewing(inv)} style={{ cursor:'pointer' }} title="View invoice details">
+                      <td style={{ fontSize:12, fontWeight:500, textDecoration:'underline', textDecorationColor:'var(--line)', textUnderlineOffset:3 }}>
                         {inv.invoice_number}
                         {inv.currency !== 'NGN' && (
                           <div style={{ fontSize:10, color:'var(--muted)' }}>{inv.currency}</div>
@@ -709,6 +710,162 @@ function InvoiceTable({ title, invoices, empty, highlightOverdue = false, footer
             </table>
           </div>
         )}
+      {viewing && <InvoiceView invoice={viewing} onClose={() => setViewing(null)} />}
+    </div>
+  )
+}
+
+
+const STATUS_LABEL = { draft: 'Draft', sent: 'Unpaid', partial: 'Part paid', paid: 'Paid', cancelled: 'Cancelled' }
+const STATUS_COLOR = { sent: 'var(--amber)', partial: 'var(--amber)', paid: 'var(--green)', cancelled: 'var(--red,#c0392b)' }
+
+// Read-only invoice details. Editing stays on Sales & Invoices.
+function InvoiceView({ invoice, onClose }) {
+  const [inv, setInv]           = useState(invoice)
+  const [items, setItems]       = useState(null)
+  const [payments, setPayments] = useState([])
+
+  useEffect(() => {
+    let alive = true
+    Promise.all([
+      supabase.from('invoices').select('*').eq('id', invoice.id).single(),
+      supabase.from('invoice_items').select('*, artworks(image_url, thumbnail_url)').eq('invoice_id', invoice.id).order('sort_order'),
+      supabase.from('payments').select('*').eq('invoice_id', invoice.id).order('paid_at'),
+    ]).then(([i, it, p]) => {
+      if (!alive) return
+      if (i.data) setInv(i.data)
+      setItems(it.data || [])
+      setPayments(p.data || [])
+    })
+    return () => { alive = false }
+  }, [invoice.id])
+
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const cur = inv.currency || 'NGN'
+  // Invoices migrated from Tessera carry a paid-to-date total with no payment
+  // records behind it; show the uncovered part as one undated line.
+  const recorded = payments.reduce((s, p) => s + Number(
+    p.currency === cur ? p.amount
+      : cur === 'NGN' ? p.amount_ngn
+      : p.amount_ngn / (Number(inv.exchange_rate) || 1)) || 0, 0)
+  const undated = Math.round((Number(inv.amount_paid || 0) - recorded) * 100) / 100
+  const today = new Date().toISOString().split('T')[0]
+  const overdue = OPEN_STATUSES.includes(inv.status) && Number(inv.balance_due) > 0 && inv.due_date && inv.due_date < today
+  const label = { fontSize:11, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)', marginBottom:10 }
+  const line = { display:'flex', justifyContent:'space-between', gap:12, marginBottom:5 }
+
+  return (
+    <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal modal-lg" style={{ maxHeight:'94vh' }}>
+        <div className="modal-header">
+          <div>
+            <div className="modal-title">{inv.invoice_number}</div>
+            <div style={{ fontSize:12, color:'var(--muted)', marginTop:2 }}>
+              <span style={{ color: STATUS_COLOR[inv.status], fontWeight:500 }}>{STATUS_LABEL[inv.status] || inv.status}</span>
+              {' · '}Issued {inv.issue_date || '—'}
+              {inv.due_date && <> {' · '}<span style={{ color: overdue ? 'var(--red,#c0392b)' : undefined }}>Due {inv.due_date}{overdue ? ' (overdue)' : ''}</span></>}
+              {' · '}{cur}
+            </div>
+          </div>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}>{'✕'}</button>
+        </div>
+
+        <div className="modal-body">
+          <div style={label}>Items</div>
+          {items === null && <div style={{ fontSize:13, color:'var(--muted)' }}>Loading{'…'}</div>}
+          {items?.length === 0 && <div style={{ fontSize:13, color:'var(--muted)' }}>No line items on this invoice.</div>}
+          {items?.map(it => {
+            const img = it.thumbnail_url || it.artworks?.thumbnail_url || it.image_url || it.artworks?.image_url
+            const isArtwork = it.item_type === 'artwork' || !it.item_type
+            return (
+              <div key={it.id} style={{ display:'flex', gap:12, padding:'10px 0', borderBottom:'1px solid var(--line-soft)' }}>
+                <div style={{ width:48, height:48, flexShrink:0, borderRadius:2, background:'var(--parchment)', overflow:'hidden' }}>
+                  {img && <img src={img} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover' }} />}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:500 }}>{it.title}</div>
+                  <div style={{ fontSize:12, color:'var(--muted)' }}>
+                    {[it.artist_name, it.year, it.medium, it.dimensions].filter(Boolean).join(' · ')}
+                  </div>
+                  {isArtwork && (
+                    <div style={{ fontSize:11, marginTop:3, color: it.delivered ? 'var(--green)' : 'var(--amber)' }}>
+                      {it.delivered
+                        ? `Collected${it.delivered_at ? ' ' + new Date(it.delivered_at).toLocaleDateString('en-GB') : ''}${it.collected_by ? ' by ' + it.collected_by : ''}`
+                        : 'Not yet collected'}
+                    </div>
+                  )}
+                </div>
+                <div style={{ textAlign:'right', flexShrink:0 }}>
+                  <div style={{ fontWeight:500, fontVariantNumeric:'tabular-nums' }}>{formatAmount(it.line_total, cur)}</div>
+                  {(Number(it.quantity) > 1 || Number(it.discount) > 0) && (
+                    <div style={{ fontSize:11, color:'var(--muted)' }}>
+                      {it.quantity} {'×'} {formatAmount(it.unit_price, cur)}{Number(it.discount) > 0 ? ` − ${formatAmount(it.discount, cur)}` : ''}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+          <div style={{ marginTop:14, fontSize:13, fontVariantNumeric:'tabular-nums' }}>
+            {Number(inv.subtotal) > 0 && Number(inv.subtotal) !== Number(inv.total) && (
+              <div style={{ ...line, color:'var(--muted)' }}><span>Subtotal</span><span>{formatAmount(inv.subtotal, cur)}</span></div>
+            )}
+            {Number(inv.discount_value) > 0 && (
+              <div style={{ ...line, color:'var(--green)' }}>
+                <span>Discount{inv.discount_type === 'percent' ? ` (${inv.discount_value}%)` : ''}</span>
+                <span>−{formatAmount(inv.discount_type === 'percent' ? Number(inv.subtotal) * Number(inv.discount_value) / 100 : inv.discount_value, cur)}</span>
+              </div>
+            )}
+            {Number(inv.vat_amount) > 0 && (
+              <div style={{ ...line, color:'var(--muted)' }}><span>VAT ({inv.vat_rate}%)</span><span>{formatAmount(inv.vat_amount, cur)}</span></div>
+            )}
+            <div style={{ ...line, fontWeight:600, fontSize:15, borderTop:'1px solid var(--line)', paddingTop:8 }}>
+              <span>Total</span><span>{formatAmount(inv.total, cur)}</span>
+            </div>
+          </div>
+
+          <div style={{ ...label, marginTop:20 }}>Payments</div>
+          {undated > 0 && (
+            <div style={{ ...line, padding:'6px 0', borderBottom:'1px solid var(--line-soft)', fontSize:13 }}>
+              <span style={{ color:'var(--muted)' }}>Earlier payments {'—'} dates not itemised</span>
+              <span style={{ color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{formatAmount(undated, cur)}</span>
+            </div>
+          )}
+          {payments.map(p => (
+            <div key={p.id} style={{ ...line, padding:'6px 0', borderBottom:'1px solid var(--line-soft)', fontSize:13 }}>
+              <span>
+                {p.paid_at || '—'}
+                <span style={{ color:'var(--muted)', marginLeft:8 }}>
+                  {[p.method, p.reference ? `ref ${p.reference}` : null].filter(Boolean).join(' · ')}
+                </span>
+              </span>
+              <span style={{ color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{formatAmount(p.amount, p.currency || cur)}</span>
+            </div>
+          ))}
+          {items !== null && payments.length === 0 && undated <= 0 && (
+            <div style={{ fontSize:13, color:'var(--muted)' }}>No payments received.</div>
+          )}
+          <div style={{ ...line, marginTop:10, fontWeight:600, fontVariantNumeric:'tabular-nums' }}>
+            <span>Balance due</span>
+            <span style={{ color: Number(inv.balance_due) > 0 ? (overdue ? 'var(--red,#c0392b)' : 'var(--amber)') : 'var(--green)' }}>
+              {Number(inv.balance_due) > 0 ? formatAmount(inv.balance_due, cur) : 'Settled'}
+            </span>
+          </div>
+
+          {(inv.notes || inv.terms) && (
+            <div style={{ marginTop:20, display:'grid', gap:12 }}>
+              {inv.notes && <div><div style={{ ...label, marginBottom:4 }}>Notes</div><div style={{ fontSize:13, whiteSpace:'pre-wrap' }}>{inv.notes}</div></div>}
+              {inv.terms && <div><div style={{ ...label, marginBottom:4 }}>Terms</div><div style={{ fontSize:13, whiteSpace:'pre-wrap', color:'var(--muted)' }}>{inv.terms}</div></div>}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
