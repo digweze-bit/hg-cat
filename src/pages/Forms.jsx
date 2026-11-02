@@ -2,7 +2,19 @@
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../components/AuthProvider'
 import { LOGO_B64, SIG_B64 } from '../lib/assets'
+import { cacheInvalidate } from '../lib/cache'
+import { auditLog } from '../lib/audit'
 import SignaturePad from 'signature_pad'
+
+const escH = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
+
+// Delivery note line types — sold must already be invoiced to the client,
+// loan moves the work to Reserved (on loan), other is a manual entry.
+const DELIVERY_TYPES = {
+  sold:  { label: 'Sold',  color: '#27ae60' },
+  loan:  { label: 'Loan',  color: '#9b59b6' },
+  other: { label: 'Other', color: '#777' },
+}
 
 const FORM_TYPES = {
   purchase_confirmation: { label: 'Purchase Confirmation', icon: '\u25C8', color: '#27ae60' },
@@ -10,6 +22,7 @@ const FORM_TYPES = {
   condition_report:      { label: 'Condition Report',      icon: '\u25C7', color: '#5a7ac7' },
   loan_agreement:        { label: 'Loan Agreement',        icon: '\u25C9', color: '#9b59b6' },
   collection_receipt:    { label: 'Collection Receipt',    icon: '\u25D1', color: '#1a9a8a' },
+  delivery_note:         { label: 'Delivery Note',         icon: '\u25D2', color: '#c0662a' },
   catalogue:             { label: 'Artwork Catalogue',       icon: '\u25E7', color: '#2c3e50' },
 }
 
@@ -199,6 +212,83 @@ ${pages}
   if (!previewOnly) setTimeout(() => w.print(), 3000)
 }
 
+// ── DELIVERY NOTE PRINT ─────────────────────────────────────
+// Paper copy for the client to sign on delivery.
+function printDeliveryNote(form, rows) {
+  const m = form.meta || {}
+  const fmt = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' }) : '—'
+  const items = [...(rows || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const rowsHtml = items.map((aw, i) => {
+    const dt = DELIVERY_TYPES[aw.delivery_type]
+    const details = [aw.medium, aw.dimensions, aw.year].filter(Boolean).join(' · ')
+    return `<tr>
+      <td class="n">${i + 1}</td>
+      <td>${aw.image_url ? `<img src="${escH(aw.image_url)}">` : ''}</td>
+      <td><div class="t">${escH(aw.title || 'Untitled')}</div><div class="a">${escH(aw.artist_name || '')}</div>
+        ${details ? `<div class="d">${escH(details)}</div>` : ''}
+        ${aw.hg_code ? `<div class="d">${escH(aw.hg_code)}</div>` : ''}
+        ${aw.notes ? `<div class="d">${escH(aw.notes)}</div>` : ''}</td>
+      <td><span class="tag" style="color:${dt?.color || '#777'};border-color:${dt?.color || '#ccc'}">${escH(dt?.label || '—')}</span>
+        ${aw.invoice_number ? `<div class="d">Inv. ${escH(aw.invoice_number)}</div>` : ''}</td>
+      <td>${escH(aw.condition || '')}</td>
+    </tr>`
+  }).join('')
+  const hasLoan = items.some(a => a.delivery_type === 'loan')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escH(form.reference || 'Delivery Note')}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; color:#1a1714; padding:36px 44px; font-size:12px; }
+.head { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e8e3db; padding-bottom:14px; margin-bottom:22px; }
+.head img { height:30px; }
+h1 { font-family: Georgia, serif; font-weight:400; font-size:26px; }
+.rule { width:36px; height:2px; background:#E05C2A; margin:6px 0 18px; }
+.ref { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#999; }
+.parties { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; background:#f8f7f5; padding:14px 16px; border-radius:4px; margin-bottom:18px; }
+.lbl { font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#999; margin-bottom:3px; }
+.b { font-weight:600; font-size:13px; }
+.s { color:#666; font-size:11px; }
+p.intro { line-height:1.6; margin-bottom:16px; }
+table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+th { text-align:left; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#999; border-bottom:1px solid #e0dbd4; padding:6px 8px; }
+td { border-bottom:1px solid #f0ece7; padding:8px; vertical-align:top; }
+td.n { color:#999; width:20px; }
+td img { width:46px; height:56px; object-fit:cover; border-radius:2px; }
+.t { font-weight:600; font-size:13px; } .a { color:#555; } .d { color:#888; font-size:11px; margin-top:2px; }
+.tag { display:inline-block; border:1px solid; border-radius:3px; padding:1px 7px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
+.notes { background:#f8f7f5; padding:10px 14px; border-radius:4px; margin-bottom:18px; line-height:1.5; }
+.sigs { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:34px; page-break-inside:avoid; }
+.line { border-bottom:1px solid #1a1714; height:46px; margin-bottom:5px; }
+.foot { margin-top:40px; border-top:1px solid #e8e3db; padding-top:8px; text-align:center; color:#999; font-size:10px; }
+@media print { @page { size:A4 portrait; margin:12mm; } body { padding:0; } }
+</style></head><body>
+<div class="head">${LOGO_B64 ? `<img src="${LOGO_B64}">` : '<b>HOURGLASS GALLERY</b>'}<span class="ref">${escH(form.reference || '')}</span></div>
+<h1>Delivery Note</h1><div class="rule"></div>
+<div class="parties">
+  <div><div class="lbl">From</div><div class="b">Hourglass Gallery</div><div class="s">298C Akin Olugbade St, Victoria Island, Lagos</div></div>
+  <div><div class="lbl">Delivered to</div><div class="b">${escH(form.recipient_name)}</div>
+    ${m.delivery_address ? `<div class="s">${escH(m.delivery_address)}</div>` : ''}
+    ${form.recipient_phone ? `<div class="s">${escH(form.recipient_phone)}</div>` : ''}
+    ${form.recipient_email ? `<div class="s">${escH(form.recipient_email)}</div>` : ''}</div>
+  <div><div class="lbl">Delivery date</div><div class="b">${fmt(m.delivery_date)}</div>
+    ${hasLoan && m.return_date ? `<div class="lbl" style="margin-top:8px">Loan works due back</div><div class="b">${fmt(m.return_date)}</div>` : ''}</div>
+</div>
+<p class="intro">The client named above acknowledges receipt of the following artwork(s) from Hourglass Gallery in good condition.${hasLoan ? ' Works marked LOAN remain the property of Hourglass Gallery and are to be returned on request.' : ''}</p>
+<table><thead><tr><th>#</th><th></th><th>Artwork</th><th>Basis</th><th>Condition</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+${m.notes ? `<div class="notes"><div class="lbl">Notes</div>${escH(m.notes)}</div>` : ''}
+<div class="sigs">
+  <div><div class="lbl">Delivered by — Hourglass Gallery</div><div class="line"></div><div class="s">Name, signature &amp; date</div></div>
+  <div><div class="lbl">Received by — client</div><div class="line"></div><div class="s">Name, signature &amp; date</div></div>
+</div>
+<div class="foot">Hourglass Gallery · 298C Akin Olugbade Street, Victoria Island, Lagos</div>
+</body></html>`
+
+  const w = window.open('', '_blank', 'width=900,height=750')
+  if (!w) { alert('Please allow popups'); return }
+  w.document.write(html)
+  w.document.close()
+  setTimeout(() => w.print(), 800)
+}
 
 export default function Forms() {
   const { user } = useAuth()
@@ -223,20 +313,26 @@ export default function Forms() {
   const [drawnSig, setDrawnSig] = useState(null)   // base64
   const [artworkSearch, setArtworkSearch] = useState('')
   const [shareUrl, setShareUrl] = useState('')
+  const [clients, setClients]   = useState([])
+  const [bClientId, setBClientId] = useState('')
+  const [clientInvoices, setClientInvoices] = useState([])  // delivery note: this client's invoices with item artwork ids
+  const [lastForm, setLastForm] = useState(null)            // form just generated, for printing from the share step
   const sigPadRef = useRef(null)
   const sigCanvasRef = useRef(null)
 
   async function load() {
-    const [{ data: f }, { data: w }, { data: a }, { data: c }] = await Promise.all([
+    const [{ data: f }, { data: w }, { data: a }, { data: c }, { data: cl }] = await Promise.all([
       supabase.from('forms').select('*, form_artworks(*)').order('created_at', { ascending: false }),
       supabase.from('artworks').select('id,title,artist_id,medium,dimensions,year,image_url,price,retail_price,hg_code,availability,category').order('title'),
       supabase.from('artists').select('id,name'),
       supabase.from('consignors').select('*').order('name'),
+      supabase.from('clients').select('id,name,email,phone,address,city').order('name'),
     ])
     setForms(f || [])
     setArtworks(w || [])
     setArtists(a || [])
     setConsignors(c || [])
+    setClients(cl || [])
     setLoading(false)
   }
   useEffect(() => { load() }, [])
@@ -255,17 +351,79 @@ export default function Forms() {
   function resetBuilder() {
     setBType(''); setBArtworks([]); setBRecipient({ name:'', email:'', phone:'' })
     setBMeta({}); setBGallerySig('stored'); setDrawnSig(null); setStep(1); setShareUrl('')
+    setBClientId(''); setClientInvoices([]); setLastForm(null)
+  }
+
+  // \u2500\u2500 Delivery note helpers \u2500\u2500
+  async function selectClient(id) {
+    setBClientId(id)
+    const c = clients.find(x => x.id === id)
+    if (!c) { setClientInvoices([]); return }
+    setBRecipient({ name: c.name, email: c.email || '', phone: c.phone || '' })
+    setBMeta(m => ({ ...m, delivery_address: [c.address, c.city].filter(Boolean).join(', ') }))
+    const { data } = await supabase.from('invoices')
+      .select('id,invoice_number,status,invoice_items(artwork_id)')
+      .eq('client_id', id).neq('status', 'cancelled')
+    const invs = data || []
+    setClientInvoices(invs)
+    // Re-resolve invoice links on any sold lines already added
+    setBArtworks(prev => prev.map(a => a.delivery_type === 'sold' ? withInvoice(a, invs) : a))
+  }
+
+  function invoiceFor(artworkId, invs = clientInvoices) {
+    if (!artworkId) return null
+    return invs.find(inv => (inv.invoice_items || []).some(ii => ii.artwork_id === artworkId)) || null
+  }
+
+  function withInvoice(a, invs) {
+    const inv = invoiceFor(a.artwork_id, invs)
+    return { ...a, invoice_id: inv?.id || null, invoice_number: inv?.invoice_number || '' }
+  }
+
+  function setDeliveryType(idx, type) {
+    setBArtworks(prev => prev.map((a, i) => {
+      if (i !== idx) return a
+      if (type === 'sold') return withInvoice({ ...a, delivery_type: 'sold' }, clientInvoices)
+      if (type === 'loan') return { ...a, delivery_type: 'loan', invoice_id: null, invoice_number: '' }
+      // Other = a manually described work, detached from the library
+      return { ...a, delivery_type: 'other', artwork_id: null, image_url: '', hg_code: '', invoice_id: null, invoice_number: '' }
+    }))
+  }
+
+  // Problems that block a delivery note from moving past the artworks step
+  function deliveryProblems() {
+    const out = []
+    if (!bClientId) out.push('Select the client receiving the delivery.')
+    bArtworks.forEach((a, i) => {
+      const label = a.title || `Line ${i + 1}`
+      const lib = a.artwork_id ? artworks.find(w => w.id === a.artwork_id) : null
+      if (a.delivery_type === 'sold' && bClientId && !a.invoice_id)
+        out.push(`"${label}" is marked Sold but is not on any invoice for this client. Invoice it first, or mark it Loan/Other.`)
+      if (a.delivery_type === 'loan' && lib && lib.availability !== 'Available')
+        out.push(`"${label}" is ${lib.availability || 'not available'} \u2014 only Available works can go out on loan.`)
+      if (a.delivery_type === 'other' && !a.title.trim())
+        out.push(`Line ${i + 1} (Other) needs a title.`)
+    })
+    return out
   }
 
   function addArtworkFromLibrary(w) {
     if (bArtworks.find(a => a.artwork_id === w.id)) return
-    setBArtworks(prev => [...prev, {
+    const row = {
       artwork_id: w.id, title: w.title, artist_name: artistMap[w.artist_id] || '',
       medium: w.medium || '', dimensions: w.dimensions || '', year: w.year || '',
       image_url: w.image_url || '', hg_code: w.hg_code || '', category: w.category || '',
       price: w.retail_price ? `\u20A6${Number(w.retail_price).toLocaleString()}` : (w.price || ''),
       condition: '', notes: '',
-    }])
+    }
+    if (bType === 'delivery_note') {
+      // Default to Sold when the client has already been invoiced for it, otherwise Loan
+      const inv = invoiceFor(w.id)
+      Object.assign(row, inv
+        ? { delivery_type: 'sold', invoice_id: inv.id, invoice_number: inv.invoice_number }
+        : { delivery_type: 'loan', invoice_id: null, invoice_number: '' })
+    }
+    setBArtworks(prev => [...prev, row])
     setArtworkSearch('')
   }
 
@@ -273,6 +431,7 @@ export default function Forms() {
     setBArtworks(prev => [...prev, {
       artwork_id: null, title: '', artist_name: '', medium: '', dimensions: '',
       year: '', image_url: '', hg_code: '', category: '', price: '', condition: '', notes: '',
+      ...(bType === 'delivery_note' ? { delivery_type: 'other', invoice_id: null, invoice_number: '' } : {}),
     }])
   }
 
@@ -288,6 +447,11 @@ export default function Forms() {
     if (!bType) return alert('Select a form type')
     if (bArtworks.length === 0) return alert('Add at least one artwork')
     if (!bRecipient.name) return alert('Recipient name is required')
+    const isDelivery = bType === 'delivery_note'
+    if (isDelivery) {
+      const problems = deliveryProblems()
+      if (problems.length) return alert(problems.join('\n'))
+    }
     setSaving(true)
     try {
       const gallerySigData = bGallerySig === 'stored'
@@ -304,19 +468,52 @@ export default function Forms() {
         recipient_name: bRecipient.name,
         recipient_email: bRecipient.email || null,
         recipient_phone: bRecipient.phone || null,
-        meta: bMeta,
+        meta: isDelivery ? { delivery_date: new Date().toISOString().split('T')[0], ...bMeta } : bMeta,
         gallery_sig_type: bGallerySig,
         gallery_sig_data: gallerySigData,
         created_by: user?.id,
+        ...(isDelivery ? { client_id: bClientId } : {}),
       }).select().single()
 
       if (error) throw error
 
       // Insert form artworks
-      await supabase.from('form_artworks').insert(
-        bArtworks.map((a, i) => ({ ...a, form_id: form.id, sort_order: i }))
-      )
+      const rows = bArtworks.map((a, i) => ({ ...a, form_id: form.id, sort_order: i }))
+      const { error: rowsErr } = await supabase.from('form_artworks').insert(rows)
+      if (rowsErr) throw rowsErr
 
+      // Loan lines go out on loan to the client: Available -> Reserved with a loanee
+      const loans = isDelivery ? bArtworks.filter(a => a.delivery_type === 'loan' && a.artwork_id) : []
+      if (loans.length) {
+        const name = bRecipient.name.trim()
+        const { data: loanees } = await supabase.from('loanees').select('id,name')
+        let loanee = (loanees || []).find(l => l.name.trim().toLowerCase() === name.toLowerCase())
+        if (!loanee) {
+          const { data: created, error: loaneeErr } = await supabase.from('loanees').insert({
+            name, type: 'Individual',
+            email: bRecipient.email || null, phone: bRecipient.phone || null,
+            address: form.meta?.delivery_address || null,
+          }).select('id,name').single()
+          if (loaneeErr) throw loaneeErr
+          loanee = created
+        }
+        for (const a of loans) {
+          const { error: loanErr } = await supabase.from('artworks').update({
+            availability: 'Reserved',
+            loanee_id: loanee.id,
+            loaned_to: loanee.name,
+            loan_date: form.meta?.delivery_date || null,
+            loan_due_date: form.meta?.return_date || null,
+            updated_at: new Date().toISOString(),
+          }).eq('id', a.artwork_id).eq('availability', 'Available')
+          if (loanErr) throw loanErr
+          auditLog('artwork.loaned', { entityType:'artwork', entityId:a.artwork_id, entityLabel:a.title, metadata:{ loanee: loanee.name, delivery_note: ref } })
+        }
+        cacheInvalidate('artworks')
+        cacheInvalidate('loanees')
+      }
+
+      setLastForm({ ...form, form_artworks: rows })
       const url = `${window.location.origin}/sign/${form.sign_token}`
       setShareUrl(url)
       await load()
@@ -397,6 +594,9 @@ export default function Forms() {
                               setShareUrl(url); setActiveForm(f); setModal('share')
                             }}>Share</button>
                         )}
+                        {f.type === 'delivery_note' && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => printDeliveryNote(f, f.form_artworks)}>Print</button>
+                        )}
                         {f.pdf_url && (
                           <a className="btn btn-ghost btn-sm" href={f.pdf_url} target="_blank" rel="noopener noreferrer">PDF</a>
                         )}
@@ -441,6 +641,7 @@ export default function Forms() {
                         {key === 'condition_report' && 'Document condition of artwork at a point in time'}
                         {key === 'loan_agreement' && 'Artwork leaving gallery temporarily'}
                         {key === 'collection_receipt' && 'Client collecting a purchased work'}
+                        {key === 'delivery_note' && 'Works delivered to a client — sold, on loan or other'}
         {key === 'catalogue' && 'Elegant artwork catalogue for collectors'}
                       </div>
                     </div>
@@ -451,6 +652,20 @@ export default function Forms() {
               {/* STEP 2 \u2014 Artworks */}
               {step === 2 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                  {bType === 'delivery_note' && (
+                    <div style={{ background:'var(--surface-0,#f8f7f5)', borderRadius:4, padding:'12px 14px' }}>
+                      <div style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:8 }}>Client *</div>
+                      <select className="form-select" style={{ maxWidth:360 }} value={bClientId} onChange={e => selectClient(e.target.value)}>
+                        <option value="">{'—'} select client {'—'}</option>
+                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      {bClientId && (
+                        <div style={{ fontSize:11, color:'var(--muted)', marginTop:6 }}>
+                          {clientInvoices.length} invoice{clientInvoices.length !== 1 ? 's' : ''} on record {'—'} works on them can be delivered as Sold.
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div style={{ display:'flex', gap:8 }}>
                     <div style={{ flex:1, position:'relative' }}>
                       <input className="form-input" placeholder="Search artworks by title, artist, HG code..."
@@ -470,7 +685,7 @@ export default function Forms() {
                         </div>
                       )}
                     </div>
-                    <button className="btn btn-outline" onClick={addBlankArtwork}>+ Add manually</button>
+                    <button className="btn btn-outline" onClick={addBlankArtwork}>{bType === 'delivery_note' ? '+ Other (manual)' : '+ Add manually'}</button>
                   </div>
 
                   {/* Consignor quick-fill for consignment forms */}
@@ -504,6 +719,32 @@ export default function Forms() {
                         }
                       </div>
                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
+                        {bType === 'delivery_note' && (
+                          <div style={{ gridColumn:'1 / -1', display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                            {Object.entries(DELIVERY_TYPES).map(([key, dt]) => {
+                              const active = a.delivery_type === key
+                              const disabled = key !== 'other' && !a.artwork_id
+                              return (
+                                <button key={key} type="button" disabled={disabled}
+                                  title={disabled ? 'Sold and Loan need an artwork from the library' : ''}
+                                  onClick={() => setDeliveryType(idx, key)}
+                                  style={{ padding:'4px 12px', fontSize:12, fontWeight:600, borderRadius:3, cursor: disabled ? 'not-allowed' : 'pointer',
+                                    border:`1px solid ${active ? dt.color : 'var(--line)'}`, background: active ? `${dt.color}18` : 'var(--white)',
+                                    color: active ? dt.color : 'var(--muted)', opacity: disabled ? .45 : 1 }}>
+                                  {active ? '✓ ' : ''}{dt.label}
+                                </button>
+                              )
+                            })}
+                            <span style={{ fontSize:11, marginLeft:6, color: a.delivery_type === 'sold' && !a.invoice_id ? 'var(--red,#c0392b)' : 'var(--muted)' }}>
+                              {a.delivery_type === 'sold' && (a.invoice_id ? `Invoice ${a.invoice_number}` : (bClientId ? 'Not invoiced to this client' : 'Select a client'))}
+                              {a.delivery_type === 'loan' && (() => {
+                                const av = artworks.find(w => w.id === a.artwork_id)?.availability
+                                return av === 'Available' ? 'Will move to On loan (Reserved)' : `Currently ${av || 'unknown'} — cannot loan`
+                              })()}
+                              {a.delivery_type === 'other' && 'Manual entry — inventory unchanged'}
+                            </span>
+                          </div>
+                        )}
                         <div className="form-group" style={{ marginBottom:0 }}>
                           <label className="form-label">Title</label>
                           <input className="form-input" value={a.title} onChange={e => updateArtwork(idx,'title',e.target.value)}/>
@@ -544,6 +785,12 @@ export default function Forms() {
                       </div>
                     </div>
                   ))}
+
+                  {bType === 'delivery_note' && bArtworks.length > 0 && deliveryProblems().length > 0 && (
+                    <div style={{ background:'#fef2f0', color:'#c0392b', borderRadius:4, padding:'10px 14px', fontSize:12, lineHeight:1.6 }}>
+                      {deliveryProblems().map((p, i) => <div key={i}>{p}</div>)}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -673,6 +920,31 @@ export default function Forms() {
                       </div>
                     )}
 
+                    {bType === 'delivery_note' && (
+                      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label className="form-label">Delivery date</label>
+                            <input className="form-input" type="date" value={bMeta.delivery_date || new Date().toISOString().split('T')[0]} onChange={e => setBMeta(m => ({ ...m, delivery_date: e.target.value }))}/>
+                          </div>
+                          {bArtworks.some(a => a.delivery_type === 'loan') && (
+                            <div className="form-group">
+                              <label className="form-label">Loan works due back</label>
+                              <input className="form-input" type="date" value={bMeta.return_date || ''} onChange={e => setBMeta(m => ({ ...m, return_date: e.target.value }))}/>
+                            </div>
+                          )}
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Delivery address</label>
+                          <input className="form-input" value={bMeta.delivery_address || ''} onChange={e => setBMeta(m => ({ ...m, delivery_address: e.target.value }))}/>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Notes</label>
+                          <textarea className="form-textarea" rows={2} value={bMeta.notes || ''} onChange={e => setBMeta(m => ({ ...m, notes: e.target.value }))}/>
+                        </div>
+                      </div>
+                    )}
+
                     {bType === 'collection_receipt' && (
                       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                         <div className="form-group">
@@ -776,7 +1048,11 @@ export default function Forms() {
                             <div style={{ fontWeight:500, fontSize:13 }}>{aw.title}</div>
                             <div style={{ fontSize:11, color:'#666', marginTop:2 }}>{aw.artist_name}{aw.year ? `, ${aw.year}` : ''}</div>
                             {aw.medium && <div style={{ fontSize:11, color:'#666' }}>{aw.medium}{aw.dimensions ? ` \u00B7 ${aw.dimensions}` : ''}</div>}
-                            {aw.price && <div style={{ fontSize:12, fontWeight:500, marginTop:4 }}>{'\u20A6'}{Number(aw.price).toLocaleString()}</div>}
+                            {bType === 'delivery_note'
+                              ? <div style={{ fontSize:11, fontWeight:600, marginTop:4, color: DELIVERY_TYPES[aw.delivery_type]?.color }}>
+                                  {DELIVERY_TYPES[aw.delivery_type]?.label}{aw.invoice_number ? ` \u00B7 Invoice ${aw.invoice_number}` : ''}
+                                </div>
+                              : aw.price && <div style={{ fontSize:12, fontWeight:500, marginTop:4 }}>{'\u20A6'}{Number(aw.price).toLocaleString()}</div>}
                           </div>
                         </div>
                       ))}
@@ -824,6 +1100,11 @@ export default function Forms() {
                       onClick={() => { navigator.clipboard.writeText(shareUrl); alert('Link copied') }}>
                       \uD83D\uDCCB Copy link
                     </button>
+                    {lastForm?.type === 'delivery_note' && (
+                      <button className="btn btn-outline" onClick={() => printDeliveryNote(lastForm, lastForm.form_artworks)}>
+                        {'\u2399'} Print for signature
+                      </button>
+                    )}
                     {bRecipient.email && (
                       <a className="btn btn-outline"
                         href={`mailto:${bRecipient.email}?subject=Document for signature \u2014 Hourglass Gallery&body=Please review and sign this document: ${shareUrl}`}>
@@ -856,6 +1137,7 @@ export default function Forms() {
                   disabled={
                     (step === 1 && !bType) ||
                     (step === 2 && bArtworks.length === 0) ||
+                    (step === 2 && bType === 'delivery_note' && deliveryProblems().length > 0) ||
                     (step === 3 && !bRecipient.name && bType !== 'catalogue')
                   }>
                   Next

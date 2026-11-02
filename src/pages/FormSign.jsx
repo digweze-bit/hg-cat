@@ -11,7 +11,11 @@ const FORM_TYPES = {
   condition_report:      'Condition Report',
   loan_agreement:        'Loan Agreement',
   collection_receipt:    'Collection Receipt',
+  delivery_note:         'Delivery Note',
 }
+
+const DELIVERY_LABELS = { sold: 'Sold', loan: 'Loan', other: 'Other' }
+const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' }) : '—'
 
 export default function FormSign() {
   const { token } = useParams()
@@ -150,6 +154,7 @@ export default function FormSign() {
       condition_report:      `This report documents the condition of the following artwork(s) as examined on ${form.meta?.report_date || dateStr}.`,
       loan_agreement:        `This agreement confirms that the following artwork(s) have been loaned to ${form.recipient_name} for the period specified below.`,
       collection_receipt:    `This receipt confirms that ${form.recipient_name} has collected the following artwork(s) from Hourglass Gallery in good condition.`,
+      delivery_note:         `${form.recipient_name} acknowledges receipt of the following artwork(s) from Hourglass Gallery in good condition.${artworks.some(a => a.delivery_type === 'loan') ? ' Works marked LOAN remain the property of Hourglass Gallery and are to be returned on request.' : ''}`,
     }
     const intro = introMap[form.type] || ''
     const introLines = doc.splitTextToSize(intro, pw - 2*margin)
@@ -177,6 +182,19 @@ export default function FormSign() {
       doc.text('LOAN DETAILS', lx + 4, y + 5)
       setFont(9, 'normal', INK)
       doc.text(`From: ${form.meta.loan_from||'\u2014'}  \u00B7  To: ${form.meta.loan_to||'\u2014'}  \u00B7  Purpose: ${form.meta.purpose||'\u2014'}  \u00B7  Insurance value: \u20A6${Number(form.meta.insurance_value||0).toLocaleString()}`, lx + 4, y + 10)
+      y += 20
+    }
+
+    if (form.type === 'delivery_note' && form.meta) {
+      doc.setFillColor('#fbf1ea')
+      doc.roundedRect(lx, y, pw - 2*margin, 14, 2, 2, 'F')
+      setFont(7, 'bold', MUTED)
+      doc.text('DELIVERY DETAILS', lx + 4, y + 5)
+      setFont(9, 'normal', INK)
+      const parts = [`Date: ${fmtDate(form.meta.delivery_date)}`]
+      if (form.meta.delivery_address) parts.push(`Address: ${form.meta.delivery_address}`)
+      if (form.meta.return_date && artworks.some(a => a.delivery_type === 'loan')) parts.push(`Loan works due back: ${fmtDate(form.meta.return_date)}`)
+      doc.text(doc.splitTextToSize(parts.join('  ·  '), pw - 2*margin - 8)[0], lx + 4, y + 10)
       y += 20
     }
 
@@ -220,6 +238,11 @@ export default function FormSign() {
       if (aw.price && form.meta?.show_price !== false && (form.type === 'purchase_confirmation' || form.type === 'consignment_agreement')) {
         setFont(9, 'bold', INK)
         doc.text(aw.price, pw - margin, y + 5, { align: 'right' })
+      }
+      if (form.type === 'delivery_note' && aw.delivery_type) {
+        setFont(9, 'bold', INK)
+        doc.text(DELIVERY_LABELS[aw.delivery_type].toUpperCase(), pw - margin, y + 5, { align: 'right' })
+        if (aw.invoice_number) { setFont(8, 'normal', MUTED); doc.text(`Invoice ${aw.invoice_number}`, pw - margin, y + 10, { align: 'right' }) }
       }
       doc.setDrawColor('#e0dbd4')
       doc.setLineWidth(0.2)
@@ -405,6 +428,7 @@ export default function FormSign() {
           {form.type === 'condition_report' && `This report documents the condition of the following artwork(s) as examined on ${form.meta?.report_date || dateStr}.`}
           {form.type === 'loan_agreement' && `This agreement confirms that the following artwork(s) have been loaned to ${form.recipient_name} for the period specified below.`}
           {form.type === 'collection_receipt' && `This receipt confirms that ${form.recipient_name} has collected the following artwork(s) from Hourglass Gallery in good condition.`}
+          {form.type === 'delivery_note' && `${form.recipient_name} acknowledges receipt of the following artwork(s) from Hourglass Gallery in good condition.${artworks.some(a => a.delivery_type === 'loan') ? ' Works marked Loan remain the property of Hourglass Gallery and are to be returned on request.' : ''}`}
         </div>
 
         {/* Meta fields */}
@@ -426,6 +450,14 @@ export default function FormSign() {
         )}
         {form.type === 'collection_receipt' && form.meta?.invoice_ref && (
           <div style={{ fontSize:13, color:'#666', marginBottom:16 }}>Invoice ref: {form.meta.invoice_ref}</div>
+        )}
+        {form.type === 'delivery_note' && form.meta && (
+          <div style={{ background:'#fbf1ea', borderRadius:4, padding:'14px 18px', marginBottom:24, fontSize:13, lineHeight:1.7 }}>
+            <strong>Delivery date:</strong> {fmtDate(form.meta.delivery_date)}
+            {form.meta.delivery_address && <div><strong>Address:</strong> {form.meta.delivery_address}</div>}
+            {form.meta.return_date && artworks.some(a => a.delivery_type === 'loan') && <div><strong>Loan works due back:</strong> {fmtDate(form.meta.return_date)}</div>}
+            {form.meta.notes && <div><strong>Notes:</strong> {form.meta.notes}</div>}
+          </div>
         )}
 
         {/* Artworks */}
@@ -450,6 +482,11 @@ export default function FormSign() {
                 {aw.price && form.meta?.show_price !== false &&
                   (form.type === 'purchase_confirmation' || form.type === 'consignment_agreement') && (
                   <div style={{ fontWeight:600, fontSize:15, marginTop:8 }}>{aw.price}</div>
+                )}
+                {form.type === 'delivery_note' && aw.delivery_type && (
+                  <div style={{ fontSize:11, fontWeight:600, letterSpacing:'.06em', textTransform:'uppercase', marginTop:8, color:'#1a1714' }}>
+                    {DELIVERY_LABELS[aw.delivery_type]}{aw.invoice_number ? <span style={{ fontWeight:400, color:'#888', textTransform:'none', letterSpacing:0 }}> {'·'} Invoice {aw.invoice_number}</span> : null}
+                  </div>
                 )}
               </div>
             </div>
