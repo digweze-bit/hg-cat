@@ -214,9 +214,23 @@ body{font-family:-apple-system,Helvetica,sans-serif;background:#f5f3f0;color:#1a
 </style></head><body>
 ${pages.join('\n')}
 <div class="dl-bar">
-  <button class="bk-btn" onclick="window.close()">Close</button>
+  <button class="bk-btn" onclick="closeCatalogue()">Close</button>
   <button class="dl-btn" onclick="window.print()">Download PDF</button>
 </div>
+<script>
+// Hide the bar inside the in-app review preview (it has its own buttons)
+if (window.self !== window.top) document.querySelector('.dl-bar').style.display = 'none'
+function closeCatalogue() {
+  // Browsers only let a page close a window that script opened; otherwise
+  // fall back to going back to the catalogue builder.
+  try { window.close() } catch (e) {}
+  setTimeout(function () {
+    if (window.closed) return
+    try { if (window.opener && !window.opener.closed) { window.opener.focus(); window.close() } } catch (e) {}
+    setTimeout(function () { if (!window.closed) window.location.href = ${JSON.stringify(window.location.origin + '/admin/catalogue')} }, 100)
+  }, 150)
+}
+</script>
 </body></html>`
 
     return html
