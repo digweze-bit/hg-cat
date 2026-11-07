@@ -96,10 +96,13 @@ export default function CatalogueBuilder() {
   }
 
   // ── Generate catalogue ──
-  async function generate() {
-    if (selected.length === 0) return alert('Select at least one artwork')
-    setGenerating(true)
+  // Images are fetched once and cached, so the preview can be rebuilt instantly
+  // whenever pages are reordered during review.
+  const imgCache = useRef({})
+  const savedScroll = useRef(0)
+  const scrollToPage = useRef(null)
 
+  async function ensureImages(list) {
     async function toB64(url) {
       if (!url) return null
       try {
@@ -108,21 +111,22 @@ export default function CatalogueBuilder() {
         return await new Promise((res, rej) => { const reader = new FileReader(); reader.onload = () => res(reader.result); reader.onerror = rej; reader.readAsDataURL(blob) })
       } catch { return null }
     }
+    const missing = list.filter(w => !(w.id in imgCache.current))
+    await Promise.all(missing.map(async w => { imgCache.current[w.id] = await toB64(w.image_url) }))
+  }
 
-    const imgMap = {}
-    await Promise.all(selected.map(async w => { imgMap[w.id] = await toB64(w.image_url) }))
-
+  function buildHtml(list) {
     const du = (w) => w.dimension_unit === 'cm' ? 'cm' : 'in'
 
     // Apply overrides
-    const finalSelected = selected.map(w => ({
+    const finalSelected = list.map(w => ({
       ...w,
       title: overrides[w.id]?.title ?? w.title,
       price: overrides[w.id]?.price ?? w.price,
     }))
 
     function card(w, size) {
-      const img = imgMap[w.id]
+      const img = imgCache.current[w.id]
       const details = [w.medium, w.dimensions ? w.dimensions + ' ' + du(w) : null, w.year ? String(w.year) : null].filter(Boolean).join(' \u00b7 ')
       const price = showPrice && (w.price || w.retail_price)
         ? (w.price || ('\u20a6' + Number(w.retail_price).toLocaleString()))
@@ -147,21 +151,21 @@ export default function CatalogueBuilder() {
     let pages = []
 
     if (showLogo && LOGO_B64) {
-      pages.push(`<div class="pg logo-pg"><img src="${LOGO_B64}" class="logo" /></div>`)
+      pages.push(`<div class="pg logo-pg" id="pg-${pages.length + 1}"><img src="${LOGO_B64}" class="logo" /></div>`)
     }
 
     if (layout === 'single') {
-      finalSelected.forEach(w => pages.push(`<div class="pg">${card(w,'full')}</div>`))
+      finalSelected.forEach(w => pages.push(`<div class="pg" id="pg-${pages.length + 1}">${card(w,'full')}</div>`))
     } else if (layout === 'double') {
       for (let i = 0; i < finalSelected.length; i += 2) {
         const c = [card(finalSelected[i],'half')]
         if (finalSelected[i+1]) c.push(card(finalSelected[i+1],'half'))
-        pages.push(`<div class="pg dbl">${c.join('')}</div>`)
+        pages.push(`<div class="pg dbl" id="pg-${pages.length + 1}">${c.join('')}</div>`)
       }
     } else {
       for (let i = 0; i < finalSelected.length; i += 4) {
         const c = finalSelected.slice(i,i+4).map(w => card(w,'quarter'))
-        pages.push(`<div class="pg quad">${c.join('')}</div>`)
+        pages.push(`<div class="pg quad" id="pg-${pages.length + 1}">${c.join('')}</div>`)
       }
     }
 
@@ -215,9 +219,87 @@ ${pages.join('\n')}
 </div>
 </body></html>`
 
-    setPreviewHtml(html)
-    setStep('review')
+    return html
+  }
+
+  async function generate() {
+    if (selected.length === 0) return alert('Select at least one artwork')
+    setGenerating(true)
+    await ensureImages(selected)
     setGenerating(false)
+    setStep('review')
+  }
+
+  // Rebuild the preview whenever the order or options change while reviewing
+  useEffect(() => {
+    if (step !== 'review') return
+    if (selected.length === 0) { setStep('select'); return }
+    let cancelled = false
+    ;(async () => {
+      await ensureImages(selected)
+      if (cancelled) return
+      try { savedScroll.current = previewRef.current?.contentWindow?.scrollY || 0 } catch { savedScroll.current = 0 }
+      setPreviewHtml(buildHtml(selected))
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, selected, overrides, notes, bios, layout, showPrice, showBio, bioPlacement, showNotes, showLogo, LOGO_B64])
+
+  // ── Page reordering (review step) ──
+  const perPage = layout === 'single' ? 1 : layout === 'double' ? 2 : 4
+  const pageOffset = showLogo && LOGO_B64 ? 1 : 0 // logo page is page 1 when shown
+  const groups = []
+  for (let i = 0; i < selected.length; i += perPage) groups.push(selected.slice(i, i + perPage))
+
+  function arrowBtn(disabled) {
+    return { background:'none', border:'1px solid var(--line)', borderRadius:3, padding:'0 5px', fontSize:11, lineHeight:'18px',
+      cursor: disabled ? 'default' : 'pointer', color: disabled ? 'var(--line)' : 'var(--ink)' }
+  }
+
+  function reorder(list, movedId) {
+    const idx = list.findIndex(w => w.id === movedId)
+    scrollToPage.current = idx >= 0 ? pageOffset + Math.floor(idx / perPage) + 1 : null
+    setSelected(list)
+  }
+
+  function moveArtwork(from, to) {
+    if (to < 0 || to >= selected.length || from === to) return
+    const list = [...selected]
+    const [moved] = list.splice(from, 1)
+    list.splice(to, 0, moved)
+    reorder(list, moved.id)
+  }
+
+  function movePage(from, to) {
+    if (to < 0 || to >= groups.length || from === to) return
+    const g = groups.map(x => [...x])
+    const [moved] = g.splice(from, 1)
+    g.splice(to, 0, moved)
+    reorder(g.flat(), moved[0].id)
+  }
+
+  function onPreviewLoad() {
+    const win = previewRef.current?.contentWindow
+    const doc = previewRef.current?.contentDocument
+    if (!win || !doc) return
+    const target = scrollToPage.current
+    scrollToPage.current = null
+    const el = target ? doc.getElementById('pg-' + target) : null
+    if (el) el.scrollIntoView({ block: 'center' })
+    else win.scrollTo(0, savedScroll.current)
+  }
+
+  function jumpToPage(n) {
+    const el = previewRef.current?.contentDocument?.getElementById('pg-' + n)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  function onReviewDrop(i) {
+    const from = dragIdx.current
+    dragIdx.current = null
+    setDragOver(null)
+    if (from === null || from === i) return
+    moveArtwork(from, i)
   }
 
   function getOverride(id, field) {
@@ -479,9 +561,10 @@ ${pages.join('\n')}
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 20px', background:'#1a1714' }}>
             <span style={{ color:'#fff', fontSize:14, fontWeight:500 }}>Review catalogue</span>
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={() => setStep('select')}
-                style={{ padding:'6px 14px', background:'transparent', border:'1px solid #555', color:'#aaa', borderRadius:3, cursor:'pointer', fontSize:12 }}>
-                Back
+              <button onClick={() => { setStep('select'); window.scrollTo(0, 0) }}
+                title="Go back to the artwork list; your current selection and order are kept"
+                style={{ padding:'6px 14px', background:'transparent', border:'1px solid #888', color:'#fff', borderRadius:3, cursor:'pointer', fontSize:12 }}>
+                + Add more artworks
               </button>
               <button onClick={() => setStep('edit-details')}
                 style={{ padding:'6px 14px', background:'transparent', border:'1px solid #888', color:'#fff', borderRadius:3, cursor:'pointer', fontSize:12 }}>
@@ -497,10 +580,86 @@ ${pages.join('\n')}
               </button>
             </div>
           </div>
-          <div style={{ flex:1, overflow:'auto', display:'flex', justifyContent:'center' }}>
-            <iframe ref={previewRef} srcDoc={previewHtml}
-              style={{ width:'100%', maxWidth:480, height:'100%', border:'none', background:'#f5f3f0' }}
-              title="Catalogue preview" />
+          <div style={{ flex:1, minHeight:0, display:'flex' }}>
+            <div style={{ flex:1, overflow:'auto', display:'flex', justifyContent:'center' }}>
+              <iframe ref={previewRef} srcDoc={previewHtml} onLoad={onPreviewLoad}
+                style={{ width:'100%', maxWidth:480, height:'100%', border:'none', background:'#f5f3f0' }}
+                title="Catalogue preview" />
+            </div>
+
+            {/* Pages panel — reorder the artwork pages */}
+            <div style={{ width:320, flexShrink:0, background:'var(--white)', display:'flex', flexDirection:'column', borderLeft:'1px solid #333' }}>
+              <div style={{ padding:'12px 14px', borderBottom:'1px solid var(--line)' }}>
+                <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--muted)' }}>
+                  Pages ({groups.length + pageOffset})
+                </div>
+                <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, lineHeight:1.4 }}>
+                  Drag artworks, use the arrows, or pick a new page number to rearrange.
+                  {perPage > 1 && ' Pages fill in order, so a part-filled page always ends up last.'}
+                </div>
+              </div>
+              <div style={{ flex:1, overflowY:'auto', padding:10, display:'flex', flexDirection:'column', gap:8 }}>
+                {pageOffset === 1 && (
+                  <div onClick={() => jumpToPage(1)}
+                    style={{ padding:'8px 10px', border:'1px dashed var(--line)', borderRadius:4, fontSize:11, color:'var(--muted)', cursor:'pointer' }}>
+                    Page 1 · Logo page
+                  </div>
+                )}
+                {groups.map((g, gi) => {
+                  const pageNo = gi + pageOffset + 1
+                  return (
+                    <div key={g[0].id} style={{ border:'1px solid var(--line)', borderRadius:4, background:'var(--white)' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 8px', borderBottom:'1px solid var(--line-soft)', background:'var(--parchment)' }}>
+                        <span onClick={() => jumpToPage(pageNo)} style={{ fontSize:11, fontWeight:600, cursor:'pointer', flex:1 }}>Page {pageNo}</span>
+                        <select className="form-input" title="Move this page to…"
+                          style={{ width:'auto', fontSize:11, padding:'1px 4px' }}
+                          value={gi}
+                          onChange={e => movePage(gi, Number(e.target.value))}>
+                          {groups.map((_, j) => <option key={j} value={j}>{j === gi ? `Page ${pageNo}` : `Move to page ${j + pageOffset + 1}`}</option>)}
+                        </select>
+                        <button title="Move page up" disabled={gi === 0} onClick={() => movePage(gi, gi - 1)}
+                          style={arrowBtn(gi === 0)}>&uarr;</button>
+                        <button title="Move page down" disabled={gi === groups.length - 1} onClick={() => movePage(gi, gi + 1)}
+                          style={arrowBtn(gi === groups.length - 1)}>&darr;</button>
+                      </div>
+                      {g.map((w, k) => {
+                        const i = gi * perPage + k
+                        return (
+                          <div key={w.id}
+                            draggable
+                            onDragStart={() => onDragStart(i)}
+                            onDragOver={e => onDragOver(e, i)}
+                            onDragLeave={() => setDragOver(null)}
+                            onDrop={() => onReviewDrop(i)}
+                            style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px', cursor:'grab',
+                              borderTop: k > 0 ? '1px solid var(--line-soft)' : 'none',
+                              outline: dragOver === i ? '2px solid var(--ink)' : 'none', outlineOffset:-2 }}>
+                            {(w.thumbnail_url || w.image_url)
+                              ? <img src={w.thumbnail_url || w.image_url} alt="" style={{ width:36, height:36, objectFit:'cover', borderRadius:2, flexShrink:0 }} />
+                              : <div style={{ width:36, height:36, background:'var(--parchment-2)', borderRadius:2, flexShrink:0 }} />}
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:12, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{overrides[w.id]?.title ?? w.title}</div>
+                              <div style={{ fontSize:10, color:'var(--muted)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{w.artist_name}</div>
+                            </div>
+                            {perPage > 1 && <>
+                              <button title="Move artwork earlier" disabled={i === 0} onClick={() => moveArtwork(i, i - 1)} style={arrowBtn(i === 0)}>&uarr;</button>
+                              <button title="Move artwork later" disabled={i === selected.length - 1} onClick={() => moveArtwork(i, i + 1)} style={arrowBtn(i === selected.length - 1)}>&darr;</button>
+                            </>}
+                            <button title="Remove from catalogue" onClick={() => removeSelected(w.id)}
+                              style={{ background:'none', border:'none', cursor:'pointer', color:'var(--muted)', fontSize:16, padding:'0 2px' }}>&times;</button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{ padding:10, borderTop:'1px solid var(--line)' }}>
+                <button className="btn" style={{ width:'100%' }} onClick={() => { setStep('select'); window.scrollTo(0, 0) }}>
+                  + Add more artworks
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
