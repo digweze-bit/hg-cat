@@ -22,7 +22,6 @@ const Safekeeping  = lazy(() => import('./pages/Safekeeping'))
 const CRM = lazy(() => import('./pages/CRM'))
 const AuditLog = lazy(() => import('./pages/AuditLog'))
 const Settings = lazy(() => import('./pages/Settings'))
-const HR = lazy(() => import('./pages/HR'))
 const Search = lazy(() => import('./pages/Search'))
 const Media = lazy(() => import('./pages/Media'))
 
@@ -99,7 +98,6 @@ export default function App() {
                 <Route path="crm" element={<CRM />} />
                 <Route path="audit-log" element={<AuditLog />} />
                 <Route path="settings" element={<Settings />} />
-                <Route path="hr" element={<HR />} />
                 <Route path="search" element={<Search />} />
                 <Route path="media" element={<Media />} />
 

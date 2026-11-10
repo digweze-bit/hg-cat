@@ -31,7 +31,6 @@ const NAV = [
   { section: 'Media' },
   { path: '/admin/media', label: 'Social & Newsletter', icon: '◱' },
   { section: 'Admin' },
-  { path: '/admin/hr', label: 'Job Check', icon: '\uD83D\uDCCB' },
   { path: '/admin/settings', label: 'Settings', icon: '\u2699' },
   { path: '/admin/users', label: 'Staff users', icon: '\u25C9' },
 ]
