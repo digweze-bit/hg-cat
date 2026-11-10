@@ -2242,6 +2242,7 @@ ${(() => {
   h += '</div>'
   return h
 })()}
+${Number(inv.vat_amount)>0?'<div style="margin-top:12px;font-size:11px">VAT ID: 2622452552846</div>':''}
 <div class="footer"><div>Hourglass Gallery</div><div>298C Akin Olugbade Street, Victoria Island, Lagos</div><div>info@hourglassgallery.com</div></div>
 </body></html>`
 }
