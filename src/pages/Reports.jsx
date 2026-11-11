@@ -465,12 +465,6 @@ function consignmentReport(ctx) {
   const isFixed  = w => Number(w.commission_rate) === 0
   const rate     = w => Number(w.commission_rate ?? 40)
   const net      = w => isFixed(w) ? price(w) : Math.round(price(w) * (100 - rate(w)) / 100)
-  const byCurrency = (ws, fn) => {
-    const t = {}
-    ws.forEach(w => { if (price(w)) t[cur(w)] = (t[cur(w)] || 0) + fn(w) })
-    const parts = Object.entries(t).map(([c, n]) => formatAmount(n, c))
-    return parts.length ? parts.join(' + ') : DASH
-  }
 
   const buckets = {}
   works.forEach(w => {
@@ -493,8 +487,6 @@ function consignmentReport(ctx) {
     stats: [
       { n: works.length, l: availableOnly ? 'Works available' : 'Consigned works', color: 'var(--amber)' },
       { n: Object.keys(buckets).length, l: byArtist ? 'Artists' : 'Consignors' },
-      { n: byCurrency(works, price), l: 'Total price' },
-      { n: byCurrency(works, net), l: `Net to ${owner}` },
     ],
     sections: Object.entries(buckets)
       .sort((a, b) => b[1].length - a[1].length)
