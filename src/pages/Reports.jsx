@@ -499,7 +499,6 @@ function consignmentReport(ctx) {
     sections: Object.entries(buckets)
       .sort((a, b) => b[1].length - a[1].length)
       .map(([name, ws]) => {
-        const lead = byArtist ? 4 : 5   // thumb, title, (artist), year, medium, status
         return {
           heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}`,
           columns: [THUMB_COL, 'Title', ...(byArtist ? [] : ['Artist']), 'Year', 'Medium', 'Status', 'Price', 'Terms', `Net to ${owner}`],
@@ -514,9 +513,6 @@ function consignmentReport(ctx) {
             { text: isFixed(w) ? 'Fixed price' : `Less ${rate(w)}% commission`, muted: true },
             { text: price(w) ? formatAmount(net(w), cur(w)) : DASH, bold: true },
           ]),
-          footer: ws.length > 1
-            ? [...Array(lead).fill(''), 'Total', byCurrency(ws, price), '', byCurrency(ws, net)]
-            : null,
         }
       }),
     empty: availableOnly
