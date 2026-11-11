@@ -16,10 +16,14 @@ function buildDimensions(form) {
 }
 
 function parseDimensions(str) {
-  // Try to split existing "H \u00D7 W \u00D7 D inches" or "H \u00D7 W inches" strings
-  const cleaned = str.replace(/\s*inches?\s*/i, '').trim()
-  const parts = cleaned.split(/[\u00D7x]/i).map(s => s.trim()).filter(Boolean)
-  return { dim_h: parts[0]||'', dim_w: parts[1]||'', dim_d: parts[2]||'' }
+  // Stored dimensions come in many shapes: "8 by 6", "10 \u00D7 10 inches",
+  // "h:50 w:40", "15 w;11.75 inches", "13 \u00D7 17,5", mis-encoded "8 \u00C3\u2014 6".
+  // Rather than split on one separator, pull the numbers out in order.
+  const nums = (String(str||'').match(/\d+(?:[.,]\d+)?/g) || [])
+    .map(n => n.replace(',', '.').replace(/\.$/, ''))
+  // Drop a trailing year that slipped into the field ("16.5 by 11.7 2024").
+  if (nums.length > 2 && /^(19|20)\d\d$/.test(nums[nums.length-1])) nums.pop()
+  return { dim_h: nums[0]||'', dim_w: nums[1]||'', dim_d: nums[2]||'' }
 }
 
 export default function Certificates() {
@@ -31,6 +35,8 @@ export default function Certificates() {
   const [modal, setModal]         = useState(false)
   const [saving, setSaving]       = useState(false)
   const [artworkSearch, setArtworkSearch] = useState('')
+  // Image chosen from the computer; overrides the linked artwork's image.
+  const [uploadedImage, setUploadedImage] = useState(null) // { blob, preview, name }
 
   const [form, setForm] = useState({
     artwork_id:'', artist_name:'', title:'', medium:'', dim_h:'', dim_w:'', dim_d:'', year:'',
@@ -53,6 +59,7 @@ export default function Certificates() {
 
   const artistMap = Object.fromEntries(artists.map(a => [a.id, a]))
   const selectedArtwork = artworks.find(w => w.id === form.artwork_id)
+  const previewImage = uploadedImage?.preview || selectedArtwork?.image_url || null
 
   const filteredArtworks = artworks.filter(w => {
     if (!artworkSearch) return false
@@ -68,7 +75,31 @@ export default function Certificates() {
       medium:w.medium||'', year:w.year||'',
       ...parseDimensions(w.dimensions||''),
     }))
+    clearUploadedImage()
     setArtworkSearch('')
+  }
+
+  function clearUploadedImage() {
+    setUploadedImage(prev => { if (prev?.preview) URL.revokeObjectURL(prev.preview); return null })
+  }
+
+  async function pickImage(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) return alert('Please choose an image file')
+    const blob = await resizeImage(file, 1600)
+    if (!blob) return alert('Could not read that image')
+    clearUploadedImage()
+    setUploadedImage({ blob, preview: URL.createObjectURL(blob), name: file.name })
+  }
+
+  async function uploadCertImage() {
+    if (!uploadedImage) return null
+    const path = `certificates/${Date.now()}_${Math.random().toString(36).slice(2,8)}.jpg`
+    const { error } = await supabase.storage.from('artwork-images').upload(path, uploadedImage.blob, { contentType:'image/jpeg' })
+    if (error) throw new Error('Image upload failed: ' + error.message)
+    return supabase.storage.from('artwork-images').getPublicUrl(path).data.publicUrl
   }
 
   function editionLabel() {
@@ -84,27 +115,39 @@ export default function Certificates() {
     if (!form.title||!form.artist_name) return alert('Artist and title are required')
     setSaving(true)
     try {
+      const uploadedUrl = await uploadCertImage()
+      const imageUrl = uploadedUrl || selectedArtwork?.image_url || null
       const { data:certNum } = await supabase.rpc('next_cert_number')
-      await supabase.from('certificates').insert({
+      const row = {
         cert_number:certNum, artwork_id:form.artwork_id||null,
         artist_name:form.artist_name, title:form.title,
-        medium:form.medium, dimensions:form.dimensions, year:form.year,
+        medium:form.medium, dimensions:buildDimensions(form)||null, year:form.year,
         client_name:form.show_client?form.client_name:null,
         show_client:form.show_client,
         issued_date:form.issued_date, issued_by:user?.id, notes:form.notes,
-      })
+      }
+      if (uploadedUrl) row.image_url = uploadedUrl
+      let { error:insErr } = await supabase.from('certificates').insert(row)
+      // Before supabase/certificate_images.sql is applied the column is missing:
+      // still issue the certificate, just without remembering the uploaded image.
+      if (insErr && uploadedUrl && /image_url/i.test(insErr.message||'')) {
+        delete row.image_url
+        ;({ error:insErr } = await supabase.from('certificates').insert(row))
+      }
+      if (insErr) throw insErr
       await load()
       printCOA({
         certNumber:certNum,
         artistName:form.artist_name, title:form.title,
         medium:form.medium, dimensions:buildDimensions(form), year:form.year,
         editionLabel:editionLabel(),
-        imageUrl:selectedArtwork?.image_url||null,
+        imageUrl,
         clientName:form.show_client?form.client_name:null,
         issued:form.issued_date, notes:form.notes,
         includeSignature:form.include_signature,
       })
       setModal(false)
+      clearUploadedImage()
       setForm({ artwork_id:'', artist_name:'', title:'', medium:'', dim_h:'', dim_w:'', dim_d:'', year:'', is_edition:false, edition_number:'', edition_size:'', edition_type:'', client_name:'', show_client:false, notes:'', include_signature:true, issued_date:new Date().toISOString().split('T')[0] })
     } catch(err) { alert('Failed: '+err.message) }
     finally { setSaving(false) }
@@ -116,7 +159,7 @@ export default function Certificates() {
       certNumber:cert.cert_number, artistName:cert.artist_name, title:cert.title,
       medium:cert.medium, dimensions:cert.dimensions, year:cert.year,
       editionLabel:null,
-      imageUrl:artwork?.image_url||null,
+      imageUrl:cert.image_url||artwork?.image_url||null,
       clientName:cert.show_client?cert.client_name:null,
       issued:cert.issued_date, notes:cert.notes, includeSignature:true,
     })
@@ -223,6 +266,26 @@ export default function Certificates() {
                     </div>
                     {buildDimensions(form)&&<div style={{fontSize:11,color:'var(--muted)'}}>Will appear as: <strong>{buildDimensions(form)}</strong></div>}
                   </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                    <label className="form-label">Artwork image</label>
+                    <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                      {previewImage
+                        ? <img src={previewImage} alt="" style={{width:48,height:48,objectFit:'cover',borderRadius:3,border:'1px solid var(--line)'}}/>
+                        : <div style={{width:48,height:48,borderRadius:3,border:'1px dashed var(--line)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'var(--muted)'}}>None</div>}
+                      <div style={{display:'flex',flexDirection:'column',gap:4,minWidth:0}}>
+                        <div style={{display:'flex',gap:6}}>
+                          <label className="btn btn-outline btn-sm" style={{cursor:'pointer'}}>
+                            {uploadedImage ? 'Change image' : 'Upload from computer'}
+                            <input type="file" accept="image/*" onChange={pickImage} style={{display:'none'}}/>
+                          </label>
+                          {uploadedImage&&<button type="button" className="btn btn-ghost btn-sm" onClick={clearUploadedImage}>Remove</button>}
+                        </div>
+                        <div style={{fontSize:11,color:'var(--muted)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          {uploadedImage ? uploadedImage.name : selectedArtwork?.image_url ? 'Using the HG Cat artwork image' : 'No image yet'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div className="form-row">
                     <div className="form-group"><label className="form-label">Year</label><input className="form-input" value={form.year} onChange={e=>setForm(f=>({...f,year:e.target.value}))}/></div>
                     <div className="form-group"><label className="form-label">Date issued</label><input className="form-input" type="date" value={form.issued_date} onChange={e=>setForm(f=>({...f,issued_date:e.target.value}))}/></div>
@@ -272,7 +335,7 @@ export default function Certificates() {
               {/* RIGHT \u2014 preview */}
               <div>
                 <div style={{fontSize:10,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--muted)',marginBottom:10}}>Live preview</div>
-                <COAPreview form={form} imageUrl={selectedArtwork?.image_url||null} editionLabel={editionLabel()} logo={LOGO_B64} sig={SIG_B64}/>
+                <COAPreview form={form} imageUrl={previewImage} editionLabel={editionLabel()} logo={LOGO_B64} sig={SIG_B64}/>
               </div>
             </div>
             <div className="modal-footer">
@@ -289,6 +352,27 @@ export default function Certificates() {
 }
 
 // \u2500\u2500 LIVE PREVIEW \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+async function resizeImage(file, maxPx = 1600) {
+  return new Promise(resolve => {
+    const img = new Image()
+    const src = URL.createObjectURL(file)
+    img.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#fff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(src)
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.9)
+    }
+    img.onerror = () => { URL.revokeObjectURL(src); resolve(null) }
+    img.src = src
+  })
+}
+
 function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
   const issued = form.issued_date
     ? new Date(form.issued_date+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'})
