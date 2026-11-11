@@ -3,6 +3,8 @@ import { supabase, fetchAll } from '../lib/supabase'
 import { useAuth } from '../components/AuthProvider'
 import { LOGO_B64, SIG_B64 } from '../lib/assets'
 import * as XLSX from 'xlsx'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 // \u2500\u2500 DIMENSION HELPERS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 function buildDimensions(form) {
@@ -114,6 +116,7 @@ export default function Certificates() {
   async function generateAndSave() {
     if (!form.title||!form.artist_name) return alert('Artist and title are required')
     setSaving(true)
+    const win = openPdfTab()
     try {
       const uploadedUrl = await uploadCertImage()
       const imageUrl = uploadedUrl || selectedArtwork?.image_url || null
@@ -136,7 +139,7 @@ export default function Certificates() {
       }
       if (insErr) throw insErr
       await load()
-      printCOA({
+      await printCOA({
         certNumber:certNum,
         artistName:form.artist_name, title:form.title,
         medium:form.medium, dimensions:buildDimensions(form), year:form.year,
@@ -145,24 +148,27 @@ export default function Certificates() {
         clientName:form.show_client?form.client_name:null,
         issued:form.issued_date, notes:form.notes,
         includeSignature:form.include_signature,
-      })
+      }, win)
       setModal(false)
       clearUploadedImage()
       setForm({ artwork_id:'', artist_name:'', title:'', medium:'', dim_h:'', dim_w:'', dim_d:'', year:'', is_edition:false, edition_number:'', edition_size:'', edition_type:'', client_name:'', show_client:false, notes:'', include_signature:true, issued_date:new Date().toISOString().split('T')[0] })
-    } catch(err) { alert('Failed: '+err.message) }
+    } catch(err) { if (win && !win.closed) win.close(); alert('Failed: '+err.message) }
     finally { setSaving(false) }
   }
 
-  function reprint(cert) {
+  async function reprint(cert) {
     const artwork = artworks.find(w => w.id===cert.artwork_id)
-    printCOA({
+    const win = openPdfTab()
+    try {
+      await printCOA({
       certNumber:cert.cert_number, artistName:cert.artist_name, title:cert.title,
       medium:cert.medium, dimensions:cert.dimensions, year:cert.year,
       editionLabel:null,
       imageUrl:cert.image_url||artwork?.image_url||null,
       clientName:cert.show_client?cert.client_name:null,
       issued:cert.issued_date, notes:cert.notes, includeSignature:true,
-    })
+      }, win)
+    } catch(err) { if (win && !win.closed) win.close(); alert('Could not build the certificate: '+err.message) }
   }
 
   function exportExcel() {
@@ -501,7 +507,7 @@ function COAPreview({ form, imageUrl, editionLabel, logo, sig }) {
 }
 
 // \u2500\u2500 PRINT \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function printCOA({ certNumber, artistName, title, medium, dimensions, year, editionLabel, imageUrl, clientName, issued, notes, includeSignature }) {
+function buildCOAHtml({ certNumber, artistName, title, medium, dimensions, year, editionLabel, imageUrl, clientName, issued, notes, includeSignature }) {
   function e(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
   const issuedFmt = issued ? new Date(issued+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric'}) : ''
 
@@ -523,7 +529,7 @@ function printCOA({ certNumber, artistName, title, medium, dimensions, year, edi
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Certificate of Authenticity {'\u2014'} ${e(title)}</title>
+<title>Certificate of Authenticity \u2014 ${e(title)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 @page{size:A4 landscape;margin:0;}
@@ -610,8 +616,59 @@ body{font-family:Helvetica,Arial,sans-serif;color:#000;background:#fff;-webkit-p
 </body>
 </html>`
 
-  const w = window.open('', '_blank', 'width=1200,height=820')
-  w.document.write(html)
-  w.document.close()
-  setTimeout(() => w.print(), 800)
+  return html
+}
+
+// Opens a tab straight away (inside the click, so pop-up blockers allow it)
+// and shows a holding message while the PDF is built.
+function openPdfTab() {
+  const w = window.open('', '_blank')
+  if (w) w.document.write('<p style="font-family:Helvetica,Arial,sans-serif;color:#777;padding:40px">Preparing certificate…</p>')
+  return w
+}
+
+async function toDataUrl(url) {
+  if (!url || url.startsWith('data:') || url.startsWith('blob:')) {
+    if (url?.startsWith('blob:')) {
+      const blob = await (await fetch(url)).blob()
+      return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob) })
+    }
+    return url
+  }
+  try {
+    const resp = await fetch(url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now(), { cache:'no-store', mode:'cors' })
+    if (!resp.ok) throw new Error('HTTP ' + resp.status)
+    const blob = await resp.blob()
+    return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob) })
+  } catch (err) {
+    console.warn('Could not embed certificate image:', err.message)
+    return null
+  }
+}
+
+// Builds the certificate as a real A4 landscape PDF. Printing a web page made
+// the browser stamp its own date, title, "about:blank" and page number on it;
+// a PDF printed from the PDF viewer has none of that.
+async function printCOA(opts, win) {
+  const imageUrl = await toDataUrl(opts.imageUrl)
+  const html = buildCOAHtml({ ...opts, imageUrl })
+  const iframe = document.createElement('iframe')
+  Object.assign(iframe.style, { position:'fixed', left:'-10000px', top:'0', width:'297mm', height:'210mm', border:'0' })
+  document.body.appendChild(iframe)
+  try {
+    const doc = iframe.contentDocument
+    doc.open(); doc.write(html); doc.close()
+    await Promise.all([...doc.images].map(img => img.complete ? null : new Promise(r => { img.onload = img.onerror = r })))
+    if (doc.fonts?.ready) await doc.fonts.ready
+    await new Promise(r => setTimeout(r, 150))
+    const canvas = await html2canvas(doc.querySelector('.page'), { scale:3, useCORS:true, backgroundColor:'#ffffff' })
+    const pdf = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' })
+    pdf.setProperties({ title:`Certificate of Authenticity ${opts.certNumber||''}`.trim() })
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 297, 210)
+    const url = URL.createObjectURL(pdf.output('blob'))
+    if (win && !win.closed) win.location.href = url
+    else pdf.save(`COA ${opts.certNumber||''}.pdf`.trim())
+  } finally {
+    document.body.removeChild(iframe)
+  }
 }
