@@ -6,6 +6,8 @@ import { printConsignmentNote, consignedOn, DEFAULT_CONSIGNMENT_TERMS } from '..
 
 const CONSIGNOR_TYPES = ['Artist', 'Estate', 'Collector', 'Dealer', 'Institution', 'Other']
 const TERM_TYPES = ['commission', 'fixed']
+// Works still with the gallery for this consignor; everything else (Sold, Returned, NFS) is history
+const isCurrent = w => !w.availability || w.availability === 'Available' || w.availability === 'Reserved'
 
 export default function Consignors() {
   const navigate = useNavigate()
@@ -15,6 +17,7 @@ export default function Consignors() {
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
   const [selected, setSelected]     = useState(null)   // clicked consignor
+  const [view, setView]             = useState('current') // current | history
   const [modal, setModal]           = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [saving, setSaving]         = useState(false)
@@ -105,6 +108,9 @@ export default function Consignors() {
   const consignorArtworks = selected
     ? artworks.filter(w => w.consignor_name?.toLowerCase() === selected.name?.toLowerCase())
     : []
+  const currentWorks = consignorArtworks.filter(isCurrent)
+  const historyWorks = consignorArtworks.filter(w => !isCurrent(w))
+  const shownWorks   = view === 'history' ? historyWorks : currentWorks
 
   function termSummary(c) {
     if (c.term_type === 'fixed') return c.fixed_amount ? `Fixed \u20A6${Number(c.fixed_amount).toLocaleString()}` : 'Fixed (TBC)'
@@ -160,7 +166,7 @@ export default function Consignors() {
             const isSelected = selected?.id === c.id
             return (
               <div key={c.id}
-                onClick={() => setSelected(isSelected ? null : c)}
+                onClick={() => { setSelected(isSelected ? null : c); setView('current') }}
                 style={{
                   padding:'14px 18px', borderBottom:'1px solid var(--line-soft)',
                   cursor:'pointer', background: isSelected ? 'var(--surface-1,#f5f3f0)' : 'transparent',
@@ -174,7 +180,7 @@ export default function Consignors() {
                     <span style={{fontSize:11, color:'var(--gold,#b8862a)', fontWeight:500}}>{termSummary(c)}</span>
                   </div>
                   <div style={{fontSize:11, color:'var(--muted)', marginTop:4}}>
-                    {cArtworks.length} artwork{cArtworks.length!==1?'s':''} consigned
+                    {cArtworks.filter(isCurrent).length} current {'·'} {cArtworks.filter(w => !isCurrent(w)).length} history
                   </div>
                 </div>
                 <div style={{display:'flex', gap:6, flexShrink:0, marginLeft:12}}>
@@ -213,16 +219,28 @@ export default function Consignors() {
 
           {/* Consigned artworks */}
           <div className="card" style={{flex:1, overflowY:'auto', padding:0}}>
-            <div style={{padding:'12px 18px', borderBottom:'1px solid var(--line-soft)', fontWeight:600, fontSize:13}}>
-              Consigned artworks ({consignorArtworks.length})
+            <div style={{padding:'8px 18px', borderBottom:'1px solid var(--line-soft)', display:'flex', alignItems:'center', gap:6}}>
+              {[
+                ['current', `Available & reserved (${currentWorks.length})`],
+                ['history', `History (${historyWorks.length})`],
+              ].map(([k, label]) => (
+                <button key={k} className={`btn btn-sm ${view===k ? 'btn-primary' : 'btn-ghost'}`} onClick={()=>setView(k)}>{label}</button>
+              ))}
+              {view === 'history' && historyWorks.length > 0 && (
+                <span style={{fontSize:11, color:'var(--muted)', marginLeft:'auto'}}>Sold, returned and not-for-sale works</span>
+              )}
             </div>
-            {consignorArtworks.length === 0 && (
+            {consignorArtworks.length === 0 ? (
               <div style={{padding:32, textAlign:'center', color:'var(--muted)'}}>
                 No artworks matched to this consignor.<br/>
                 <span style={{fontSize:12}}>Link artworks by setting the consignor name to <strong>{selected.name}</strong> in the Artworks page.</span>
               </div>
+            ) : shownWorks.length === 0 && (
+              <div style={{padding:32, textAlign:'center', color:'var(--muted)'}}>
+                {view === 'history' ? 'No sold or returned works yet.' : 'No available or reserved works — see History.'}
+              </div>
             )}
-            <table style={{width:'100%', borderCollapse:'collapse'}}>
+            {shownWorks.length > 0 && <table style={{width:'100%', borderCollapse:'collapse'}}>
               <thead>
                 <tr style={{background:'var(--surface-0,#f8f7f5)'}}>
                   {['','Artist','Title','Year','Medium','Availability','Consignment price','Commission'].map(h=>(
@@ -231,7 +249,7 @@ export default function Consignors() {
                 </tr>
               </thead>
               <tbody>
-                {consignorArtworks.map(w => (
+                {shownWorks.map(w => (
                   <tr key={w.id} onClick={() => navigate('/admin/artworks', { state: { editArtworkId: w.id } })} style={{borderBottom:'1px solid var(--line-soft)', cursor:'pointer'}} onMouseEnter={e=>e.currentTarget.style.background='var(--parchment)'} onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     <td style={{padding:'8px 14px', width:44}}>
                       {w.image_url
@@ -245,8 +263,8 @@ export default function Consignors() {
                     <td style={{padding:'8px 14px', fontSize:13, color:'var(--muted)'}}>{w.medium||'\u2014'}</td>
                     <td style={{padding:'8px 14px'}}>
                       <span style={{fontSize:11, padding:'2px 8px', borderRadius:3,
-                        background: w.availability==='Sold' ? '#fef2f0' : w.availability==='Reserved' ? '#fef9ec' : '#f0faf4',
-                        color: w.availability==='Sold' ? '#c0392b' : w.availability==='Reserved' ? '#b8862a' : '#27ae60',
+                        background: w.availability==='Sold' ? '#fef2f0' : w.availability==='Reserved' ? '#fef9ec' : isCurrent(w) ? '#f0faf4' : '#f1efec',
+                        color: w.availability==='Sold' ? '#c0392b' : w.availability==='Reserved' ? '#b8862a' : isCurrent(w) ? '#27ae60' : '#6b6560',
                       }}>{w.availability}</span>
                     </td>
                     <td style={{padding:'8px 14px', fontSize:13}}>
@@ -258,7 +276,7 @@ export default function Consignors() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table>}
           </div>
         </div>
       )}
