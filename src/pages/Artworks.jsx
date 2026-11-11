@@ -402,8 +402,13 @@ export default function Artworks() {
 
   const sorted = useMemo(() => {
     let list = [...filtered]
-    if (sortBy === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
-    if (sortBy === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
+    // Most recent = newest entries added to the catalogue; bulk imports share a
+    // timestamp, so fall back to the HG code (higher = added later)
+    if (sortBy === 'recent') list.sort((a, b) =>
+      (b.created_at || '').localeCompare(a.created_at || '') ||
+      (b.hg_code || '').localeCompare(a.hg_code || '', undefined, { numeric: true }))
+    else if (sortBy === 'year_desc') list.sort((a, b) => (parseInt(b.year) || 0) - (parseInt(a.year) || 0))
+    else if (sortBy === 'az') list.sort((a, b) => a.title.localeCompare(b.title))
     else if (sortBy === 'artist_az') list.sort((a, b) => {
       const nameA = artistMap[a.artist_id]?.name || 'zzz'
       const nameB = artistMap[b.artist_id]?.name || 'zzz'
@@ -721,7 +726,7 @@ export default function Artworks() {
                 <th style={{ width:60 }}>Image</th>
                 <th style={{ cursor:'pointer', color: sortBy==='az'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('az'); setPage(0) }}>Title {sortBy==='az'?'↑':''}</th>
                 <th>Artist</th>
-                <th style={{ cursor:'pointer', color: sortBy==='recent'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('recent'); setPage(0) }}>Year {sortBy==='recent'?'↓':''}</th>
+                <th style={{ cursor:'pointer', color: sortBy==='year_desc'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('year_desc'); setPage(0) }}>Year {sortBy==='year_desc'?'↓':''}</th>
                 <th style={{ cursor:'pointer', color: sortBy==='location'?'var(--ink)':'inherit' }} onClick={() => { setSortBy('location'); setPage(0) }}>Location {sortBy==='location'?'↑':''}</th>
                 <th>Ownership</th>
                 <th style={{ cursor:'pointer', color: ['price_desc','price_asc'].includes(sortBy)?'var(--ink)':'inherit' }} onClick={() => { setSortBy(sortBy==='price_desc'?'price_asc':'price_desc'); setPage(0) }}>Price {sortBy==='price_desc'?'↓':sortBy==='price_asc'?'↑':''}</th>
