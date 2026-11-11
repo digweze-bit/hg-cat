@@ -104,6 +104,9 @@ const OWNERSHIP_LABEL = {
 // third party or estate belong to the consignor reports.
 const CONSIGNMENT_OWNERSHIP = { artist: 'artist_owned', consignor: 'consignment' }
 
+// Consigned works still held by the gallery and offered for sale
+const STILL_HELD = ['Available', 'Reserved']
+
 function workValue(w) {
   // price is a free-text field, so only trust the numeric columns
   return Number(w.consignment_price || w.retail_price || w.valuation || 0)
@@ -134,6 +137,7 @@ export default function Reports() {
   const [safekeeping, setSafekeeping] = useState([])
   const [payments, setPayments] = useState([])
   const [skStatus, setSkStatus] = useState('in_storage')
+  const [consignScope, setConsignScope] = useState('available') // available | all
   const [loading, setLoading]   = useState(true)
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 3)
@@ -258,9 +262,9 @@ export default function Reports() {
       artworks, items, invoices, artistMap,
       matchesEntity, itemMatchesEntity, inPeriod, dateFrom, dateTo,
       loanees, loaneeId, clientId, sortId: sub.sort && sorts[sub.sort],
-      safekeeping, skStatus, payments, entityId,
+      safekeeping, skStatus, payments, entityId, consignScope,
     })
-  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId, clientId, sorts, safekeeping, skStatus, payments])
+  }, [loading, groupId, subId, entityId, artworks, items, invoices, artistMap, dateFrom, dateTo, loanees, loaneeId, clientId, sorts, safekeeping, skStatus, payments, consignScope])
 
   if (loading) return <div style={{ color:'var(--muted)' }}>Loading reports{'…'}</div>
 
@@ -355,6 +359,16 @@ export default function Reports() {
           </>
         )}
 
+        {sub.id === 'consignment' && (
+          <>
+            <span style={{ fontSize:13, color:'var(--muted)' }}>Works:</span>
+            <select className="form-select" style={{ width:200 }} value={consignScope} onChange={e => setConsignScope(e.target.value)}>
+              <option value="available">Available (incl. reserved)</option>
+              <option value="all">All, including sold</option>
+            </select>
+          </>
+        )}
+
         {sub.id === 'safekeeping' && (
           <>
             <span style={{ fontSize:13, color:'var(--muted)' }}>Status:</span>
@@ -440,7 +454,23 @@ function consignmentReport(ctx) {
   // Artist reports cover works consigned by the artist; consignor reports cover
   // works consigned by third parties and estates. Never both.
   const ownership = CONSIGNMENT_OWNERSHIP[group.entity]
-  const works = artworks.filter(w => w.ownership === ownership && matchesEntity(w))
+  const availableOnly = ctx.consignScope !== 'all'
+  const works = artworks.filter(w => w.ownership === ownership && matchesEntity(w)
+    && (!availableOnly || STILL_HELD.includes(w.availability || 'Available')))
+
+  // Consignor-facing figures: only the price agreed with the owner, never the
+  // gallery's retail price. commission_rate 0 means a fixed (net) price.
+  const cur      = w => w.consignment_currency || 'NGN'
+  const price    = w => Number(w.consignment_price || 0)
+  const isFixed  = w => Number(w.commission_rate) === 0
+  const rate     = w => Number(w.commission_rate ?? 40)
+  const net      = w => isFixed(w) ? price(w) : Math.round(price(w) * (100 - rate(w)) / 100)
+  const byCurrency = (ws, fn) => {
+    const t = {}
+    ws.forEach(w => { if (price(w)) t[cur(w)] = (t[cur(w)] || 0) + fn(w) })
+    const parts = Object.entries(t).map(([c, n]) => formatAmount(n, c))
+    return parts.length ? parts.join(' + ') : DASH
+  }
 
   const buckets = {}
   works.forEach(w => {
@@ -450,40 +480,48 @@ function consignmentReport(ctx) {
     if (!buckets[k]) buckets[k] = []
     buckets[k].push(w)
   })
-  const total = works.reduce((s, w) => s + workValue(w), 0)
+  const owner = byArtist ? 'artist' : 'consignor'
+  const statusColor = s => s === 'Sold' ? 'var(--red)' : s === 'Reserved' ? 'var(--amber)' : s === 'Available' ? 'var(--green)' : undefined
 
   return {
     title: byArtist ? 'Artist consignment' : 'Consignor consignment',
-    subtitle: subtitleFor(ctx),
-    note: byArtist
+    subtitle: [subtitleFor(ctx), availableOnly ? 'Available and reserved works' : 'All works, including sold'].filter(Boolean).join('  ·  '),
+    note: (byArtist
       ? 'Works consigned directly by the artist.'
-      : 'Works consigned by third parties and estates. Consignments direct from artists are covered by the Artist Reports.',
+      : 'Works consigned by third parties and estates. Consignments direct from artists are covered by the Artist Reports.')
+      + ` Prices are as agreed with the ${owner}. On commission, the ${owner} receives the price less the stated commission; on a fixed price, the ${owner} receives the price shown.`,
     stats: [
-      { n: works.length, l: 'Consigned works', color: 'var(--amber)' },
+      { n: works.length, l: availableOnly ? 'Works available' : 'Consigned works', color: 'var(--amber)' },
       { n: Object.keys(buckets).length, l: byArtist ? 'Artists' : 'Consignors' },
-      { n: formatAmount(total, 'NGN'), l: 'Total value' },
+      { n: byCurrency(works, price), l: 'Total price' },
+      { n: byCurrency(works, net), l: `Net to ${owner}` },
     ],
     sections: Object.entries(buckets)
       .sort((a, b) => b[1].length - a[1].length)
-      .map(([name, ws]) => ({
-        heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}`,
-        columns: byArtist
-          ? [THUMB_COL, 'Title', 'Year', 'Medium', 'Location', 'Status', 'Value']
-          : [THUMB_COL, 'Title', 'Artist', 'Year', 'Medium', 'Location', 'Status', 'Value'],
-        rows: ws.map(w => [
-          thumb(w),
-          { text: w.title, bold: true },
-          ...(byArtist ? [] : [{ text: artistMap[w.artist_id]?.name || DASH, muted: true }]),
-          { text: w.year || DASH, muted: true },
-          { text: w.medium || DASH, muted: true },
-          { text: w.location || DASH, muted: true },
-          { text: w.availability || DASH },
-          { text: formatAmount(workValue(w), w.consignment_currency || 'NGN') },
-        ]),
-      })),
-    empty: byArtist
-      ? 'No works consigned by this artist'
-      : 'No third-party or estate consignments on record',
+      .map(([name, ws]) => {
+        const lead = byArtist ? 4 : 5   // thumb, title, (artist), year, medium, status
+        return {
+          heading: `${name} — ${ws.length} work${ws.length !== 1 ? 's' : ''}`,
+          columns: [THUMB_COL, 'Title', ...(byArtist ? [] : ['Artist']), 'Year', 'Medium', 'Status', 'Price', 'Terms', `Net to ${owner}`],
+          rows: ws.map(w => [
+            thumb(w),
+            { text: w.title, bold: true },
+            ...(byArtist ? [] : [{ text: artistMap[w.artist_id]?.name || DASH, muted: true }]),
+            { text: w.year || DASH, muted: true },
+            { text: w.medium || DASH, muted: true },
+            { text: w.availability || DASH, color: statusColor(w.availability) },
+            { text: price(w) ? formatAmount(price(w), cur(w)) : DASH },
+            { text: isFixed(w) ? 'Fixed price' : `Less ${rate(w)}% commission`, muted: true },
+            { text: price(w) ? formatAmount(net(w), cur(w)) : DASH, bold: true },
+          ]),
+          footer: ws.length > 1
+            ? [...Array(lead).fill(''), 'Total', byCurrency(ws, price), '', byCurrency(ws, net)]
+            : null,
+        }
+      }),
+    empty: availableOnly
+      ? (byArtist ? 'No available works consigned by this artist' : 'No available consigned works')
+      : (byArtist ? 'No works consigned by this artist' : 'No third-party or estate consignments on record'),
   }
 }
 
