@@ -31,6 +31,7 @@ const NAV = [
   { section: 'Media' },
   { path: '/admin/media', label: 'Social & Newsletter', icon: '◱' },
   { section: 'Admin' },
+  { path: '/admin/jobs', label: 'Team jobs', icon: '\u2611', badge: 'jobs' },
   { path: '/admin/hr', label: 'Job Check', icon: '\uD83D\uDCCB' },
   { path: '/admin/settings', label: 'Settings', icon: '\u2699' },
   { path: '/admin/users', label: 'Staff users', icon: '\u25C9' },
@@ -42,6 +43,7 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const shopCount = useShopCount()
+  const jobsCount = useJobsCount(profile?.id)
 
   const isActive = (path) => {
     if (path === '/admin') return location.pathname === '/admin'
@@ -73,6 +75,10 @@ export default function AdminLayout() {
                 {item.badge === 'shop' && shopCount > 0 && (
                   <span style={{ marginLeft:'auto', background:'#E05C2A', color:'#fff', borderRadius:10, fontSize:10, fontWeight:600, padding:'1px 7px' }}
                     aria-label={`${shopCount} waiting`}>{shopCount}</span>
+                )}
+                {item.badge === 'jobs' && jobsCount > 0 && (
+                  <span style={{ marginLeft:'auto', background:'#E05C2A', color:'#fff', borderRadius:10, fontSize:10, fontWeight:600, padding:'1px 7px' }}
+                    aria-label={`${jobsCount} jobs need you`}>{jobsCount}</span>
                 )}
               </div>
             )
@@ -111,7 +117,8 @@ export default function AdminLayout() {
              location.pathname.includes('forms') ? 'Forms' :
              location.pathname.includes('media') ? 'Media' :
              location.pathname.includes('certificates') ? 'Certificates' :
-             location.pathname.includes('users') ? 'Staff Users' : ''}
+             location.pathname.includes('users') ? 'Staff Users' :
+             location.pathname.includes('jobs') ? 'Team jobs' : ''}
           </div>
           <a href="/" target="_blank" style={{ fontSize:12, color:'var(--muted)' }}>
             View public site {'\u2197'}
@@ -123,6 +130,36 @@ export default function AdminLayout() {
       </div>
     </div>
   )
+}
+
+// Jobs needing the signed-in user: their own open/sent-back work, plus the
+// review queue if they are an approved closer.
+function useJobsCount(uid) {
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    if (!uid) return
+    let alive = true
+    async function count() {
+      const [{ data: jobs }, { data: people }, { data: closer }] = await Promise.all([
+        supabase.from('jobs').select('status,assignee_user_id,assignee_employee_id')
+          .in('status', ['open', 'in_progress', 'sent_back', 'submitted']),
+        supabase.rpc('job_people'),
+        supabase.from('job_closers').select('user_id').eq('user_id', uid),
+      ])
+      const myEmp = (people || []).filter(p => p.user_id === uid && p.employee_id).map(p => p.employee_id)
+      const isCloser = (closer || []).length > 0
+      const total = (jobs || []).filter(j =>
+        (j.status === 'submitted' && isCloser) ||
+        (j.status !== 'submitted' && (j.assignee_user_id === uid || myEmp.includes(j.assignee_employee_id)))
+      ).length
+      if (alive) setN(total)
+    }
+    count()
+    const t = setInterval(count, 60000)
+    window.addEventListener('jobs:changed', count)
+    return () => { alive = false; clearInterval(t); window.removeEventListener('jobs:changed', count) }
+  }, [uid])
+  return n
 }
 
 // Buy requests, receipts to check, paid orders to post and new questions.
