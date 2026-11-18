@@ -2,11 +2,12 @@ import QRCode from 'qrcode'
 import { supabase } from './supabase'
 
 // Shared by Artworks and Stock take so a work's location is picked from one
-// list rather than typed. Plain "Storage" is legacy: works still carrying it
-// need sorting into Storage 1 or Storage 2.
+// list rather than typed. (Plain "Storage" was split into Storage 1 / 2 on
+// 2026-11-18.)
 export const LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
-// Still offered when choosing what to count or tag, so the unsorted works can be found.
-export const LEGACY_LOCATIONS = ['Storage']
+// Old labels still offered when choosing what to count or tag, so works
+// carrying them can be found and sorted. Empty while none remain.
+export const LEGACY_LOCATIONS = []
 
 // Why a work is not on the premises.
 export const OFF_SITE_REASONS = ['On loan', 'Framer', 'With client (approval)', 'Exhibition / art fair', 'Artist studio', 'Consignor collected', 'Other']
