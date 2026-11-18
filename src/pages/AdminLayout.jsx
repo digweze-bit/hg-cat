@@ -10,6 +10,7 @@ const NAV = [
   { path: '/admin/artists', label: 'Artists', icon: '\u25CE' },
   { path: '/admin/artworks', label: 'Artworks', icon: '\u25FB' },
   { path: '/admin/batch-upload', label: 'Batch upload', icon: '\u25A4' },
+  { path: '/admin/stock-take', label: 'Stock take', icon: '\u2611' },
   { section: 'Archive' },
   { path: '/admin/archive', label: 'Live Archive', icon: '\u25C8' },
   { section: 'Commerce' },
@@ -118,6 +119,7 @@ export default function AdminLayout() {
              location.pathname.includes('media') ? 'Media' :
              location.pathname.includes('certificates') ? 'Certificates' :
              location.pathname.includes('users') ? 'Staff Users' :
+             location.pathname.includes('stock-take') ? 'Stock take' :
              location.pathname.includes('jobs') ? 'Team jobs' : ''}
           </div>
           <a href="/" target="_blank" style={{ fontSize:12, color:'var(--muted)' }}>

@@ -1,8 +1,9 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './authContext'
 
 export default function RequireAuth({ children }) {
   const { user, profile, loading, signOut } = useAuth()
+  const location = useLocation()
 
   // Still checking session \u2014 show minimal spinner
   if (loading) return (
@@ -13,7 +14,7 @@ export default function RequireAuth({ children }) {
   )
 
   // Not logged in
-  if (!user) return <Navigate to="/admin/login" replace />
+  if (!user) return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />
 
   // Logged in but profile not yet loaded {'\u2014'} render children anyway
   // Profile check happens below once loaded

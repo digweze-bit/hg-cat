@@ -1,10 +1,11 @@
 ﻿import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../components/AuthProvider'
 
 export default function AdminLogin() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -16,7 +17,8 @@ export default function AdminLogin() {
     setLoading(true)
     try {
       await signIn(email, password)
-      navigate('/admin')
+      const from = location.state?.from
+      navigate(typeof from === 'string' && from.startsWith('/admin/') ? from : '/admin')
     } catch (err) {
       setError(err.message || 'Invalid email or password')
     } finally {

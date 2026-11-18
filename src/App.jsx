@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+﻿import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import RequireAuth from './components/RequireAuth'
@@ -24,6 +24,9 @@ const AuditLog = lazy(() => import('./pages/AuditLog'))
 const Settings = lazy(() => import('./pages/Settings'))
 const HR = lazy(() => import('./pages/HR'))
 const Jobs = lazy(() => import('./pages/Jobs'))
+const StockTake = lazy(() => import('./pages/StockTake'))
+const StockCount = lazy(() => import('./pages/StockCount'))
+const StockScan = lazy(() => import('./pages/StockScan'))
 const Search = lazy(() => import('./pages/Search'))
 const Media = lazy(() => import('./pages/Media'))
 
@@ -43,6 +46,11 @@ const CatalogueBuilder = lazy(() => import('./pages/CatalogueBuilder'))
 const Shop         = lazy(() => import('./pages/Shop'))
 const ShopListing  = lazy(() => import('./pages/ShopListing'))
 const ShopOrder    = lazy(() => import('./pages/ShopOrder'))
+
+function TagRedirect() {
+  const { artworkId } = useParams()
+  return <Navigate to={`/admin/stock-take/scan/${artworkId}`} replace />
+}
 
 function PageLoader() {
   return (
@@ -78,6 +86,8 @@ export default function App() {
             <Route path="/book/:id" element={<BookPage />} />
             <Route path="/sign/:token" element={<FormSign />} />
             <Route path="/shop/order/:token" element={<ShopOrder />} />
+            {/* QR stock tags: short URL so the printed code stays small */}
+            <Route path="/t/:artworkId" element={<TagRedirect />} />
             <Route path="/shop/:listingId" element={<ShopListing />} />
             {/* Auth lives here and nowhere else: public routes above never
                 mount AuthProvider, so they never start a token refresh. */}
@@ -102,6 +112,9 @@ export default function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="hr" element={<HR />} />
                 <Route path="jobs" element={<Jobs />} />
+                <Route path="stock-take" element={<StockTake />} />
+                <Route path="stock-take/scan/:artworkId" element={<StockScan />} />
+                <Route path="stock-take/:countId" element={<StockCount />} />
                 <Route path="search" element={<Search />} />
                 <Route path="media" element={<Media />} />
 

@@ -6,12 +6,13 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase, fetchAll } from '../lib/supabase'
 import { CURRENCIES, formatAmount, fetchLiveRates } from '../lib/currencies'
 import { cacheInvalidate } from '../lib/cache'
+import { LOCATIONS } from '../lib/stock'
 import { printConsignmentNote } from '../lib/consignmentNote'
 
 const AVAILABILITY = ['Available', 'Reserved', 'Sold', 'NFS', 'Returned']
 const LOANEE_TYPES = ['Individual', 'Institution', 'Museum', 'Gallery', 'Corporate', 'Other']
 const CATEGORIES = ['Painting','Drawing','Sculpture','Photography','Print','Mixed Media','Textile','Ceramic','Video','Installation','Other']
-const DEFAULT_LOCATIONS = ['Main Gallery', 'Miniature Room', 'Storage 1', 'Storage 2', 'Safecourt']
+const DEFAULT_LOCATIONS = LOCATIONS
 const IMAGE_POSITIONS = ['center', 'top', 'bottom', 'left', 'right']
 const EMPTY = { tags: [], title:'', artist_id:'', year:'', medium:'', category:'', dimensions:'', dimension_unit:'in', thumbnail_url:'', full_image_url:'', series:'', availability:'Available', writeup:'', image_url:'', image_position:'center', price:'', price_currency:'NGN', retail_price:'', inventory_price:'', valuation:'', tags:'', location:'', sort_order:0, ownership:'gallery', consignment_price:'', consignor_name:'', consignor_contact:'', commission_rate:40, consignment_date:'', is_framed:false, frame_cost:'', tessera_id:'', loaned_to:'', returned_at:'', loanee_mode:'saved', loanee_id:'', loanee_type:'Individual', loanee_email:'', loanee_phone:'', save_loanee:true, loan_date:'', loan_due_date:'', loan_price:'', loan_commission_rate:0 }
 
