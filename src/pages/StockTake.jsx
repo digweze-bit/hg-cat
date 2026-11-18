@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { cacheInvalidate } from '../lib/cache'
-import { LOCATIONS, COUNT_STATUS, ARTWORK_FIELDS, selectAll, sizeText, printTags, openPrintWindow } from '../lib/stock'
+import { LOCATIONS, LEGACY_LOCATIONS, COUNT_STATUS, ARTWORK_FIELDS, selectAll, sizeText, printTags, openPrintWindow } from '../lib/stock'
 
 // Stock take section: every count ever run (with its differences and how they
 // were resolved), starting a new count, and printing QR stock tags.
@@ -156,6 +156,7 @@ function StartModal({ artists, onClose, onStarted }) {
               <select className="form-select" value={location} onChange={e => setLocation(e.target.value)}>
                 <option value="">Choose{'…'}</option>
                 {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                {LEGACY_LOCATIONS.map(l => <option key={l} value={l}>{l} (old label, not yet sorted)</option>)}
               </select>
             </div>
           )}
@@ -262,6 +263,7 @@ function Tags({ artists }) {
         <select className="form-select" style={{ maxWidth: 200 }} value={location} onChange={e => setLocation(e.target.value)}>
           <option value="">Any location</option>
           {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+          {LEGACY_LOCATIONS.map(l => <option key={l} value={l}>{l} (old label, not yet sorted)</option>)}
         </select>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
           <input type="checkbox" checked={onlyUntagged} onChange={e => setOnlyUntagged(e.target.checked)} /> Only works without a tag
